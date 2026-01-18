@@ -1,4 +1,5 @@
-import { createClient } from "@/lib/supabase/server"
+import { auth } from "@/auth"
+import { prisma } from "@/lib/prisma"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { RequestForm } from "@/components/requests/request-form"
@@ -26,44 +27,29 @@ const statusColors: Record<string, string> = {
 }
 
 export default async function MemberDashboardPage() {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const session = await auth()
+  const userId = session?.user?.id
 
   // Fetch user's transactions
-  const { data: transactions, error } = user ? await supabase
-    .from("transactions")
-    .select(`
-      id,
-      purpose,
-      status,
-      estimated_amount,
-      final_amount,
-      receipt_url,
-      created_at,
-      updated_at,
-      section:sections(id, name)
-    `)
-    .eq("requester_id", user.id)
-    .order("created_at", { ascending: false }) : { data: null, error: null }
+  const transactions = userId ? await prisma.transaction.findMany({
+    where: { requesterId: userId },
+    orderBy: { createdAt: "desc" },
+    include: {
+      section: { select: { id: true, name: true } },
+    },
+  }) : []
 
-  if (error) {
-    console.error("Error fetching transactions:", error)
-  }
-
-  const pendingTransactions = transactions?.filter(
-    (t) => t.status === "PENDING" || t.status === "DRAFT"
-  ) || []
+  const pendingTransactions = transactions.filter(
+    (t: { status: string }) => t.status === "PENDING" || t.status === "DRAFT"
+  )
   
-  const approvedTransactions = transactions?.filter(
-    (t) => t.status === "APPROVED"
-  ) || []
+  const approvedTransactions = transactions.filter(
+    (t: { status: string }) => t.status === "APPROVED"
+  )
   
-  const completedTransactions = transactions?.filter(
-    (t) => t.status === "PURCHASED" || t.status === "VERIFIED" || t.status === "REJECTED"
-  ) || []
+  const completedTransactions = transactions.filter(
+    (t: { status: string }) => t.status === "PURCHASED" || t.status === "VERIFIED" || t.status === "REJECTED"
+  )
 
   return (
     <div className="space-y-8">
@@ -85,7 +71,7 @@ export default async function MemberDashboardPage() {
             value="all"
             className="data-[state=active]:bg-slate-700 data-[state=active]:text-white"
           >
-            Všechny ({transactions?.length || 0})
+            Všechny ({transactions.length})
           </TabsTrigger>
           <TabsTrigger
             value="pending"
@@ -108,7 +94,7 @@ export default async function MemberDashboardPage() {
         </TabsList>
 
         <TabsContent value="all" className="space-y-4">
-          <TransactionList transactions={transactions || []} />
+          <TransactionList transactions={transactions} />
         </TabsContent>
 
         <TabsContent value="pending" className="space-y-4">
@@ -155,11 +141,11 @@ interface Transaction {
   id: string
   purpose: string
   status: string
-  estimated_amount: number
-  final_amount: number | null
-  receipt_url: string | null
-  created_at: string
-  updated_at: string
+  estimatedAmount: { toString(): string } | number
+  finalAmount: { toString(): string } | number | null
+  receiptUrl: string | null
+  createdAt: Date
+  updatedAt: Date
   section: { id: string; name: string } | null
 }
 
@@ -207,7 +193,7 @@ function TransactionList({
                 <CardTitle className="text-white text-lg">{tx.purpose}</CardTitle>
                 <CardDescription className="text-slate-400">
                   {tx.section?.name || "Neznámá sekce"} •{" "}
-                  {new Date(tx.created_at).toLocaleDateString("cs-CZ", {
+                  {new Date(tx.createdAt).toLocaleDateString("cs-CZ", {
                     day: "numeric",
                     month: "long",
                     year: "numeric",
@@ -225,22 +211,22 @@ function TransactionList({
                 <div>
                   <p className="text-xs text-slate-500 mb-1">Odhadovaná částka</p>
                   <p className="text-lg font-semibold text-white">
-                    {tx.estimated_amount.toLocaleString("cs-CZ")} Kč
+                    {Number(tx.estimatedAmount).toLocaleString("cs-CZ")} Kč
                   </p>
                 </div>
-                {tx.final_amount && (
+                {tx.finalAmount && (
                   <div>
                     <p className="text-xs text-slate-500 mb-1">Skutečná částka</p>
                     <p className="text-lg font-semibold text-green-400">
-                      {tx.final_amount.toLocaleString("cs-CZ")} Kč
+                      {Number(tx.finalAmount).toLocaleString("cs-CZ")} Kč
                     </p>
                   </div>
                 )}
               </div>
               <div className="flex items-center gap-2">
-                {tx.receipt_url && (
+                {tx.receiptUrl && (
                   <a
-                    href={tx.receipt_url}
+                    href={tx.receiptUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1"
@@ -262,7 +248,7 @@ function TransactionList({
                     Zobrazit účtenku
                   </a>
                 )}
-                {(showUpload || tx.status === "APPROVED") && !tx.receipt_url && (
+                {(showUpload || tx.status === "APPROVED") && !tx.receiptUrl && (
                   <ReceiptUpload transactionId={tx.id} />
                 )}
               </div>

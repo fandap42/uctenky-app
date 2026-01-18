@@ -4,7 +4,6 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { updateTransactionStatus } from "@/lib/actions/transactions"
-import { TransactionStatus } from "@/lib/database.types"
 import { toast } from "sonner"
 
 interface ApprovalActionsProps {
@@ -12,11 +11,13 @@ interface ApprovalActionsProps {
   currentStatus: string
 }
 
+type TransStatus = "APPROVED" | "REJECTED" | "VERIFIED" | "PENDING" | "DRAFT" | "PURCHASED"
+
 export function ApprovalActions({ transactionId, currentStatus }: ApprovalActionsProps) {
   const [isLoading, setIsLoading] = useState<string | null>(null)
   const router = useRouter()
 
-  async function handleStatusChange(status: TransactionStatus) {
+  async function handleStatusChange(status: TransStatus) {
     setIsLoading(status)
     const result = await updateTransactionStatus(transactionId, status)
 

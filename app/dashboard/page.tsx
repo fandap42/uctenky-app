@@ -1,4 +1,5 @@
-import { createClient } from "@/lib/supabase/server"
+import { auth } from "@/auth"
+import { prisma } from "@/lib/prisma"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 
@@ -23,41 +24,43 @@ const statusColors: Record<string, string> = {
 }
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
+  const session = await auth()
+  const userId = session?.user?.id
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  const { data: profile } = user ? await supabase
-    .from("profiles")
-    .select("id, full_name, role, section_id")
-    .eq("id", user.id)
-    .single() : { data: null }
+  const user = userId ? await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, fullName: true, role: true, sectionId: true },
+  }) : null
 
   // Get recent transactions
-  const { data: transactions } = await supabase
-    .from("transactions")
-    .select("id, purpose, status, estimated_amount, created_at")
-    .order("created_at", { ascending: false })
-    .limit(5)
+  const transactions = userId ? await prisma.transaction.findMany({
+    where: { requesterId: userId },
+    orderBy: { createdAt: "desc" },
+    take: 5,
+    select: {
+      id: true,
+      purpose: true,
+      status: true,
+      estimatedAmount: true,
+      createdAt: true,
+    },
+  }) : []
 
-  // Get stats based on role
-  const { count: totalTransactions } = await supabase
-    .from("transactions")
-    .select("*", { count: "exact", head: true })
+  // Get stats
+  const totalTransactions = userId ? await prisma.transaction.count({
+    where: { requesterId: userId },
+  }) : 0
 
-  const { count: pendingTransactions } = await supabase
-    .from("transactions")
-    .select("*", { count: "exact", head: true })
-    .eq("status", "PENDING")
+  const pendingTransactions = userId ? await prisma.transaction.count({
+    where: { requesterId: userId, status: "PENDING" },
+  }) : 0
 
   return (
     <div className="space-y-8">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-white mb-2">
-          Vítejte, {profile?.full_name?.split(" ")[0] || "uživateli"}!
+          Vítejte, {user?.fullName?.split(" ")[0] || "uživateli"}!
         </h1>
         <p className="text-slate-400">
           Zde je přehled vašich finančních aktivit
@@ -72,7 +75,7 @@ export default async function DashboardPage() {
               Celkem žádostí
             </CardDescription>
             <CardTitle className="text-4xl font-bold text-white">
-              {totalTransactions || 0}
+              {totalTransactions}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -86,7 +89,7 @@ export default async function DashboardPage() {
               Čeká na schválení
             </CardDescription>
             <CardTitle className="text-4xl font-bold text-yellow-400">
-              {pendingTransactions || 0}
+              {pendingTransactions}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -98,9 +101,9 @@ export default async function DashboardPage() {
           <CardHeader className="pb-2">
             <CardDescription className="text-slate-400">Vaše role</CardDescription>
             <CardTitle className="text-2xl font-bold text-white">
-              {profile?.role === "MEMBER" && "Člen"}
-              {profile?.role === "SECTION_HEAD" && "Vedoucí sekce"}
-              {profile?.role === "FINANCE" && "Finance"}
+              {user?.role === "MEMBER" && "Člen"}
+              {user?.role === "SECTION_HEAD" && "Vedoucí sekce"}
+              {user?.role === "FINANCE" && "Finance"}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -118,9 +121,9 @@ export default async function DashboardPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {transactions && transactions.length > 0 ? (
+          {transactions.length > 0 ? (
             <div className="space-y-4">
-              {transactions.map((tx) => (
+              {transactions.map((tx: { id: string; purpose: string; createdAt: Date; estimatedAmount: { toString(): string } | number; status: string }) => (
                 <div
                   key={tx.id}
                   className="flex items-center justify-between p-4 rounded-xl bg-slate-900/50 border border-slate-700 hover:border-slate-600 transition-colors"
@@ -128,12 +131,12 @@ export default async function DashboardPage() {
                   <div className="flex-1">
                     <p className="font-medium text-white">{tx.purpose}</p>
                     <p className="text-sm text-slate-400">
-                      {new Date(tx.created_at).toLocaleDateString("cs-CZ")}
+                      {new Date(tx.createdAt).toLocaleDateString("cs-CZ")}
                     </p>
                   </div>
                   <div className="flex items-center gap-4">
                     <span className="font-semibold text-white">
-                      {tx.estimated_amount.toLocaleString("cs-CZ")} Kč
+                      {Number(tx.estimatedAmount).toLocaleString("cs-CZ")} Kč
                     </span>
                     <Badge className={`${statusColors[tx.status]} text-white`}>
                       {statusLabels[tx.status]}

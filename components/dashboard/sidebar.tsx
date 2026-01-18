@@ -2,8 +2,8 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useSession, signOut } from "next-auth/react"
 import { cn } from "@/lib/utils"
-import { useAuth } from "@/components/providers/auth-provider"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -17,13 +17,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-const roleLabels = {
+const roleLabels: Record<string, string> = {
   MEMBER: "Člen",
   SECTION_HEAD: "Vedoucí sekce",
   FINANCE: "Finance",
 }
 
-const roleColors = {
+const roleColors: Record<string, string> = {
   MEMBER: "bg-slate-500",
   SECTION_HEAD: "bg-blue-500",
   FINANCE: "bg-purple-500",
@@ -31,7 +31,8 @@ const roleColors = {
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { profile, signOut, isLoading } = useAuth()
+  const { data: session, status } = useSession()
+  const isLoading = status === "loading"
 
   const navigation = [
     {
@@ -76,8 +77,9 @@ export function Sidebar() {
     },
   ]
 
+  const userRole = session?.user?.role || "MEMBER"
   const filteredNavigation = navigation.filter(
-    (item) => profile && item.roles.includes(profile.role)
+    (item) => item.roles.includes(userRole)
   )
 
   const getInitials = (name: string) => {
@@ -148,7 +150,7 @@ export function Sidebar() {
               <div className="h-3 bg-slate-700 rounded w-2/3 animate-pulse" />
             </div>
           </div>
-        ) : profile ? (
+        ) : session?.user ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -157,21 +159,21 @@ export function Sidebar() {
               >
                 <Avatar className="h-10 w-10">
                   <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm">
-                    {getInitials(profile.full_name)}
+                    {getInitials(session.user.name || "U")}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 text-left">
                   <p className="text-sm font-medium text-white truncate">
-                    {profile.full_name}
+                    {session.user.name}
                   </p>
                   <Badge
                     variant="secondary"
                     className={cn(
                       "text-xs text-white mt-1",
-                      roleColors[profile.role]
+                      roleColors[userRole] || "bg-slate-500"
                     )}
                   >
-                    {roleLabels[profile.role]}
+                    {roleLabels[userRole] || "Člen"}
                   </Badge>
                 </div>
               </Button>
@@ -180,7 +182,7 @@ export function Sidebar() {
               <DropdownMenuLabel className="text-slate-400">Můj účet</DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-slate-700" />
               <DropdownMenuItem
-                onClick={() => signOut()}
+                onClick={() => signOut({ callbackUrl: "/login" })}
                 className="text-red-400 focus:bg-red-500/20 focus:text-red-400 cursor-pointer"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">

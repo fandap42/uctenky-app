@@ -1,4 +1,5 @@
-import { createClient } from "@/lib/supabase/server"
+import { auth } from "@/auth"
+import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -35,85 +36,68 @@ const statusColors: Record<string, string> = {
 }
 
 export default async function FinanceDashboardPage() {
-  const supabase = await createClient()
+  const session = await auth()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
+  if (!session?.user?.id) {
     redirect("/login")
   }
 
   // Get user's profile to check role
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, full_name, role")
-    .eq("id", user.id)
-    .single()
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, fullName: true, role: true },
+  })
 
   // Redirect if not finance
-  if (!profile || profile.role !== "FINANCE") {
+  if (!user || user.role !== "FINANCE") {
     redirect("/dashboard")
   }
 
   // Fetch all transactions
-  const { data: transactions, error } = await supabase
-    .from("transactions")
-    .select(`
-      id,
-      purpose,
-      status,
-      estimated_amount,
-      final_amount,
-      receipt_url,
-      created_at,
-      requester:profiles!transactions_requester_id_fkey(id, full_name),
-      section:sections(id, name)
-    `)
-    .order("created_at", { ascending: false })
-
-  if (error) {
-    console.error("Error fetching transactions:", error)
-  }
+  const transactions = await prisma.transaction.findMany({
+    orderBy: { createdAt: "desc" },
+    include: {
+      requester: { select: { id: true, fullName: true } },
+      section: { select: { id: true, name: true } },
+    },
+  })
 
   // Fetch all sections with budget info
-  const { data: sections } = await supabase
-    .from("sections")
-    .select("id, name, budget_cap, is_active")
-    .eq("is_active", true)
-    .order("name")
+  const sections = await prisma.section.findMany({
+    where: { isActive: true },
+    orderBy: { name: "asc" },
+  })
 
   // Calculate spent and pending per section
-  const sectionStats = sections?.map((section) => {
-    const sectionTransactions = transactions?.filter(
+  const sectionStats = sections.map((section) => {
+    const sectionTransactions = transactions.filter(
       (t) => t.section?.id === section.id
-    ) || []
+    )
 
     const spent = sectionTransactions
       .filter((t) => t.status === "VERIFIED" || t.status === "PURCHASED")
-      .reduce((sum, t) => sum + (t.final_amount || t.estimated_amount), 0)
+      .reduce((sum, t) => sum + Number(t.finalAmount || t.estimatedAmount), 0)
 
     const pending = sectionTransactions
       .filter((t) => t.status === "PENDING" || t.status === "APPROVED")
-      .reduce((sum, t) => sum + t.estimated_amount, 0)
+      .reduce((sum, t) => sum + Number(t.estimatedAmount), 0)
 
     return {
       ...section,
       spent,
       pending,
     }
-  }) || []
+  })
 
-  const pendingTransactions = transactions?.filter((t) => t.status === "PENDING") || []
-  const purchasedTransactions = transactions?.filter((t) => t.status === "PURCHASED") || []
+  const pendingTransactions = transactions.filter((t) => t.status === "PENDING")
+  const purchasedTransactions = transactions.filter((t) => t.status === "PURCHASED")
 
   // Calculate totals
   const totalSpent = transactions
-    ?.filter((t) => t.status === "VERIFIED" || t.status === "PURCHASED")
-    .reduce((sum, t) => sum + (t.final_amount || t.estimated_amount), 0) || 0
+    .filter((t) => t.status === "VERIFIED" || t.status === "PURCHASED")
+    .reduce((sum, t) => sum + Number(t.finalAmount || t.estimatedAmount), 0)
 
-  const totalBudget = sections?.reduce((sum, s) => sum + s.budget_cap, 0) || 0
+  const totalBudget = sections.reduce((sum, s) => sum + Number(s.budgetCap), 0)
 
   return (
     <div className="space-y-8">
@@ -186,7 +170,7 @@ export default async function FinanceDashboardPage() {
               <BudgetProgress
                 key={section.id}
                 sectionName={section.name}
-                budgetCap={section.budget_cap}
+                budgetCap={Number(section.budgetCap)}
                 spent={section.spent}
                 pending={section.pending}
               />
@@ -218,7 +202,7 @@ export default async function FinanceDashboardPage() {
             value="all"
             className="data-[state=active]:bg-slate-700 data-[state=active]:text-white"
           >
-            Všechny ({transactions?.length || 0})
+            Všechny ({transactions.length})
           </TabsTrigger>
         </TabsList>
 
@@ -231,7 +215,7 @@ export default async function FinanceDashboardPage() {
         </TabsContent>
 
         <TabsContent value="all">
-          <TransactionTable transactions={transactions || []} />
+          <TransactionTable transactions={transactions} />
         </TabsContent>
       </Tabs>
     </div>
@@ -242,11 +226,11 @@ interface Transaction {
   id: string
   purpose: string
   status: string
-  estimated_amount: number
-  final_amount: number | null
-  receipt_url: string | null
-  created_at: string
-  requester: { id: string; full_name: string } | null
+  estimatedAmount: unknown
+  finalAmount: unknown
+  receiptUrl: string | null
+  createdAt: Date
+  requester: { id: string; fullName: string } | null
   section: { id: string; name: string } | null
 }
 
@@ -300,7 +284,7 @@ function TransactionTable({
             {transactions.map((tx) => (
               <TableRow key={tx.id} className="border-slate-700 hover:bg-slate-700/50">
                 <TableCell className="font-medium text-white">
-                  {tx.requester?.full_name || "Neznámý"}
+                  {tx.requester?.fullName || "Neznámý"}
                 </TableCell>
                 <TableCell className="text-slate-300">
                   {tx.section?.name || "Neznámá"}
@@ -309,12 +293,12 @@ function TransactionTable({
                   {tx.purpose}
                 </TableCell>
                 <TableCell className="text-white">
-                  {tx.final_amount
-                    ? `${tx.final_amount.toLocaleString("cs-CZ")} Kč`
-                    : `${tx.estimated_amount.toLocaleString("cs-CZ")} Kč`}
-                  {tx.receipt_url && (
+                  {tx.finalAmount
+                    ? `${Number(tx.finalAmount).toLocaleString("cs-CZ")} Kč`
+                    : `${Number(tx.estimatedAmount).toLocaleString("cs-CZ")} Kč`}
+                  {tx.receiptUrl && (
                     <a
-                      href={tx.receipt_url}
+                      href={tx.receiptUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="ml-2 text-blue-400 hover:text-blue-300"
@@ -342,7 +326,7 @@ function TransactionTable({
                   </Badge>
                 </TableCell>
                 <TableCell className="text-slate-400">
-                  {new Date(tx.created_at).toLocaleDateString("cs-CZ")}
+                  {new Date(tx.createdAt).toLocaleDateString("cs-CZ")}
                 </TableCell>
                 {showActions && (
                   <TableCell className="text-right">

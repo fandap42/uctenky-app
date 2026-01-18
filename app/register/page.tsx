@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
 
@@ -21,19 +20,35 @@ export default function LoginPage() {
     const formData = new FormData(e.currentTarget)
     const email = formData.get("email") as string
     const password = formData.get("password") as string
+    const confirmPassword = formData.get("confirmPassword") as string
+    const fullName = formData.get("fullName") as string
+
+    if (password !== confirmPassword) {
+      toast.error("Hesla se neshodují")
+      setIsLoading(false)
+      return
+    }
+
+    if (password.length < 8) {
+      toast.error("Heslo musí mít alespoň 8 znaků")
+      setIsLoading(false)
+      return
+    }
 
     try {
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, fullName }),
       })
 
-      if (result?.error) {
-        toast.error("Neplatný email nebo heslo")
+      const data = await res.json()
+
+      if (!res.ok) {
+        toast.error(data.error || "Registrace se nezdařila")
       } else {
-        router.push("/dashboard")
-        router.refresh()
+        toast.success("Registrace úspěšná! Nyní se můžete přihlásit.")
+        router.push("/login")
       }
     } catch {
       toast.error("Nastala neočekávaná chyba")
@@ -60,19 +75,30 @@ export default function LoginPage() {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
               />
             </svg>
           </div>
           <CardTitle className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-            StudentOrgFinance
+            Registrace
           </CardTitle>
           <CardDescription className="text-slate-400">
-            Přihlaste se pro správu financí vaší organizace
+            Vytvořte si účet pro správu financí
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="fullName" className="text-slate-300">Celé jméno</Label>
+              <Input
+                id="fullName"
+                name="fullName"
+                type="text"
+                placeholder="Jan Novák"
+                required
+                className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500"
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="email" className="text-slate-300">Email</Label>
               <Input
@@ -92,6 +118,19 @@ export default function LoginPage() {
                 type="password"
                 placeholder="••••••••"
                 required
+                minLength={8}
+                className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword" className="text-slate-300">Potvrdit heslo</Label>
+              <Input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                placeholder="••••••••"
+                required
+                minLength={8}
                 className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500"
               />
             </div>
@@ -122,19 +161,19 @@ export default function LoginPage() {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     />
                   </svg>
-                  Přihlašování...
+                  Registrace...
                 </>
               ) : (
-                "Přihlásit se"
+                "Registrovat se"
               )}
             </Button>
           </form>
           
           <div className="mt-6 text-center">
             <p className="text-slate-400 text-sm">
-              Nemáte účet?{" "}
-              <Link href="/register" className="text-blue-400 hover:text-blue-300 transition-colors">
-                Registrujte se
+              Už máte účet?{" "}
+              <Link href="/login" className="text-blue-400 hover:text-blue-300 transition-colors">
+                Přihlaste se
               </Link>
             </p>
           </div>

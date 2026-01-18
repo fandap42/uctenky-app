@@ -1,7 +1,6 @@
-import { createClient } from "@/lib/supabase/server"
+import { auth } from "@/auth"
+import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-
-export const dynamic = 'force-dynamic'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -14,6 +13,8 @@ import {
 } from "@/components/ui/table"
 import { ApprovalActions } from "@/components/requests/approval-actions"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
+export const dynamic = 'force-dynamic'
 
 const statusLabels: Record<string, string> = {
   DRAFT: "Koncept",
@@ -34,30 +35,25 @@ const statusColors: Record<string, string> = {
 }
 
 export default async function SectionHeadDashboardPage() {
-  const supabase = await createClient()
+  const session = await auth()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
+  if (!session?.user?.id) {
     redirect("/login")
   }
 
   // Get user's profile to check role and section
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, full_name, role, section_id")
-    .eq("id", user.id)
-    .single()
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, fullName: true, role: true, sectionId: true },
+  })
 
   // Redirect if not section head or finance
-  if (!profile || (profile.role !== "SECTION_HEAD" && profile.role !== "FINANCE")) {
+  if (!user || (user.role !== "SECTION_HEAD" && user.role !== "FINANCE")) {
     redirect("/dashboard")
   }
 
   // If no section assigned, show message
-  if (!profile.section_id) {
+  if (!user.sectionId) {
     return (
       <div className="space-y-8">
         <div>
@@ -71,35 +67,23 @@ export default async function SectionHeadDashboardPage() {
   }
 
   // Fetch section's transactions
-  const { data: transactions, error } = await supabase
-    .from("transactions")
-    .select(`
-      id,
-      purpose,
-      status,
-      estimated_amount,
-      final_amount,
-      receipt_url,
-      created_at,
-      requester:profiles!transactions_requester_id_fkey(id, full_name),
-      section:sections(id, name)
-    `)
-    .eq("section_id", profile.section_id)
-    .order("created_at", { ascending: false })
-
-  if (error) {
-    console.error("Error fetching transactions:", error)
-  }
+  const transactions = await prisma.transaction.findMany({
+    where: { sectionId: user.sectionId },
+    orderBy: { createdAt: "desc" },
+    include: {
+      requester: { select: { id: true, fullName: true } },
+      section: { select: { id: true, name: true } },
+    },
+  })
 
   // Get section info
-  const { data: section } = await supabase
-    .from("sections")
-    .select("id, name, budget_cap")
-    .eq("id", profile.section_id)
-    .single()
+  const section = await prisma.section.findUnique({
+    where: { id: user.sectionId },
+    select: { id: true, name: true, budgetCap: true },
+  })
 
-  const pendingTransactions = transactions?.filter((t) => t.status === "PENDING") || []
-  const purchasedTransactions = transactions?.filter((t) => t.status === "PURCHASED") || []
+  const pendingTransactions = transactions.filter((t: { status: string }) => t.status === "PENDING")
+  const purchasedTransactions = transactions.filter((t: { status: string }) => t.status === "PURCHASED")
 
   return (
     <div className="space-y-8">
@@ -143,7 +127,7 @@ export default async function SectionHeadDashboardPage() {
               Rozpočet sekce
             </CardDescription>
             <CardTitle className="text-2xl font-bold text-white">
-              {section?.budget_cap?.toLocaleString("cs-CZ") || 0} Kč
+              {section?.budgetCap ? Number(section.budgetCap).toLocaleString("cs-CZ") : 0} Kč
             </CardTitle>
           </CardHeader>
         </Card>
@@ -168,7 +152,7 @@ export default async function SectionHeadDashboardPage() {
             value="all"
             className="data-[state=active]:bg-slate-700 data-[state=active]:text-white"
           >
-            Všechny ({transactions?.length || 0})
+            Všechny ({transactions.length})
           </TabsTrigger>
         </TabsList>
 
@@ -181,7 +165,7 @@ export default async function SectionHeadDashboardPage() {
         </TabsContent>
 
         <TabsContent value="all">
-          <TransactionTable transactions={transactions || []} />
+          <TransactionTable transactions={transactions} />
         </TabsContent>
       </Tabs>
     </div>
@@ -192,11 +176,11 @@ interface Transaction {
   id: string
   purpose: string
   status: string
-  estimated_amount: number
-  final_amount: number | null
-  receipt_url: string | null
-  created_at: string
-  requester: { id: string; full_name: string } | null
+  estimatedAmount: unknown
+  finalAmount: unknown
+  receiptUrl: string | null
+  createdAt: Date
+  requester: { id: string; fullName: string } | null
   section: { id: string; name: string } | null
 }
 
@@ -249,16 +233,16 @@ function TransactionTable({
             {transactions.map((tx) => (
               <TableRow key={tx.id} className="border-slate-700 hover:bg-slate-700/50">
                 <TableCell className="font-medium text-white">
-                  {tx.requester?.full_name || "Neznámý"}
+                  {tx.requester?.fullName || "Neznámý"}
                 </TableCell>
                 <TableCell className="text-slate-300">{tx.purpose}</TableCell>
                 <TableCell className="text-white">
-                  {tx.final_amount
-                    ? `${tx.final_amount.toLocaleString("cs-CZ")} Kč`
-                    : `${tx.estimated_amount.toLocaleString("cs-CZ")} Kč`}
-                  {tx.receipt_url && (
+                  {tx.finalAmount
+                    ? `${Number(tx.finalAmount).toLocaleString("cs-CZ")} Kč`
+                    : `${Number(tx.estimatedAmount).toLocaleString("cs-CZ")} Kč`}
+                  {tx.receiptUrl && (
                     <a
-                      href={tx.receipt_url}
+                      href={tx.receiptUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="ml-2 text-blue-400 hover:text-blue-300"
@@ -286,7 +270,7 @@ function TransactionTable({
                   </Badge>
                 </TableCell>
                 <TableCell className="text-slate-400">
-                  {new Date(tx.created_at).toLocaleDateString("cs-CZ")}
+                  {new Date(tx.createdAt).toLocaleDateString("cs-CZ")}
                 </TableCell>
                 {showActions && (
                   <TableCell className="text-right">

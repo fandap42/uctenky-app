@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+
+}
+
+enum AppRole {
+  MEMBER
+  SECTION_HEAD
+  FINANCE
+}
+
+enum TransStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  PURCHASED
+  VERIFIED
+  REJECTED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String    @map("password_hash")
+  fullName      String    @map("full_name")
+  role          AppRole   @default(MEMBER)
+  sectionId     String?   @map("section_id")
+  section       Section?  @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  
+  transactions  Transaction[]
+  
+  @@map("users")
+}
+
+model Section {
+  id          String    @id @default(cuid())
+  name        String
+  budgetCap   Decimal   @default(0) @map("budget_cap") @db.Decimal(12, 2)
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  users        User[]
+  budgets      Budget[]
+  transactions Transaction[]
+  
+  @@map("sections")
+}
+
+model Budget {
+  id          String    @id @default(cuid())
+  sectionId   String    @map("section_id")
+  section     Section   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  fiscalYear  String    @map("fiscal_year")
+  totalAmount Decimal   @default(0) @map("total_amount") @db.Decimal(12, 2)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  @@unique([sectionId, fiscalYear])
+  @@map("budgets")
+}
+
+model Transaction {
+  id              String      @id @default(cuid())
+  requesterId     String      @map("requester_id")
+  requester       User        @relation(fields: [requesterId], references: [id], onDelete: Cascade)
+  sectionId       String      @map("section_id")
+  section         Section     @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  status          TransStatus @default(DRAFT)
+  purpose         String
+  estimatedAmount Decimal     @map("estimated_amount") @db.Decimal(12, 2)
+  finalAmount     Decimal?    @map("final_amount") @db.Decimal(12, 2)
+  receiptUrl      String?     @map("receipt_url")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+  
+  @@index([requesterId])
+  @@index([sectionId])
+  @@index([status])
+  @@map("transactions")
+}
