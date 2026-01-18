@@ -1,12 +1,7 @@
-- Datumy splatnosti učtenek (kdy uživatel chce tu věc koupit)
-- Vedoucí sekcí musí vidět všechny účtenky sekce
-- Problém: Admin nemuze schvalovat žádosti
-- Při loginu si uživatel přiřadí sekci
-- Žádná první stránka, rovnou login
-- v záložce uživatelé rozdělit uživatele do sekcí
-- sloučit vedoucího a podvedoucího do jedné role vedoucí
-- Vedoucí a admin můžou měnit budget
-- Záložku admin přejmenovat na Správa účtenek
-- Budget v této založce dát do dropdownu co bude defualtně schované
-
-- Důkladně otestuj veškerou funkčnost
+- Export do csv (bez obrazku) po měsících
+- Když uživatel uploaduje účtenku zadá krom data i obchod
+- Pro admina ještě přidat zaškrtávání zda je účtenka proplacena
+- Problém: vedoucí sekce může schvalovat účtenky - toto je může dělat jen admin v panelu správa účtenek
+- v panelu žádosti sekce chci přehled kolik zbývá budgetu sekci
+- V panelu žádosti sekce také vždy zobrazuj všechny účtenky
+- Všechny přehledy účtenek rozděl po semsetrech: zimní začníná v září a letní začíná v únoru a podle měsíců - dropdown menu

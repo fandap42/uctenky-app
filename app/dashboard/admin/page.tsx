@@ -192,41 +192,11 @@ export default async function FinanceDashboardPage() {
         )}
       </CollapsibleBudget>
 
-      {/* Transactions Tabs */}
-      <Tabs defaultValue="pending" className="space-y-6">
-        <TabsList className="bg-slate-800 border border-slate-700">
-          <TabsTrigger
-            value="pending"
-            className="data-[state=active]:bg-slate-700 data-[state=active]:text-white"
-          >
-            Čekající ({pendingTransactions.length})
-          </TabsTrigger>
-          <TabsTrigger
-            value="purchased"
-            className="data-[state=active]:bg-slate-700 data-[state=active]:text-white"
-          >
-            K ověření ({purchasedTransactions.length})
-          </TabsTrigger>
-          <TabsTrigger
-            value="all"
-            className="data-[state=active]:bg-slate-700 data-[state=active]:text-white"
-          >
-            Všechny ({transactions.length})
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="pending">
-          <TransactionTable transactions={pendingTransactions} showActions />
-        </TabsContent>
-
-        <TabsContent value="purchased">
-          <TransactionTable transactions={purchasedTransactions} showActions />
-        </TabsContent>
-
-        <TabsContent value="all">
-          <TransactionTable transactions={transactions} />
-        </TabsContent>
-      </Tabs>
+      {/* Transactions List */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold text-white">Všechny žádosti</h2>
+        <TransactionTable transactions={transactions} showActions />
+      </div>
     </div>
   )
 }

@@ -2,8 +2,10 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { RequestForm } from "@/components/requests/request-form"
+import { ReceiptUpload } from "@/components/receipts/receipt-upload"
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic"
 
 const statusLabels: Record<string, string> = {
   DRAFT: "Koncept",
@@ -27,44 +29,44 @@ export default async function DashboardPage() {
   const session = await auth()
   const userId = session?.user?.id
 
-  const user = userId ? await prisma.user.findUnique({
+  if (!userId) {
+    return null
+  }
+
+  const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { id: true, fullName: true, role: true, sectionId: true },
-  }) : null
+  })
 
-  // Get recent transactions
-  const transactions = userId ? await prisma.transaction.findMany({
+  // Get all user's transactions
+  const transactions = await prisma.transaction.findMany({
     where: { requesterId: userId },
     orderBy: { createdAt: "desc" },
-    take: 5,
-    select: {
-      id: true,
-      purpose: true,
-      status: true,
-      estimatedAmount: true,
-      createdAt: true,
+    include: {
+      section: { select: { id: true, name: true } },
     },
-  }) : []
+  })
 
   // Get stats
-  const totalTransactions = userId ? await prisma.transaction.count({
-    where: { requesterId: userId },
-  }) : 0
-
-  const pendingTransactions = userId ? await prisma.transaction.count({
-    where: { requesterId: userId, status: "PENDING" },
-  }) : 0
+  const totalCount = transactions.length
+  const pendingCount = transactions.filter((t) => t.status === "PENDING").length
+  const totalSpent = transactions
+    .filter((t) => t.status === "VERIFIED" || t.status === "PURCHASED")
+    .reduce((sum, t) => sum + Number(t.finalAmount || t.estimatedAmount), 0)
 
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-white mb-2">
-          Vítejte, {user?.fullName?.split(" ")[0] || "uživateli"}!
-        </h1>
-        <p className="text-slate-400">
-          Zde je přehled vašich finančních aktivit
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-white mb-2">
+            Vítejte, {user?.fullName?.split(" ")[0] || "uživateli"}!
+          </h1>
+          <p className="text-slate-400">
+            Přehled vašich finančních žádostí a aktivit
+          </p>
+        </div>
+        <RequestForm />
       </div>
 
       {/* Stats Cards */}
@@ -75,12 +77,9 @@ export default async function DashboardPage() {
               Celkem žádostí
             </CardDescription>
             <CardTitle className="text-4xl font-bold text-white">
-              {totalTransactions}
+              {totalCount}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-xs text-slate-500">Všechny vaše žádosti</p>
-          </CardContent>
         </Card>
 
         <Card className="bg-slate-800/50 border-slate-700 hover:border-yellow-500/50 transition-colors">
@@ -89,58 +88,79 @@ export default async function DashboardPage() {
               Čeká na schválení
             </CardDescription>
             <CardTitle className="text-4xl font-bold text-yellow-400">
-              {pendingTransactions}
+              {pendingCount}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-xs text-slate-500">Žádosti ke schválení</p>
-          </CardContent>
         </Card>
 
         <Card className="bg-slate-800/50 border-slate-700 hover:border-green-500/50 transition-colors">
           <CardHeader className="pb-2">
-            <CardDescription className="text-slate-400">Vaše role</CardDescription>
-            <CardTitle className="text-2xl font-bold text-white">
-              {user?.role === "MEMBER" && "Člen"}
-              {user?.role === "SECTION_HEAD" && "Vedoucí sekce"}
-              {user?.role === "FINANCE" && "Finance"}
+            <CardDescription className="text-slate-400">
+              Celkem vyčerpáno
+            </CardDescription>
+            <CardTitle className="text-2xl font-bold text-green-400">
+              {totalSpent.toLocaleString("cs-CZ")} Kč
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-xs text-slate-500">Vaše oprávnění v systému</p>
-          </CardContent>
         </Card>
       </div>
 
-      {/* Recent Transactions */}
+      {/* All Transactions */}
       <Card className="bg-slate-800/50 border-slate-700">
         <CardHeader>
-          <CardTitle className="text-white">Poslední žádosti</CardTitle>
+          <CardTitle className="text-white">Moje žádosti</CardTitle>
           <CardDescription className="text-slate-400">
-            Vaše nejnovější finanční žádosti
+            Seznam všech vašich finančních žádostí
           </CardDescription>
         </CardHeader>
         <CardContent>
           {transactions.length > 0 ? (
             <div className="space-y-4">
-              {transactions.map((tx: { id: string; purpose: string; createdAt: Date; estimatedAmount: { toString(): string } | number; status: string }) => (
+              {transactions.map((tx) => (
                 <div
                   key={tx.id}
-                  className="flex items-center justify-between p-4 rounded-xl bg-slate-900/50 border border-slate-700 hover:border-slate-600 transition-colors"
+                  className="p-4 rounded-xl bg-slate-900/50 border border-slate-700 hover:border-slate-600 transition-colors"
                 >
-                  <div className="flex-1">
-                    <p className="font-medium text-white">{tx.purpose}</p>
-                    <p className="text-sm text-slate-400">
-                      {new Date(tx.createdAt).toLocaleDateString("cs-CZ")}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="font-semibold text-white">
-                      {Number(tx.estimatedAmount).toLocaleString("cs-CZ")} Kč
-                    </span>
-                    <Badge className={`${statusColors[tx.status]} text-white`}>
-                      {statusLabels[tx.status]}
-                    </Badge>
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge className={`${statusColors[tx.status]} text-white`}>
+                          {statusLabels[tx.status]}
+                        </Badge>
+                        <span className="text-xs text-slate-500">
+                          {tx.section?.name} • {new Date(tx.createdAt).toLocaleDateString("cs-CZ")}
+                        </span>
+                      </div>
+                      <p className="font-medium text-white text-lg">{tx.purpose}</p>
+                    </div>
+                    
+                    <div className="flex flex-wrap items-center gap-4">
+                      <div className="text-right">
+                        <p className="text-xs text-slate-500">Částka</p>
+                        <p className="font-semibold text-white">
+                          {Number(tx.finalAmount || tx.estimatedAmount).toLocaleString("cs-CZ")} Kč
+                        </p>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        {tx.receiptUrl && (
+                          <a
+                            href={tx.receiptUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
+                            title="Zobrazit účtenku"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          </a>
+                        )}
+                        {tx.status === "APPROVED" && !tx.receiptUrl && (
+                          <ReceiptUpload transactionId={tx.id} />
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -162,9 +182,6 @@ export default async function DashboardPage() {
                 />
               </svg>
               <p>Zatím nemáte žádné žádosti</p>
-              <p className="text-sm mt-2">
-                Vytvořte svou první žádost v sekci &quot;Moje žádosti&quot;
-              </p>
             </div>
           )}
         </CardContent>
