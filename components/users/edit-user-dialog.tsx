@@ -33,7 +33,7 @@ const roleLabels: Record<string, string> = {
   MEMBER: "Člen",
   SECTION_DEPUTY: "Zástupce vedoucího",
   SECTION_HEAD: "Vedoucí sekce",
-  FINANCE: "Finance",
+  ADMIN: "Administrátor",
 }
 
 export function EditUserDialog({

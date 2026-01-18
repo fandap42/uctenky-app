@@ -11,7 +11,7 @@ enum AppRole {
   MEMBER
   SECTION_DEPUTY
   SECTION_HEAD
-  FINANCE
+  ADMIN
 }
 
 enum TransStatus {

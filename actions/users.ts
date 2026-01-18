@@ -8,7 +8,7 @@ import { AppRole } from "@prisma/client"
 export async function getUsers() {
   const session = await auth()
 
-  if (session?.user?.role !== "FINANCE") {
+  if (session?.user?.role !== "ADMIN") {
     throw new Error("Unauthorized")
   }
 
@@ -25,7 +25,7 @@ export async function getUsers() {
 export async function getSections() {
   const session = await auth()
 
-  if (session?.user?.role !== "FINANCE") {
+  if (session?.user?.role !== "ADMIN") {
     throw new Error("Unauthorized")
   }
 
@@ -43,7 +43,7 @@ export async function updateUser(
 ) {
   const session = await auth()
 
-  if (session?.user?.role !== "FINANCE") {
+  if (session?.user?.role !== "ADMIN") {
     throw new Error("Unauthorized")
   }
 

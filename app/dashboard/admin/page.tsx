@@ -48,8 +48,8 @@ export default async function FinanceDashboardPage() {
     select: { id: true, fullName: true, role: true },
   })
 
-  // Redirect if not finance
-  if (!user || user.role !== "FINANCE") {
+  // Redirect if not admin
+  if (!user || user.role !== "ADMIN") {
     redirect("/dashboard")
   }
 
@@ -103,7 +103,7 @@ export default async function FinanceDashboardPage() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white mb-2">Finance Dashboard</h1>
+        <h1 className="text-3xl font-bold text-white mb-2">Admin Dashboard</h1>
         <p className="text-slate-400">
           Přehled všech finančních operací a rozpočtů
         </p>

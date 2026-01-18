@@ -25,14 +25,14 @@ const roleLabels: Record<string, string> = {
   MEMBER: "Člen",
   SECTION_DEPUTY: "Zástupce vedoucího",
   SECTION_HEAD: "Vedoucí sekce",
-  FINANCE: "Finance",
+  ADMIN: "Administrátor",
 }
 
 const roleColors: Record<string, string> = {
   MEMBER: "bg-slate-500",
   SECTION_DEPUTY: "bg-cyan-500",
   SECTION_HEAD: "bg-blue-500",
-  FINANCE: "bg-purple-500",
+  ADMIN: "bg-purple-500",
 }
 
 export function UserManagement({
