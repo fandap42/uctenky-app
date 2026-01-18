@@ -8,6 +8,15 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth
   const isAuthRoute = req.nextUrl.pathname === "/login" || req.nextUrl.pathname === "/register"
   const isProtectedRoute = req.nextUrl.pathname.startsWith("/dashboard")
+  const isRoot = req.nextUrl.pathname === "/"
+
+  // Redirect root to login or dashboard
+  if (isRoot) {
+    if (isLoggedIn) {
+      return NextResponse.redirect(new URL("/dashboard", req.nextUrl))
+    }
+    return NextResponse.redirect(new URL("/login", req.nextUrl))
+  }
 
   // Redirect to login if accessing protected route without auth
   if (isProtectedRoute && !isLoggedIn) {

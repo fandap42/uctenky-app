@@ -31,7 +31,6 @@ interface EditUserDialogProps {
 
 const roleLabels: Record<string, string> = {
   MEMBER: "Člen",
-  SECTION_DEPUTY: "Zástupce vedoucího",
   SECTION_HEAD: "Vedoucí sekce",
   ADMIN: "Administrátor",
 }

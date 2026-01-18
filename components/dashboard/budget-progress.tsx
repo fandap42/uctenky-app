@@ -8,6 +8,7 @@ interface BudgetProgressProps {
   budgetCap: number
   spent: number
   pending: number
+  action?: React.ReactNode
 }
 
 export function BudgetProgress({
@@ -15,6 +16,7 @@ export function BudgetProgress({
   budgetCap,
   spent,
   pending,
+  action,
 }: BudgetProgressProps) {
   const spentPercentage = budgetCap > 0 ? (spent / budgetCap) * 100 : 0
   const pendingPercentage = budgetCap > 0 ? (pending / budgetCap) * 100 : 0
@@ -30,7 +32,10 @@ export function BudgetProgress({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <span className="font-medium text-white">{sectionName}</span>
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-white">{sectionName}</span>
+          {action}
+        </div>
         <span className="text-sm text-slate-400">
           {spent.toLocaleString("cs-CZ")} / {budgetCap.toLocaleString("cs-CZ")} Kč
         </span>

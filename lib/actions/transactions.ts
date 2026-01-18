@@ -24,6 +24,8 @@ export async function createTransaction(formData: FormData) {
 
   const purpose = formData.get("purpose") as string
   const estimatedAmount = parseFloat(formData.get("estimatedAmount") as string)
+  const dueDateStr = formData.get("dueDate") as string
+  const dueDate = dueDateStr ? new Date(dueDateStr) : null
   const status = (formData.get("status") as TransStatus) || "DRAFT"
 
   if (!purpose || !estimatedAmount) {
@@ -37,6 +39,7 @@ export async function createTransaction(formData: FormData) {
         sectionId: user.sectionId,
         purpose,
         estimatedAmount,
+        dueDate,
         status,
       },
     })
@@ -79,7 +82,7 @@ export async function updateTransactionStatus(
 
     // Check permissions
     const canUpdate =
-      user?.role === "FINANCE" ||
+      user?.role === "ADMIN" ||
       (user?.role === "SECTION_HEAD" && user.sectionId === transaction.sectionId) ||
       (transaction.requesterId === session.user.id &&
         (transaction.status === "DRAFT" || transaction.status === "APPROVED"))
@@ -163,7 +166,7 @@ export async function deleteTransaction(transactionId: string) {
       select: { role: true },
     })
 
-    if (user?.role !== "FINANCE") {
+    if (user?.role !== "ADMIN") {
       return { error: "Nemáte oprávnění k této akci" }
     }
 

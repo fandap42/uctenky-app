@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/table"
 import { ApprovalActions } from "@/components/requests/approval-actions"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { EditBudgetDialog } from "@/components/dashboard/edit-budget-dialog"
+import { Button } from "@/components/ui/button"
 
 export const dynamic = 'force-dynamic'
 
@@ -47,8 +49,8 @@ export default async function SectionHeadDashboardPage() {
     select: { id: true, fullName: true, role: true, sectionId: true },
   })
 
-  // Redirect if not section head or finance
-  if (!user || (user.role !== "SECTION_HEAD" && user.role !== "FINANCE")) {
+  // Redirect if not section head or admin
+  if (!user || (user.role !== "SECTION_HEAD" && user.role !== "ADMIN")) {
     redirect("/dashboard")
   }
 
@@ -123,9 +125,25 @@ export default async function SectionHeadDashboardPage() {
 
         <Card className="bg-slate-800/50 border-slate-700 hover:border-purple-500/50 transition-colors">
           <CardHeader className="pb-2">
-            <CardDescription className="text-slate-400">
-              Rozpočet sekce
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <CardDescription className="text-slate-400">
+                Rozpočet sekce
+              </CardDescription>
+              {section && (
+                <EditBudgetDialog 
+                  sectionId={section.id} 
+                  sectionName={section.name} 
+                  currentBudget={Number(section.budgetCap)}
+                  trigger={
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-slate-500 hover:text-blue-400">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      </svg>
+                    </Button>
+                  }
+                />
+              )}
+            </div>
             <CardTitle className="text-2xl font-bold text-white">
               {section?.budgetCap ? Number(section.budgetCap).toLocaleString("cs-CZ") : 0} Kč
             </CardTitle>
@@ -180,6 +198,7 @@ interface Transaction {
   finalAmount: unknown
   receiptUrl: string | null
   createdAt: Date
+  dueDate: Date | null
   requester: { id: string; fullName: string } | null
   section: { id: string; name: string } | null
 }
@@ -225,7 +244,8 @@ function TransactionTable({
               <TableHead className="text-slate-400">Účel</TableHead>
               <TableHead className="text-slate-400">Částka</TableHead>
               <TableHead className="text-slate-400">Stav</TableHead>
-              <TableHead className="text-slate-400">Datum</TableHead>
+              <TableHead className="text-slate-400">Předpokládané datum</TableHead>
+              <TableHead className="text-slate-400">Datum vytvoření</TableHead>
               {showActions && <TableHead className="text-slate-400 text-right">Akce</TableHead>}
             </TableRow>
           </TableHeader>
@@ -268,6 +288,9 @@ function TransactionTable({
                   <Badge className={`${statusColors[tx.status]} text-white`}>
                     {statusLabels[tx.status]}
                   </Badge>
+                </TableCell>
+                <TableCell className="text-slate-400">
+                  {tx.dueDate ? new Date(tx.dueDate).toLocaleDateString("cs-CZ") : "-"}
                 </TableCell>
                 <TableCell className="text-slate-400">
                   {new Date(tx.createdAt).toLocaleDateString("cs-CZ")}

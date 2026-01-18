@@ -1,0 +1,12 @@
+- Datumy splatnosti učtenek (kdy uživatel chce tu věc koupit)
+- Vedoucí sekcí musí vidět všechny účtenky sekce
+- Problém: Admin nemuze schvalovat žádosti
+- Při loginu si uživatel přiřadí sekci
+- Žádná první stránka, rovnou login
+- v záložce uživatelé rozdělit uživatele do sekcí
+- sloučit vedoucího a podvedoucího do jedné role vedoucí
+- Vedoucí a admin můžou měnit budget
+- Záložku admin přejmenovat na Správa účtenek
+- Budget v této založce dát do dropdownu co bude defualtně schované
+
+- Důkladně otestuj veškerou funkčnost
