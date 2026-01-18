@@ -1,0 +1,28 @@
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# Build outputs
+dist/
+build/
+
+# Expo / React Native
+.expo/
+.expo-shared/
+android/
+ios/
+
+# Environment files (all apps + infra)
+*.env
+*.env.local
+*.env.*.local
+
+# Specific app envs (redundant, ale jistota)
+apps/backend/.env
+apps/frontend/.env
+infra/.env
+bike-service-app.code-workspace
+apps/frontend/.turbo/turbo-dev.log
+.turbo
