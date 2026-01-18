@@ -28,6 +28,7 @@ export function ReceiptUpload({ transactionId }: ReceiptUploadProps) {
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [finalAmount, setFinalAmount] = useState("")
+  const [store, setStore] = useState("")
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
@@ -84,7 +85,8 @@ export function ReceiptUpload({ transactionId }: ReceiptUploadProps) {
       const result = await updateTransactionReceipt(
         transactionId,
         url,
-        finalAmount ? parseFloat(finalAmount) : undefined
+        finalAmount ? parseFloat(finalAmount) : undefined,
+        store || undefined
       )
 
       setProgress(100)
@@ -183,6 +185,21 @@ export function ReceiptUpload({ transactionId }: ReceiptUploadProps) {
               accept="image/*"
               onChange={handleFileChange}
               className="hidden"
+            />
+          </div>
+
+          {/* Store name */}
+          <div className="space-y-2">
+            <Label htmlFor="store" className="text-slate-300">
+              Obchod
+            </Label>
+            <Input
+              id="store"
+              type="text"
+              value={store}
+              onChange={(e) => setStore(e.target.value)}
+              placeholder="Např. Lidl, Alza..."
+              className="bg-slate-900 border-slate-700 text-white"
             />
           </div>
 

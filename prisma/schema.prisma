@@ -73,10 +73,12 @@ model Transaction {
   section         Section     @relation(fields: [sectionId], references: [id], onDelete: Cascade)
   status          TransStatus @default(DRAFT)
   purpose         String
+  store           String?
   dueDate         DateTime?   @map("due_date")
   estimatedAmount Decimal     @map("estimated_amount") @db.Decimal(12, 2)
   finalAmount     Decimal?    @map("final_amount") @db.Decimal(12, 2)
   receiptUrl      String?     @map("receipt_url")
+  isPaid          Boolean     @default(false) @map("is_paid")
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
   

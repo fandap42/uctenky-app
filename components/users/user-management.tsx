@@ -15,6 +15,8 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { EditUserDialog } from "./edit-user-dialog"
+import { DeleteButton } from "@/components/dashboard/delete-button"
+import { deleteUser } from "@/lib/actions/transactions"
 
 interface UserManagementProps {
   initialUsers: (User & { section: Section | null })[]
@@ -104,14 +106,21 @@ export function UserManagement({
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEdit(user)}
-                            className="text-blue-400 hover:text-blue-300 hover:bg-blue-500/20"
-                          >
-                            Upravit
-                          </Button>
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEdit(user)}
+                              className="text-blue-400 hover:text-blue-300 hover:bg-blue-500/20"
+                            >
+                              Upravit
+                            </Button>
+                            <DeleteButton 
+                              onDelete={() => deleteUser(user.id)} 
+                              title="Smazat uživatele?" 
+                              description={`Opravdu chcete smazat uživatele ${user.fullName || user.email}? Akce je nevratná.`}
+                            />
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

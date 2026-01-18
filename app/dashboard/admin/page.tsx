@@ -1,42 +1,14 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { ApprovalActions } from "@/components/requests/approval-actions"
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { BudgetProgress } from "@/components/dashboard/budget-progress"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CollapsibleBudget } from "@/components/dashboard/collapsible-budget"
 import { EditBudgetDialog } from "@/components/dashboard/edit-budget-dialog"
 import { Button } from "@/components/ui/button"
+import { SemesterStructuredList } from "@/components/dashboard/semester-structured-list"
 
-export const dynamic = 'force-dynamic'
-
-const statusLabels: Record<string, string> = {
-  DRAFT: "Koncept",
-  PENDING: "Čeká na schválení",
-  APPROVED: "Schváleno",
-  PURCHASED: "Nakoupeno",
-  VERIFIED: "Ověřeno",
-  REJECTED: "Zamítnuto",
-}
-
-const statusColors: Record<string, string> = {
-  DRAFT: "bg-slate-500",
-  PENDING: "bg-yellow-500",
-  APPROVED: "bg-green-500",
-  PURCHASED: "bg-blue-500",
-  VERIFIED: "bg-purple-500",
-  REJECTED: "bg-red-500",
-}
+export const dynamic = "force-dynamic"
 
 export default async function FinanceDashboardPage() {
   const session = await auth()
@@ -57,7 +29,7 @@ export default async function FinanceDashboardPage() {
   }
 
   // Fetch all transactions
-  const transactions = await prisma.transaction.findMany({
+  const rawTransactionsList = await prisma.transaction.findMany({
     orderBy: { createdAt: "desc" },
     include: {
       requester: { select: { id: true, fullName: true } },
@@ -65,16 +37,27 @@ export default async function FinanceDashboardPage() {
     },
   })
 
+  // Serialize Decimals for Client Components
+  const transactions = rawTransactionsList.map(t => ({
+    ...t,
+    estimatedAmount: Number(t.estimatedAmount),
+    finalAmount: t.finalAmount ? Number(t.finalAmount) : null,
+    createdAt: t.createdAt.toISOString(),
+    updatedAt: t.updatedAt.toISOString(),
+    dueDate: t.dueDate ? t.dueDate.toISOString() : null,
+  })) as any
+
   // Fetch all sections with budget info
   const sections = await prisma.section.findMany({
     where: { isActive: true },
     orderBy: { name: "asc" },
   })
 
-  // Calculate spent and pending per section
+  // Calculate spent and pending per section (on all transactions)
+  const allRawTransactions = await prisma.transaction.findMany()
   const sectionStats = sections.map((section) => {
-    const sectionTransactions = transactions.filter(
-      (t) => t.section?.id === section.id
+    const sectionTransactions = allRawTransactions.filter(
+      (t) => t.sectionId === section.id
     )
 
     const spent = sectionTransactions
@@ -92,29 +75,35 @@ export default async function FinanceDashboardPage() {
     }
   })
 
-  const pendingTransactions = transactions.filter((t) => t.status === "PENDING")
-  const purchasedTransactions = transactions.filter((t) => t.status === "PURCHASED")
+  // Stats for the stats cards
+  const totalVerified = (transactions as any[])
+    .filter((t: any) => t.status === "VERIFIED")
+    .reduce((sum: number, t: any) => sum + Number(t.finalAmount || t.estimatedAmount || 0), 0)
 
-  // Calculate totals
-  const totalSpent = transactions
-    .filter((t) => t.status === "VERIFIED" || t.status === "PURCHASED")
-    .reduce((sum, t) => sum + Number(t.finalAmount || t.estimatedAmount), 0)
+  const pendingTransactions = (transactions as any[]).filter((t: any) => t.status === "PENDING")
+  const purchasedTransactions = (transactions as any[]).filter((t: any) => t.status === "PURCHASED")
+
+  const totalSpent = (transactions as any[])
+    .filter((t: any) => t.status === "VERIFIED" || t.status === "PURCHASED")
+    .reduce((sum: number, t: any) => sum + Number(t.finalAmount || t.estimatedAmount), 0)
 
   const totalBudget = sections.reduce((sum, s) => sum + Number(s.budgetCap), 0)
 
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-white mb-2">Správa účtenek</h1>
-        <p className="text-slate-400">
-          Přehled všech finančních operací a rozpočtů
-        </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-white mb-2">Správa účtenek</h1>
+          <p className="text-slate-400">
+            Přehled všech finančních operací a rozpočtů
+          </p>
+        </div>
       </div>
 
       {/* Overview stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="bg-slate-800/50 border-slate-700 hover:border-yellow-500/50 transition-colors">
+        <Card className="bg-slate-800/50 border-slate-700">
           <CardHeader className="pb-2">
             <CardDescription className="text-slate-400">
               Čeká na schválení
@@ -125,7 +114,7 @@ export default async function FinanceDashboardPage() {
           </CardHeader>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700 hover:border-blue-500/50 transition-colors">
+        <Card className="bg-slate-800/50 border-slate-700">
           <CardHeader className="pb-2">
             <CardDescription className="text-slate-400">
               K ověření
@@ -147,7 +136,7 @@ export default async function FinanceDashboardPage() {
           </CardHeader>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700 hover:border-purple-500/50 transition-colors">
+        <Card className="bg-slate-800/50 border-slate-700">
           <CardHeader className="pb-2">
             <CardDescription className="text-slate-400">
               Celkový rozpočet
@@ -159,7 +148,7 @@ export default async function FinanceDashboardPage() {
         </Card>
       </div>
 
-      {/* Budget Progress per Section (Collapsible) */}
+      {/* Budget Progress (Collapsible) */}
       <CollapsibleBudget>
         {sectionStats.length > 0 ? (
           sectionStats.map((section) => (
@@ -192,136 +181,15 @@ export default async function FinanceDashboardPage() {
         )}
       </CollapsibleBudget>
 
-      {/* Transactions List */}
+      {/* Structured Transactions List */}
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-white">Všechny žádosti</h2>
-        <TransactionTable transactions={transactions} showActions />
+        <h2 className="text-xl font-semibold text-white">Přehled žádostí</h2>
+        <SemesterStructuredList 
+          transactions={transactions} 
+          isAdmin={true} 
+          showActions={true} 
+        />
       </div>
     </div>
-  )
-}
-
-interface Transaction {
-  id: string
-  purpose: string
-  status: string
-  estimatedAmount: unknown
-  finalAmount: unknown
-  receiptUrl: string | null
-  createdAt: Date
-  dueDate: Date | null
-  requester: { id: string; fullName: string } | null
-  section: { id: string; name: string } | null
-}
-
-function TransactionTable({
-  transactions,
-  showActions = false,
-}: {
-  transactions: Transaction[]
-  showActions?: boolean
-}) {
-  if (transactions.length === 0) {
-    return (
-      <Card className="bg-slate-800/50 border-slate-700">
-        <CardContent className="py-12 text-center">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-12 w-12 mx-auto text-slate-500 mb-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <p className="text-slate-400">Žádné žádosti v této kategorii</p>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  return (
-    <Card className="bg-slate-800/50 border-slate-700">
-      <CardContent className="p-0">
-        <Table>
-          <TableHeader>
-            <TableRow className="border-slate-700 hover:bg-transparent">
-              <TableHead className="text-slate-400">Žadatel</TableHead>
-              <TableHead className="text-slate-400">Sekce</TableHead>
-              <TableHead className="text-slate-400">Účel</TableHead>
-              <TableHead className="text-slate-400">Částka</TableHead>
-              <TableHead className="text-slate-400">Stav</TableHead>
-              <TableHead className="text-slate-400">Předpokládané datum</TableHead>
-              <TableHead className="text-slate-400">Datum vytvoření</TableHead>
-              {showActions && <TableHead className="text-slate-400 text-right">Akce</TableHead>}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {transactions.map((tx) => (
-              <TableRow key={tx.id} className="border-slate-700 hover:bg-slate-700/50">
-                <TableCell className="font-medium text-white">
-                  {tx.requester?.fullName || "Neznámý"}
-                </TableCell>
-                <TableCell className="text-slate-300">
-                  {tx.section?.name || "Neznámá"}
-                </TableCell>
-                <TableCell className="text-slate-300 max-w-[200px] truncate">
-                  {tx.purpose}
-                </TableCell>
-                <TableCell className="text-white">
-                  {tx.finalAmount
-                    ? `${Number(tx.finalAmount).toLocaleString("cs-CZ")} Kč`
-                    : `${Number(tx.estimatedAmount).toLocaleString("cs-CZ")} Kč`}
-                  {tx.receiptUrl && (
-                    <a
-                      href={tx.receiptUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="ml-2 text-blue-400 hover:text-blue-300"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4 inline"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
-                      </svg>
-                    </a>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Badge className={`${statusColors[tx.status]} text-white`}>
-                    {statusLabels[tx.status]}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-slate-400">
-                  {tx.dueDate ? new Date(tx.dueDate).toLocaleDateString("cs-CZ") : "-"}
-                </TableCell>
-                <TableCell className="text-slate-400">
-                  {new Date(tx.createdAt).toLocaleDateString("cs-CZ")}
-                </TableCell>
-                {showActions && (
-                  <TableCell className="text-right">
-                    <ApprovalActions transactionId={tx.id} currentStatus={tx.status} />
-                  </TableCell>
-                )}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
   )
 }
