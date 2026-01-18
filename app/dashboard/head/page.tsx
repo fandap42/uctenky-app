@@ -1,0 +1,303 @@
+import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
+
+export const dynamic = 'force-dynamic'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { ApprovalActions } from "@/components/requests/approval-actions"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
+const statusLabels: Record<string, string> = {
+  DRAFT: "Koncept",
+  PENDING: "Čeká na schválení",
+  APPROVED: "Schváleno",
+  PURCHASED: "Nakoupeno",
+  VERIFIED: "Ověřeno",
+  REJECTED: "Zamítnuto",
+}
+
+const statusColors: Record<string, string> = {
+  DRAFT: "bg-slate-500",
+  PENDING: "bg-yellow-500",
+  APPROVED: "bg-green-500",
+  PURCHASED: "bg-blue-500",
+  VERIFIED: "bg-purple-500",
+  REJECTED: "bg-red-500",
+}
+
+export default async function SectionHeadDashboardPage() {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect("/login")
+  }
+
+  // Get user's profile to check role and section
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, full_name, role, section_id")
+    .eq("id", user.id)
+    .single()
+
+  // Redirect if not section head or finance
+  if (!profile || (profile.role !== "SECTION_HEAD" && profile.role !== "FINANCE")) {
+    redirect("/dashboard")
+  }
+
+  // If no section assigned, show message
+  if (!profile.section_id) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold text-white mb-2">Žádosti sekce</h1>
+          <p className="text-slate-400">
+            Nemáte přiřazenou žádnou sekci. Kontaktujte administrátora.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // Fetch section's transactions
+  const { data: transactions, error } = await supabase
+    .from("transactions")
+    .select(`
+      id,
+      purpose,
+      status,
+      estimated_amount,
+      final_amount,
+      receipt_url,
+      created_at,
+      requester:profiles!transactions_requester_id_fkey(id, full_name),
+      section:sections(id, name)
+    `)
+    .eq("section_id", profile.section_id)
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    console.error("Error fetching transactions:", error)
+  }
+
+  // Get section info
+  const { data: section } = await supabase
+    .from("sections")
+    .select("id, name, budget_cap")
+    .eq("id", profile.section_id)
+    .single()
+
+  const pendingTransactions = transactions?.filter((t) => t.status === "PENDING") || []
+  const purchasedTransactions = transactions?.filter((t) => t.status === "PURCHASED") || []
+
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-white mb-2">
+          Žádosti sekce: {section?.name || "Neznámá sekce"}
+        </h1>
+        <p className="text-slate-400">
+          Spravujte žádosti členů vaší sekce
+        </p>
+      </div>
+
+      {/* Quick stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="bg-slate-800/50 border-slate-700 hover:border-yellow-500/50 transition-colors">
+          <CardHeader className="pb-2">
+            <CardDescription className="text-slate-400">
+              Čeká na schválení
+            </CardDescription>
+            <CardTitle className="text-4xl font-bold text-yellow-400">
+              {pendingTransactions.length}
+            </CardTitle>
+          </CardHeader>
+        </Card>
+
+        <Card className="bg-slate-800/50 border-slate-700 hover:border-blue-500/50 transition-colors">
+          <CardHeader className="pb-2">
+            <CardDescription className="text-slate-400">
+              K ověření
+            </CardDescription>
+            <CardTitle className="text-4xl font-bold text-blue-400">
+              {purchasedTransactions.length}
+            </CardTitle>
+          </CardHeader>
+        </Card>
+
+        <Card className="bg-slate-800/50 border-slate-700 hover:border-purple-500/50 transition-colors">
+          <CardHeader className="pb-2">
+            <CardDescription className="text-slate-400">
+              Rozpočet sekce
+            </CardDescription>
+            <CardTitle className="text-2xl font-bold text-white">
+              {section?.budget_cap?.toLocaleString("cs-CZ") || 0} Kč
+            </CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
+
+      {/* Tabs */}
+      <Tabs defaultValue="pending" className="space-y-6">
+        <TabsList className="bg-slate-800 border border-slate-700">
+          <TabsTrigger
+            value="pending"
+            className="data-[state=active]:bg-slate-700 data-[state=active]:text-white"
+          >
+            Čekající ({pendingTransactions.length})
+          </TabsTrigger>
+          <TabsTrigger
+            value="purchased"
+            className="data-[state=active]:bg-slate-700 data-[state=active]:text-white"
+          >
+            K ověření ({purchasedTransactions.length})
+          </TabsTrigger>
+          <TabsTrigger
+            value="all"
+            className="data-[state=active]:bg-slate-700 data-[state=active]:text-white"
+          >
+            Všechny ({transactions?.length || 0})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="pending">
+          <TransactionTable transactions={pendingTransactions} showActions />
+        </TabsContent>
+
+        <TabsContent value="purchased">
+          <TransactionTable transactions={purchasedTransactions} showActions />
+        </TabsContent>
+
+        <TabsContent value="all">
+          <TransactionTable transactions={transactions || []} />
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}
+
+interface Transaction {
+  id: string
+  purpose: string
+  status: string
+  estimated_amount: number
+  final_amount: number | null
+  receipt_url: string | null
+  created_at: string
+  requester: { id: string; full_name: string } | null
+  section: { id: string; name: string } | null
+}
+
+function TransactionTable({
+  transactions,
+  showActions = false,
+}: {
+  transactions: Transaction[]
+  showActions?: boolean
+}) {
+  if (transactions.length === 0) {
+    return (
+      <Card className="bg-slate-800/50 border-slate-700">
+        <CardContent className="py-12 text-center">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-12 w-12 mx-auto text-slate-500 mb-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <p className="text-slate-400">Žádné žádosti v této kategorii</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <Card className="bg-slate-800/50 border-slate-700">
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-slate-700 hover:bg-transparent">
+              <TableHead className="text-slate-400">Žadatel</TableHead>
+              <TableHead className="text-slate-400">Účel</TableHead>
+              <TableHead className="text-slate-400">Částka</TableHead>
+              <TableHead className="text-slate-400">Stav</TableHead>
+              <TableHead className="text-slate-400">Datum</TableHead>
+              {showActions && <TableHead className="text-slate-400 text-right">Akce</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {transactions.map((tx) => (
+              <TableRow key={tx.id} className="border-slate-700 hover:bg-slate-700/50">
+                <TableCell className="font-medium text-white">
+                  {tx.requester?.full_name || "Neznámý"}
+                </TableCell>
+                <TableCell className="text-slate-300">{tx.purpose}</TableCell>
+                <TableCell className="text-white">
+                  {tx.final_amount
+                    ? `${tx.final_amount.toLocaleString("cs-CZ")} Kč`
+                    : `${tx.estimated_amount.toLocaleString("cs-CZ")} Kč`}
+                  {tx.receipt_url && (
+                    <a
+                      href={tx.receipt_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-2 text-blue-400 hover:text-blue-300"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4 inline"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                    </a>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <Badge className={`${statusColors[tx.status]} text-white`}>
+                    {statusLabels[tx.status]}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-slate-400">
+                  {new Date(tx.created_at).toLocaleDateString("cs-CZ")}
+                </TableCell>
+                {showActions && (
+                  <TableCell className="text-right">
+                    <ApprovalActions transactionId={tx.id} currentStatus={tx.status} />
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  )
+}
