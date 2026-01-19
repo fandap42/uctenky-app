@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
-import { writeFile, mkdir } from "fs/promises"
-import { join } from "path"
-import { existsSync } from "fs"
+import { uploadFile } from "@/lib/s3"
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,30 +40,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), "public", "uploads", "receipts")
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true })
-    }
-
     // Generate unique filename
     const extension = file.name.split(".").pop()
-    const filename = `${transactionId}-${Date.now()}.${extension}`
-    const filepath = join(uploadsDir, filename)
+    const key = `receipts/${transactionId}-${Date.now()}.${extension}`
 
-    // Convert file to buffer and save
+    // Convert file to buffer
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
-    await writeFile(filepath, buffer)
 
-    // Return URL
-    const url = `/uploads/receipts/${filename}`
+    // Upload to MinIO
+    const url = await uploadFile(buffer, key, file.type)
 
     return NextResponse.json({ url })
   } catch (error) {
     console.error("Upload error:", error)
     return NextResponse.json(
-      { error: "Nahrání se nezdařilo" },
+      { error: "Nahrání se nezdařilo. Zkontrolujte, zda je MinIO spuštěno." },
       { status: 500 }
     )
   }
