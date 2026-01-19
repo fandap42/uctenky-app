@@ -29,6 +29,7 @@ export function ReceiptUpload({ transactionId }: ReceiptUploadProps) {
   const [progress, setProgress] = useState(0)
   const [finalAmount, setFinalAmount] = useState("")
   const [store, setStore] = useState("")
+  const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split('T')[0])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
@@ -86,7 +87,8 @@ export function ReceiptUpload({ transactionId }: ReceiptUploadProps) {
         transactionId,
         url,
         finalAmount ? parseFloat(finalAmount) : undefined,
-        store || undefined
+        store || undefined,
+        purchaseDate ? new Date(purchaseDate) : undefined
       )
 
       setProgress(100)
@@ -199,6 +201,21 @@ export function ReceiptUpload({ transactionId }: ReceiptUploadProps) {
               value={store}
               onChange={(e) => setStore(e.target.value)}
               placeholder="Např. Lidl, Alza..."
+              className="bg-slate-900 border-slate-700 text-white"
+            />
+          </div>
+
+          {/* Purchase date (real date from receipt) */}
+          <div className="space-y-2">
+            <Label htmlFor="purchaseDate" className="text-slate-300">
+              Datum nákupu (z účtenky) *
+            </Label>
+            <Input
+              id="purchaseDate"
+              type="date"
+              value={purchaseDate}
+              onChange={(e) => setPurchaseDate(e.target.value)}
+              required
               className="bg-slate-900 border-slate-700 text-white"
             />
           </div>

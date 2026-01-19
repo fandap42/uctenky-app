@@ -71,7 +71,8 @@ export function SemesterStructuredList({
   const semesters: Record<string, Record<number, Transaction[]>> = {}
 
   transactions.forEach((tx) => {
-    const date = new Date(tx.createdAt)
+    // Use real purchase date (dueDate) if available, otherwise creation date
+    const date = new Date(tx.dueDate || tx.createdAt)
     const semKey = getSemester(date)
     const monthKey = date.getMonth() + 1
 
@@ -125,11 +126,11 @@ export function SemesterStructuredList({
                           <TableRow className="border-slate-700 hover:bg-transparent">
                             {showRequester && <TableHead className="text-slate-400 text-xs py-2">Žadatel</TableHead>}
                             {showSection && <TableHead className="text-slate-400 text-xs py-2">Sekce</TableHead>}
+                            <TableHead className="text-slate-400 text-xs py-2">Datum</TableHead>
                             <TableHead className="text-slate-400 text-xs py-2">Účel</TableHead>
                             <TableHead className="text-slate-400 text-xs py-2">Obchod</TableHead>
                             <TableHead className="text-slate-400 text-xs py-2">Částka</TableHead>
                             <TableHead className="text-slate-400 text-xs py-2">Stav</TableHead>
-                            <TableHead className="text-slate-400 text-xs py-2">Datum</TableHead>
                             {isAdmin && <TableHead className="text-slate-400 text-xs py-2 text-right">Proplaceno</TableHead>}
                             {(showActions || isAdmin) && <TableHead className="text-slate-400 text-xs py-2 text-right">Akce</TableHead>}
                           </TableRow>
@@ -147,6 +148,9 @@ export function SemesterStructuredList({
                                   {tx.section?.name || "-"}
                                 </TableCell>
                               )}
+                              <TableCell className="py-2 text-sm text-white whitespace-nowrap">
+                                {new Date(tx.dueDate || tx.createdAt).toLocaleDateString("cs-CZ")}
+                              </TableCell>
                               <TableCell className="py-2">
                                 <p className="text-sm text-white font-medium truncate max-w-[150px]">{tx.purpose}</p>
                               </TableCell>
@@ -163,9 +167,6 @@ export function SemesterStructuredList({
                                 <Badge className={`${statusColors[tx.status]} text-[10px] px-1.5 h-5 text-white`}>
                                   {statusLabels[tx.status]}
                                 </Badge>
-                              </TableCell>
-                              <TableCell className="py-2 text-[10px] text-slate-400 whitespace-nowrap">
-                                {new Date(tx.createdAt).toLocaleDateString("cs-CZ")}
                               </TableCell>
                               {isAdmin && (
                                 <TableCell className="py-2 text-right">

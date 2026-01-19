@@ -96,7 +96,8 @@ export async function updateTransactionReceipt(
   transactionId: string,
   receiptUrl: string,
   finalAmount?: number,
-  store?: string
+  store?: string,
+  purchaseDate?: Date
 ) {
   const session = await auth()
 
@@ -126,6 +127,7 @@ export async function updateTransactionReceipt(
         receiptUrl,
         finalAmount: finalAmount ?? undefined,
         store: store ?? undefined,
+        dueDate: purchaseDate ?? undefined,
         status: "PURCHASED",
       },
     })

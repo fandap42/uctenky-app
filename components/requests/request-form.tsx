@@ -93,17 +93,6 @@ export function RequestForm({ trigger }: RequestFormProps) {
               className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500"
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="dueDate" className="text-slate-300">
-              Předpokládané datum nákupu
-            </Label>
-            <Input
-              id="dueDate"
-              name="dueDate"
-              type="date"
-              className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500"
-            />
-          </div>
           <DialogFooter className="gap-2">
             <Button
               type="button"
