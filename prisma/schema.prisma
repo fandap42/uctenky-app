@@ -8,7 +8,15 @@ datasource db {
 
 enum AppRole {
   MEMBER
-  SECTION_HEAD
+  HEAD_VEDENI
+  HEAD_FINANCE
+  HEAD_HR
+  HEAD_PR
+  HEAD_NEVZDELAVACI
+  HEAD_VZDELAVACI
+  HEAD_SPORTOVNI
+  HEAD_GAMING
+  HEAD_KRUHOVE
   ADMIN
 }
 
@@ -32,8 +40,6 @@ model User {
   passwordHash  String    @map("password_hash")
   fullName      String    @map("full_name")
   role          AppRole   @default(MEMBER)
-  sectionId     String?   @map("section_id")
-  section       Section?  @relation(fields: [sectionId], references: [id], onDelete: SetNull)
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
   
@@ -49,7 +55,6 @@ model Section {
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
   
-  users        User[]
   transactions Transaction[]
   
   @@map("sections")

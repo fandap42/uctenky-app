@@ -53,6 +53,32 @@ async function main() {
       console.log(`Section already exists: ${name}`);
     }
   }
+
+  // 3. Create test users for each role
+  const testUsers = [
+    { email: 'vedouci.vedeni@test.com', fullName: 'Vedoucí Vedení', role: 'HEAD_VEDENI' },
+    { email: 'vedouci.hr@test.com', fullName: 'Vedoucí HR', role: 'HEAD_HR' },
+    { email: 'clen@test.com', fullName: 'Běžný Člen', role: 'MEMBER' },
+  ];
+
+  const testPassword = await hash('test123', 10);
+
+  for (const userData of testUsers) {
+    const existing = await prisma.user.findUnique({ where: { email: userData.email } });
+    if (!existing) {
+      await prisma.user.create({
+        data: {
+          email: userData.email,
+          fullName: userData.fullName,
+          passwordHash: testPassword,
+          role: userData.role,
+        },
+      });
+      console.log(`Created test user: ${userData.email} (${userData.role})`);
+    } else {
+      console.log(`User already exists: ${userData.email}`);
+    }
+  }
 }
 
 main()

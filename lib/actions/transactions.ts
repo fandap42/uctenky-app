@@ -12,19 +12,10 @@ export async function createTransaction(formData: FormData) {
     return { error: "Nepřihlášený uživatel" }
   }
 
-  // Get user's section
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { sectionId: true },
-  })
-
-  if (!user?.sectionId) {
-    return { error: "Uživatel není přiřazen k žádné sekci" }
-  }
-
   const purpose = formData.get("purpose") as string
   const store = formData.get("store") as string
   const estimatedAmount = parseFloat(formData.get("estimatedAmount") as string)
+  const sectionId = formData.get("sectionId") as string
   const dueDateStr = formData.get("dueDate") as string
   const dueDate = dueDateStr ? new Date(dueDateStr) : null
   const status = (formData.get("status") as TransStatus) || "DRAFT"
@@ -33,11 +24,15 @@ export async function createTransaction(formData: FormData) {
     return { error: "Vyplňte všechna povinná pole" }
   }
 
+  if (!sectionId) {
+    return { error: "Vyberte sekci" }
+  }
+
   try {
     await prisma.transaction.create({
       data: {
         requesterId: session.user.id,
-        sectionId: user.sectionId,
+        sectionId,
         purpose,
         store: store || undefined,
         estimatedAmount,

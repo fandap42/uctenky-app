@@ -1,6 +1,6 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { RequestForm } from "@/components/requests/request-form"
 import { SemesterStructuredList } from "@/components/dashboard/semester-structured-list"
 
@@ -16,7 +16,14 @@ export default async function DashboardPage() {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, fullName: true, role: true, sectionId: true },
+    select: { id: true, fullName: true, role: true },
+  })
+
+  // Get all active sections for the form dropdown
+  const sections = await prisma.section.findMany({
+    where: { isActive: true },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true },
   })
 
   // Get all user's transactions
@@ -58,11 +65,11 @@ export default async function DashboardPage() {
             Přehled vašich finančních žádostí a aktivit
           </p>
         </div>
-        <RequestForm />
+        <RequestForm sections={sections} />
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="bg-slate-800/50 border-slate-700 hover:border-blue-500/50 transition-colors">
           <CardHeader className="pb-2">
             <CardDescription className="text-slate-400">
@@ -81,17 +88,6 @@ export default async function DashboardPage() {
             </CardDescription>
             <CardTitle className="text-4xl font-bold text-yellow-400">
               {pendingCount}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-
-        <Card className="bg-slate-800/50 border-slate-700 hover:border-green-500/50 transition-colors">
-          <CardHeader className="pb-2">
-            <CardDescription className="text-slate-400">
-              Celkem vyčerpáno
-            </CardDescription>
-            <CardTitle className="text-2xl font-bold text-green-400">
-              {totalSpent.toLocaleString("cs-CZ")} Kč
             </CardTitle>
           </CardHeader>
         </Card>

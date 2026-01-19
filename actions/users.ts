@@ -14,9 +14,6 @@ export async function getUsers() {
 
   const users = await prisma.user.findMany({
     orderBy: { fullName: "asc" },
-    include: {
-      section: true,
-    },
   })
 
   return users
@@ -39,7 +36,7 @@ export async function getSections() {
 
 export async function updateUser(
   userId: string,
-  data: { role: AppRole; sectionId: string | null }
+  data: { role: AppRole }
 ) {
   const session = await auth()
 
@@ -52,7 +49,6 @@ export async function updateUser(
       where: { id: userId },
       data: {
         role: data.role,
-        sectionId: data.sectionId === "none" ? null : data.sectionId,
       },
     })
 

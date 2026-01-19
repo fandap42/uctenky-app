@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { AppRole, Section, User } from "@prisma/client"
+import { AppRole, User } from "@prisma/client"
 import {
   Dialog,
   DialogContent,
@@ -20,36 +20,43 @@ import {
 } from "@/components/ui/select"
 import { updateUser } from "@/actions/users"
 import { toast } from "sonner"
+import { roleLabels } from "@/lib/utils/roles"
 
 interface EditUserDialogProps {
-  user: User & { section: Section | null }
-  sections: Section[]
+  user: User
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess: () => void
 }
 
-const roleLabels: Record<string, string> = {
-  MEMBER: "Člen",
-  SECTION_HEAD: "Vedoucí sekce",
-  ADMIN: "Administrátor",
-}
+// All available roles for selection
+const allRoles: AppRole[] = [
+  "MEMBER",
+  "HEAD_VEDENI",
+  "HEAD_FINANCE",
+  "HEAD_HR",
+  "HEAD_PR",
+  "HEAD_NEVZDELAVACI",
+  "HEAD_VZDELAVACI",
+  "HEAD_SPORTOVNI",
+  "HEAD_GAMING",
+  "HEAD_KRUHOVE",
+  "ADMIN",
+]
 
 export function EditUserDialog({
   user,
-  sections,
   open,
   onOpenChange,
   onSuccess,
 }: EditUserDialogProps) {
   const [role, setRole] = useState<AppRole>(user.role)
-  const [sectionId, setSectionId] = useState<string>(user.sectionId || "none")
   const [isLoading, setIsLoading] = useState(false)
 
   const handleSave = async () => {
     setIsLoading(true)
     try {
-      const result = await updateUser(user.id, { role, sectionId })
+      const result = await updateUser(user.id, { role })
       if (result.success) {
         toast.success("Uživatel byl úspěšně aktualizován")
         onSuccess()
@@ -78,25 +85,9 @@ export function EditUserDialog({
                 <SelectValue placeholder="Vyberte roli" />
               </SelectTrigger>
               <SelectContent className="bg-slate-800 border-slate-700">
-                {Object.entries(roleLabels).map(([key, label]) => (
-                  <SelectItem key={key} value={key}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="section">Sekce</Label>
-            <Select value={sectionId} onValueChange={setSectionId}>
-              <SelectTrigger className="bg-slate-800 border-slate-700">
-                <SelectValue placeholder="Vyberte sekci" />
-              </SelectTrigger>
-              <SelectContent className="bg-slate-800 border-slate-700">
-                <SelectItem value="none">Bez sekce</SelectItem>
-                {sections.map((section) => (
-                  <SelectItem key={section.id} value={section.id}>
-                    {section.name}
+                {allRoles.map((roleKey) => (
+                  <SelectItem key={roleKey} value={roleKey}>
+                    {roleLabels[roleKey] || roleKey}
                   </SelectItem>
                 ))}
               </SelectContent>

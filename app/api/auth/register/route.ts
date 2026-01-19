@@ -42,7 +42,6 @@ export async function POST(request: NextRequest) {
         email,
         passwordHash,
         fullName,
-        sectionId: body.sectionId,
         role: "MEMBER",
       },
     })
