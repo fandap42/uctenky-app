@@ -40,9 +40,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate unique filename
+    // Generate unique filename with year/month folder structure
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, "0")
     const extension = file.name.split(".").pop()
-    const key = `receipts/${transactionId}-${Date.now()}.${extension}`
+    const key = `receipts/${year}/${month}/${transactionId}-${Date.now()}.${extension}`
 
     // Convert file to buffer
     const bytes = await file.arrayBuffer()
