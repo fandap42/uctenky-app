@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getSemester, monthNames } from "@/lib/utils/semesters"
 import { CSVExportButton } from "./csv-export-button"
 import { PaidStatusSelect } from "./paid-status-select"
+import { ExpenseTypeSelect } from "./expense-type-select"
 import { ApprovalActions } from "@/components/requests/approval-actions"
 import { EditTransactionDialog } from "./edit-transaction-dialog"
 import { ReceiptUpload } from "@/components/receipts/receipt-upload"
@@ -25,6 +26,7 @@ interface Transaction {
   store?: string | null
   status: string
   isPaid: boolean
+  expenseType: string
   estimatedAmount: any
   finalAmount: any
   receiptUrl: string | null
@@ -131,7 +133,8 @@ export function SemesterStructuredList({
                             <TableHead className="text-slate-400 text-xs py-2">Obchod</TableHead>
                             <TableHead className="text-slate-400 text-xs py-2">Částka</TableHead>
                             <TableHead className="text-slate-400 text-xs py-2">Stav</TableHead>
-                            {isAdmin && <TableHead className="text-slate-400 text-xs py-2 text-right">Proplaceno</TableHead>}
+                            {isAdmin && <TableHead className="text-slate-400 text-xs py-2">Typ</TableHead>}
+                            {isAdmin && <TableHead className="text-slate-400 text-xs py-2">Proplaceno</TableHead>}
                             {(showActions || isAdmin) && <TableHead className="text-slate-400 text-xs py-2 text-right">Akce</TableHead>}
                           </TableRow>
                         </TableHeader>
@@ -169,7 +172,12 @@ export function SemesterStructuredList({
                                 </Badge>
                               </TableCell>
                               {isAdmin && (
-                                <TableCell className="py-2 text-right">
+                                <TableCell className="py-2">
+                                  <ExpenseTypeSelect transactionId={tx.id} initialType={tx.expenseType || "MATERIAL"} />
+                                </TableCell>
+                              )}
+                              {isAdmin && (
+                                <TableCell className="py-2">
                                   <PaidStatusSelect transactionId={tx.id} initialStatus={tx.isPaid} />
                                 </TableCell>
                               )}

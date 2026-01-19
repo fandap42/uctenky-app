@@ -21,6 +21,11 @@ enum TransStatus {
   REJECTED
 }
 
+enum ExpenseType {
+  MATERIAL
+  SERVICE
+}
+
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
@@ -79,6 +84,7 @@ model Transaction {
   finalAmount     Decimal?    @map("final_amount") @db.Decimal(12, 2)
   receiptUrl      String?     @map("receipt_url")
   isPaid          Boolean     @default(false) @map("is_paid")
+  expenseType     ExpenseType @default(MATERIAL) @map("expense_type")
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
   

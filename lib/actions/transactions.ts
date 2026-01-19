@@ -175,6 +175,40 @@ export async function updateTransactionPaidStatus(
   }
 }
 
+export async function updateTransactionExpenseType(
+  transactionId: string,
+  expenseType: "MATERIAL" | "SERVICE"
+) {
+  const session = await auth()
+
+  if (!session?.user?.id) {
+    return { error: "Nepřihlášený uživatel" }
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true },
+    })
+
+    if (user?.role !== "ADMIN") {
+      return { error: "Nemáte oprávnění k této akci" }
+    }
+
+    await prisma.transaction.update({
+      where: { id: transactionId },
+      data: { expenseType } as any,
+    })
+
+    revalidatePath("/dashboard/admin")
+    revalidatePath("/dashboard")
+    return { success: true }
+  } catch (error) {
+    console.error("Update transaction expense type error:", error)
+    return { error: "Nepodařilo se aktualizovat typ výdaje" }
+  }
+}
+
 export async function deleteTransaction(transactionId: string) {
   const session = await auth()
 
