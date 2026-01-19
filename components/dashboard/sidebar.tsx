@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useSession, signOut } from "next-auth/react"
@@ -29,7 +30,12 @@ function getRoleColor(role: string): string {
   return roleColors[role] || "bg-slate-500"
 }
 
-export function Sidebar() {
+interface SidebarProps {
+  isOpen: boolean
+  onClose: () => void
+}
+
+export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname()
   const { data: session, status } = useSession()
   const isLoading = status === "loading"
@@ -102,109 +108,144 @@ export function Sidebar() {
       .slice(0, 2)
   }
 
+  const handleNavClick = () => {
+    // Close sidebar on mobile after navigation
+    if (window.innerWidth < 768) {
+      onClose()
+    }
+  }
+
   return (
-    <div className="flex flex-col h-full bg-slate-900 border-r border-slate-800 w-64">
-      {/* Logo */}
-      <div className="h-16 flex items-center px-6 border-b border-slate-800">
-        <Link href="/dashboard" className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-          </div>
-          <span className="font-bold text-lg text-white">SOFinance</span>
-        </Link>
-      </div>
+    <>
+      {/* Backdrop for mobile */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={onClose}
+        />
+      )}
 
-      {/* Navigation */}
-      <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-        {filteredNavigation.map((item) => {
-          const isActive = pathname === item.href
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
-                isActive
-                  ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border border-blue-500/30"
-                  : "text-slate-400 hover:text-white hover:bg-slate-800"
-              )}
-            >
-              {item.icon}
-              {item.name}
-            </Link>
-          )
-        })}
-      </nav>
-
-      <Separator className="bg-slate-800" />
-
-      {/* User section */}
-      <div className="p-4">
-        {isLoading ? (
-          <div className="flex items-center gap-3 p-3">
-            <div className="w-10 h-10 rounded-full bg-slate-700 animate-pulse" />
-            <div className="flex-1 space-y-2">
-              <div className="h-4 bg-slate-700 rounded animate-pulse" />
-              <div className="h-3 bg-slate-700 rounded w-2/3 animate-pulse" />
+      {/* Sidebar */}
+      <div
+        className={cn(
+          "fixed md:static inset-y-0 left-0 z-50 flex flex-col h-full bg-slate-900 border-r border-slate-800 w-64 transition-transform duration-300 ease-in-out",
+          isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        )}
+      >
+        {/* Logo */}
+        <div className="h-16 flex items-center justify-between px-6 border-b border-slate-800">
+          <Link href="/dashboard" className="flex items-center gap-3" onClick={handleNavClick}>
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
             </div>
-          </div>
-        ) : session?.user ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-3 p-3 h-auto hover:bg-slate-800 rounded-xl"
+            <span className="font-bold text-lg text-white">SOFinance</span>
+          </Link>
+          {/* Close button for mobile */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden text-slate-400 hover:text-white"
+            onClick={onClose}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </Button>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+          {filteredNavigation.map((item) => {
+            const isActive = pathname === item.href
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                onClick={handleNavClick}
+                className={cn(
+                  "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
+                  isActive
+                    ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border border-blue-500/30"
+                    : "text-slate-400 hover:text-white hover:bg-slate-800"
+                )}
               >
-                <Avatar className="h-10 w-10">
-                  <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm">
-                    {getInitials(session.user.name || "U")}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 text-left">
-                  <p className="text-sm font-medium text-white truncate">
-                    {session.user.name}
-                  </p>
-                  <Badge
-                    variant="secondary"
-                    className={cn(
-                      "text-xs text-white mt-1",
-                      getRoleColor(userRole)
-                    )}
-                  >
-                    {roleLabels[userRole] || "Člen"}
-                  </Badge>
-                </div>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-slate-800 border-slate-700">
-              <DropdownMenuLabel className="text-slate-400">Můj účet</DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-slate-700" />
-              <DropdownMenuItem
-                onClick={() => signOut({ callbackUrl: "/login" })}
-                className="text-red-400 focus:bg-red-500/20 focus:text-red-400 cursor-pointer"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                Odhlásit se
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : null}
+                {item.icon}
+                {item.name}
+              </Link>
+            )
+          })}
+        </nav>
+
+        <Separator className="bg-slate-800" />
+
+        {/* User section */}
+        <div className="p-4">
+          {isLoading ? (
+            <div className="flex items-center gap-3 p-3">
+              <div className="w-10 h-10 rounded-full bg-slate-700 animate-pulse" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 bg-slate-700 rounded animate-pulse" />
+                <div className="h-3 bg-slate-700 rounded w-2/3 animate-pulse" />
+              </div>
+            </div>
+          ) : session?.user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start gap-3 p-3 h-auto hover:bg-slate-800 rounded-xl"
+                >
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm">
+                      {getInitials(session.user.name || "U")}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 text-left">
+                    <p className="text-sm font-medium text-white truncate">
+                      {session.user.name}
+                    </p>
+                    <Badge
+                      variant="secondary"
+                      className={cn(
+                        "text-xs text-white mt-1",
+                        getRoleColor(userRole)
+                      )}
+                    >
+                      {roleLabels[userRole] || "Člen"}
+                    </Badge>
+                  </div>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 bg-slate-800 border-slate-700">
+                <DropdownMenuLabel className="text-slate-400">Můj účet</DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-slate-700" />
+                <DropdownMenuItem
+                  onClick={() => signOut({ callbackUrl: "/login" })}
+                  className="text-red-400 focus:bg-red-500/20 focus:text-red-400 cursor-pointer"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Odhlásit se
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
+        </div>
       </div>
-    </div>
+    </>
   )
 }
