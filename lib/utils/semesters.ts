@@ -21,6 +21,10 @@ export function getSemester(date: Date) {
   }
 }
 
+export function getCurrentSemester() {
+  return getSemester(new Date())
+}
+
 export const monthNames: Record<number, string> = {
   1: "Leden",
   2: "Únor",

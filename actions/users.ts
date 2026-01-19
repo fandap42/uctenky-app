@@ -4,6 +4,7 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { AppRole } from "@prisma/client"
+import { getCurrentSemester } from "@/lib/utils/semesters"
 
 export async function getUsers() {
   const session = await auth()
@@ -29,16 +30,27 @@ export async function getSections() {
     throw new Error("Unauthorized")
   }
 
+  const currentSemester = getCurrentSemester()
+
   const sections = await prisma.section.findMany({
     where: { isActive: true },
     orderBy: { name: "asc" },
+    include: {
+      budgets: {
+        where: { fiscalYear: currentSemester },
+        take: 1,
+      },
+    },
   })
 
-  // Serialize Decimal objects to plain numbers for Client Components
-  return sections.map(section => ({
-    ...section,
-    budgetCap: section.budgetCap ? Number(section.budgetCap) : null,
-  }))
+  // Serialize Decimal objects to plain numbers and use semester budget
+  return sections.map(section => {
+    const budgetAmount = section.budgets[0] ? Number(section.budgets[0].totalAmount) : 0
+    return {
+      ...section,
+      budgetCap: budgetAmount,
+    }
+  })
 }
 
 export async function updateUser(

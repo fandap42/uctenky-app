@@ -126,3 +126,5 @@ Next.js version: 16.1.3 (Turbopack)
 - export chci ; separated - pro česky excel jednoudssi
 
 - Obtázky nahrávat do blobu
+
+- budgety nějak vymyslet na semestry

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { SemesterStructuredList } from "@/components/dashboard/semester-structured-list"
+import { getCurrentSemester } from "@/lib/utils/semesters"
 
 export const dynamic = "force-dynamic"
 
@@ -12,6 +13,8 @@ export default async function SectionHeadDashboardPage() {
   if (!session?.user?.id) {
     redirect("/login")
   }
+
+  const currentSemester = getCurrentSemester()
 
   // Get user's profile to check role and section
   const user = await prisma.user.findUnique({
@@ -57,18 +60,27 @@ export default async function SectionHeadDashboardPage() {
     dueDate: t.dueDate ? t.dueDate.toISOString() : null,
   })) as any
 
-  // Get section info
+  // Get section info and budget for current semester
   const section = await prisma.section.findUnique({
     where: { id: user.sectionId },
-    select: { id: true, name: true, budgetCap: true },
+    select: {
+      id: true,
+      name: true,
+      budgets: {
+        where: { fiscalYear: currentSemester },
+        take: 1,
+      },
+    },
   })
+
+  const budgetAmount = section?.budgets[0] ? Number(section.budgets[0].totalAmount) : 0
 
   // Calculate spent (using ALL transactions for accurate budget)
   const totalSpent = (transactions as any[])
     .filter((t: any) => t.status === "VERIFIED" || t.status === "PURCHASED")
     .reduce((sum: number, t: any) => sum + Number(t.finalAmount || t.estimatedAmount), 0)
 
-  const remaining = Number(section?.budgetCap || 0) - totalSpent
+  const remaining = budgetAmount - totalSpent
 
   const pendingTransactions = (transactions as any[]).filter((t: any) => t.status === "PENDING")
 
@@ -108,7 +120,7 @@ export default async function SectionHeadDashboardPage() {
           </CardHeader>
           <CardContent>
             <p className="text-xs text-slate-500 italic">
-              Z celkového limitu {Number(section?.budgetCap || 0).toLocaleString("cs-CZ")} Kč
+              Z celkového limitu {budgetAmount.toLocaleString("cs-CZ")} Kč
             </p>
           </CardContent>
         </Card>
@@ -128,9 +140,9 @@ export default async function SectionHeadDashboardPage() {
       {/* Structured Transactions List */}
       <div className="space-y-4">
         <h2 className="text-xl font-semibold text-white">Přehled žádostí sekce</h2>
-        <SemesterStructuredList 
-          transactions={transactions} 
-          showSection={false} 
+        <SemesterStructuredList
+          transactions={transactions}
+          showSection={false}
           showActions={true}
         />
       </div>

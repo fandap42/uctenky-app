@@ -7,6 +7,7 @@ import { CollapsibleBudget } from "@/components/dashboard/collapsible-budget"
 import { EditBudgetDialog } from "@/components/dashboard/edit-budget-dialog"
 import { Button } from "@/components/ui/button"
 import { SemesterStructuredList } from "@/components/dashboard/semester-structured-list"
+import { getCurrentSemester } from "@/lib/utils/semesters"
 
 export const dynamic = "force-dynamic"
 
@@ -28,6 +29,8 @@ export default async function FinanceDashboardPage() {
     redirect("/dashboard")
   }
 
+  const currentSemester = getCurrentSemester()
+
   // Fetch all transactions
   const rawTransactionsList = await prisma.transaction.findMany({
     orderBy: { createdAt: "desc" },
@@ -47,10 +50,16 @@ export default async function FinanceDashboardPage() {
     dueDate: t.dueDate ? t.dueDate.toISOString() : null,
   })) as any
 
-  // Fetch all sections with budget info
+  // Fetch all sections with budget info from Budget table
   const sections = await prisma.section.findMany({
     where: { isActive: true },
     orderBy: { name: "asc" },
+    include: {
+      budgets: {
+        where: { fiscalYear: currentSemester },
+        take: 1,
+      },
+    },
   })
 
   // Calculate spent and pending per section (on all transactions)
@@ -68,10 +77,14 @@ export default async function FinanceDashboardPage() {
       .filter((t) => t.status === "PENDING" || t.status === "APPROVED")
       .reduce((sum, t) => sum + Number(t.estimatedAmount), 0)
 
+    // Get budget from Budget table for current semester
+    const budgetAmount = section.budgets[0] ? Number(section.budgets[0].totalAmount) : 0
+
     return {
       ...section,
       spent,
       pending,
+      budgetAmount,
     }
   })
 
@@ -87,7 +100,7 @@ export default async function FinanceDashboardPage() {
     .filter((t: any) => t.status === "VERIFIED" || t.status === "PURCHASED")
     .reduce((sum: number, t: any) => sum + Number(t.finalAmount || t.estimatedAmount), 0)
 
-  const totalBudget = sections.reduce((sum, s) => sum + Number(s.budgetCap), 0)
+  const totalBudget = sectionStats.reduce((sum, s) => sum + s.budgetAmount, 0)
 
   return (
     <div className="space-y-8">
@@ -155,14 +168,14 @@ export default async function FinanceDashboardPage() {
             <BudgetProgress
               key={section.id}
               sectionName={section.name}
-              budgetCap={Number(section.budgetCap)}
+              budgetCap={section.budgetAmount}
               spent={section.spent}
               pending={section.pending}
               action={
-                <EditBudgetDialog 
-                  sectionId={section.id} 
-                  sectionName={section.name} 
-                  currentBudget={Number(section.budgetCap)}
+                <EditBudgetDialog
+                  sectionId={section.id}
+                  sectionName={section.name}
+                  currentBudget={section.budgetAmount}
                   trigger={
                     <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-slate-500 hover:text-blue-400">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -184,10 +197,10 @@ export default async function FinanceDashboardPage() {
       {/* Structured Transactions List */}
       <div className="space-y-4">
         <h2 className="text-xl font-semibold text-white">Přehled žádostí</h2>
-        <SemesterStructuredList 
-          transactions={transactions} 
-          isAdmin={true} 
-          showActions={true} 
+        <SemesterStructuredList
+          transactions={transactions}
+          isAdmin={true}
+          showActions={true}
         />
       </div>
     </div>
