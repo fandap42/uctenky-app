@@ -45,29 +45,14 @@ model User {
 model Section {
   id          String    @id @default(cuid())
   name        String
-  budgetCap   Decimal   @default(0) @map("budget_cap") @db.Decimal(12, 2)
   isActive    Boolean   @default(true) @map("is_active")
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
   
   users        User[]
-  budgets      Budget[]
   transactions Transaction[]
   
   @@map("sections")
-}
-
-model Budget {
-  id          String    @id @default(cuid())
-  sectionId   String    @map("section_id")
-  section     Section   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  fiscalYear  String    @map("fiscal_year")
-  totalAmount Decimal   @default(0) @map("total_amount") @db.Decimal(12, 2)
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-  
-  @@unique([sectionId, fiscalYear])
-  @@map("budgets")
 }
 
 model Transaction {

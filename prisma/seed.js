@@ -1,4 +1,5 @@
-
+require('dotenv').config();
+require('dotenv').config({ path: '.env.local' });
 const { PrismaClient } = require('@prisma/client');
 const { Pool } = require('pg');
 const { PrismaPg } = require('@prisma/adapter-pg');
@@ -50,29 +51,6 @@ async function main() {
       console.log(`Created section: ${name}`);
     } else {
       console.log(`Section already exists: ${name}`);
-    }
-  }
-
-  // 3. Create Budgets for each section (10000 Kč for ZS25)
-  const allSections = await prisma.section.findMany();
-  const fiscalYear = "ZS25";
-
-  for (const section of allSections) {
-    const existingBudget = await prisma.budget.findFirst({
-      where: { sectionId: section.id, fiscalYear }
-    });
-
-    if (!existingBudget) {
-      await prisma.budget.create({
-        data: {
-          sectionId: section.id,
-          fiscalYear,
-          totalAmount: 10000
-        }
-      });
-      console.log(`Created budget for section ${section.name}: 10000 Kč`);
-    } else {
-      console.log(`Budget already exists for section ${section.name}`);
     }
   }
 }
