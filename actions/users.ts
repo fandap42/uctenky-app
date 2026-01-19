@@ -34,7 +34,11 @@ export async function getSections() {
     orderBy: { name: "asc" },
   })
 
-  return sections
+  // Serialize Decimal objects to plain numbers for Client Components
+  return sections.map(section => ({
+    ...section,
+    budgetCap: section.budgetCap ? Number(section.budgetCap) : null,
+  }))
 }
 
 export async function updateUser(

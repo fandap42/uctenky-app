@@ -77,7 +77,7 @@ export function SemesterStructuredList({
 
     if (!semesters[semKey]) semesters[semKey] = {}
     if (!semesters[semKey][monthKey]) semesters[semKey][monthKey] = []
-    
+
     semesters[semKey][monthKey].push(tx)
   })
 
@@ -113,8 +113,8 @@ export function SemesterStructuredList({
                         {monthNames[monthKey]}
                       </CardTitle>
                       {isAdmin && (
-                        <CSVExportButton 
-                          transactions={monthTxs} 
+                        <CSVExportButton
+                          transactions={monthTxs}
                           filename={`export-${semKey}-${monthKey}.csv`}
                         />
                       )}
@@ -178,10 +178,10 @@ export function SemesterStructuredList({
                                     {isAdmin && (
                                       <>
                                         {tx.receiptUrl && (
-                                          <DeleteButton 
-                                            onDelete={() => removeReceipt(tx.id)} 
-                                            iconOnly 
-                                            title="Odstranit účtenku?" 
+                                          <DeleteButton
+                                            onDelete={() => removeReceipt(tx.id)}
+                                            iconOnly
+                                            title="Odstranit účtenku?"
                                             description="Žádost bude vrácena do stavu 'Schváleno'."
                                             className="text-yellow-500 hover:text-yellow-600 hover:bg-yellow-500/10"
                                           />
@@ -198,7 +198,7 @@ export function SemesterStructuredList({
                                         )}
                                       </>
                                     )}
-                                    <ApprovalActions transactionId={tx.id} currentStatus={tx.status} />
+                                    {isAdmin && <ApprovalActions transactionId={tx.id} currentStatus={tx.status} />}
                                   </div>
                                 </TableCell>
                               )}

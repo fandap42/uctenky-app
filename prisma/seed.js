@@ -11,11 +11,8 @@ const prisma = new PrismaClient({ adapter });
 
 async function main() {
   // 1. Create Admin User
-  const email = 'pavlik.frantisek42@gmail.com';
-  const password = 'admin'; // Temporary password, should be changed or user should use existing hash if creating from scratch with known hash
-  // Since we are resetting, we need a password hash. I'll use a dummy one or if I can't import hash easily without bcryptjs/node setup in seed (it is a script).
-  // I'll grab the hash from the promote-user.js context if I had it, but I don't.
-  // I will make a new hash for 'password'.
+  const email = 'admin@admin.com';
+  const password = 'admin';
   const passwordHash = await hash(password, 10);
 
   const admin = await prisma.user.upsert({
@@ -23,7 +20,7 @@ async function main() {
     update: { role: 'ADMIN' },
     create: {
       email,
-      fullName: 'František Pavlík',
+      fullName: 'Admin',
       passwordHash,
       role: 'ADMIN',
     },
@@ -44,8 +41,6 @@ async function main() {
   ];
 
   for (const name of sections) {
-
-    
     const existing = await prisma.section.findFirst({ where: { name } });
     if (!existing) {
       await prisma.section.create({
@@ -53,7 +48,7 @@ async function main() {
       });
       console.log(`Created section: ${name}`);
     } else {
-        console.log(`Section already exists: ${name}`);
+      console.log(`Section already exists: ${name}`);
     }
   }
 }
