@@ -24,7 +24,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </Button>
-          <span className="font-bold text-lg text-white">SOFinance</span>
+          <span className="font-bold text-lg text-white">4FISuctenky</span>
         </header>
 
         {/* Main content */}

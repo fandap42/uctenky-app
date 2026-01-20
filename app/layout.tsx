@@ -11,7 +11,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "StudentOrgFinance | Správa financí studentské organizace",
+  title: "4FISuctenky | Správa financí studentské organizace",
   description: "Systém pro správu účtenek a finančních náhrad pro studentské organizace",
 };
 

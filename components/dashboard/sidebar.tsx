@@ -161,7 +161,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 />
               </svg>
             </div>
-            <span className="font-bold text-lg text-white">SOFinance</span>
+            <span className="font-bold text-lg text-white">4FISuctenky</span>
           </Link>
           {/* Close button for mobile */}
           <Button

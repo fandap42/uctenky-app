@@ -65,7 +65,7 @@ export default function LoginPage() {
             </svg>
           </div>
           <CardTitle className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-            StudentOrgFinance
+            4FISuctenky
           </CardTitle>
           <CardDescription className="text-slate-400">
             Přihlaste se pro správu financí vaší organizace
