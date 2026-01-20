@@ -11,7 +11,6 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getSemester, monthNames } from "@/lib/utils/semesters"
-import { CSVExportButton } from "./csv-export-button"
 import { PaidStatusSelect } from "./paid-status-select"
 import { ExpenseTypeSelect } from "./expense-type-select"
 import { ApprovalActions } from "@/components/requests/approval-actions"
@@ -115,12 +114,6 @@ export function SemesterStructuredList({
                       <CardTitle className="text-sm font-medium text-slate-300">
                         {monthNames[monthKey]}
                       </CardTitle>
-                      {isAdmin && (
-                        <CSVExportButton
-                          transactions={monthTxs}
-                          filename={`export-${semKey}-${monthKey}.csv`}
-                        />
-                      )}
                     </CardHeader>
                     <CardContent className="p-0 overflow-x-auto">
                       <Table>

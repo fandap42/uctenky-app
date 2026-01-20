@@ -83,3 +83,31 @@ model Transaction {
   @@index([status])
   @@map("transactions")
 }
+
+model Deposit {
+  id          String   @id @default(cuid())
+  amount      Decimal  @db.Decimal(12, 2)
+  description String?
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("deposits")
+}
+
+model DebtError {
+  id          String   @id @default(cuid())
+  amount      Decimal  @db.Decimal(12, 2)
+  reason      String
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("debt_errors")
+}
+
+model CashOnHand {
+  id          String   @id @default(cuid())
+  amount      Decimal  @db.Decimal(12, 2)
+  reason      String
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("cash_on_hand")
+}
