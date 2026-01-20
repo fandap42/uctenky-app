@@ -8,9 +8,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -18,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { updateUser } from "@/actions/users"
+import { updateUser, changeUserPassword } from "@/actions/users"
 import { toast } from "sonner"
 import { roleLabels } from "@/lib/utils/roles"
 
@@ -51,19 +53,44 @@ export function EditUserDialog({
   onSuccess,
 }: EditUserDialogProps) {
   const [role, setRole] = useState<AppRole>(user.role)
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
+  const passwordsMatch = newPassword === confirmPassword
+  const passwordValid = newPassword.length === 0 || newPassword.length >= 6
+
   const handleSave = async () => {
+    if (newPassword && !passwordsMatch) {
+      toast.error("Hesla se neshodují")
+      return
+    }
+
     setIsLoading(true)
     try {
+      // Update role
       const result = await updateUser(user.id, { role })
-      if (result.success) {
-        toast.success("Uživatel byl úspěšně aktualizován")
-        onSuccess()
-        onOpenChange(false)
-      } else {
-        toast.error("Nastala chyba při aktualizaci uživatele")
+      if (!result.success) {
+        toast.error("Nastala chyba při aktualizaci role")
+        setIsLoading(false)
+        return
       }
+
+      // Change password if provided
+      if (newPassword.trim()) {
+        const pwResult = await changeUserPassword(user.id, newPassword)
+        if (!pwResult.success) {
+          toast.error(pwResult.error || "Nepodařilo se změnit heslo")
+          setIsLoading(false)
+          return
+        }
+      }
+
+      toast.success("Uživatel byl úspěšně aktualizován")
+      setNewPassword("")
+      setConfirmPassword("")
+      onSuccess()
+      onOpenChange(false)
     } catch {
       toast.error("Nastala neočekávaná chyba")
     } finally {
@@ -76,6 +103,9 @@ export function EditUserDialog({
       <DialogContent className="bg-slate-900 border-slate-800 text-white">
         <DialogHeader>
           <DialogTitle>Upravit uživatele {user.fullName}</DialogTitle>
+          <DialogDescription className="text-slate-400">
+            {user.email}
+          </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
@@ -93,6 +123,42 @@ export function EditUserDialog({
               </SelectContent>
             </Select>
           </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="password">Nové heslo (volitelné)</Label>
+            <Input
+              id="password"
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Ponechte prázdné pro zachování stávajícího"
+              className="bg-slate-800 border-slate-700"
+            />
+            {newPassword && newPassword.length < 6 && (
+              <p className="text-xs text-red-400">
+                Heslo musí mít alespoň 6 znaků
+              </p>
+            )}
+          </div>
+
+          {newPassword && (
+            <div className="grid gap-2">
+              <Label htmlFor="confirmPassword">Potvrdit heslo</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Zadejte heslo znovu"
+                className="bg-slate-800 border-slate-700"
+              />
+              {confirmPassword && !passwordsMatch && (
+                <p className="text-xs text-red-400">
+                  Hesla se neshodují
+                </p>
+              )}
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button
@@ -105,7 +171,7 @@ export function EditUserDialog({
           </Button>
           <Button
             onClick={handleSave}
-            disabled={isLoading}
+            disabled={isLoading || !passwordValid || (newPassword.length > 0 && !passwordsMatch)}
             className="bg-blue-600 hover:bg-blue-700 text-white"
           >
             {isLoading ? "Ukládání..." : "Uložit"}

@@ -59,3 +59,35 @@ export async function updateUser(
     return { success: false, error: "Failed to update user" }
   }
 }
+
+export async function changeUserPassword(
+  userId: string,
+  newPassword: string
+) {
+  const session = await auth()
+
+  if (session?.user?.role !== "ADMIN") {
+    return { success: false, error: "Neoprávněný přístup" }
+  }
+
+  if (!newPassword || newPassword.length < 6) {
+    return { success: false, error: "Heslo musí mít alespoň 6 znaků" }
+  }
+
+  try {
+    // Hash the password
+    const bcrypt = await import("bcryptjs")
+    const passwordHash = await bcrypt.hash(newPassword, 10)
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    })
+
+    revalidatePath("/dashboard/users")
+    return { success: true }
+  } catch (error) {
+    console.error("Failed to change password:", error)
+    return { success: false, error: "Nepodařilo se změnit heslo" }
+  }
+}
