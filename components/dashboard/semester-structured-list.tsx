@@ -135,12 +135,12 @@ export function SemesterStructuredList({
                           {monthTxs.map((tx) => (
                             <TableRow key={tx.id} className="border-slate-700/50 hover:bg-slate-700/20">
                               {showRequester && (
-                                <TableCell className="py-2 text-sm text-white">
+                                <TableCell className="py-2 text-sm text-white font-semibold">
                                   {tx.requester?.fullName || "Neznámý"}
                                 </TableCell>
                               )}
                               {showSection && (
-                                <TableCell className="py-2 text-xs text-slate-400">
+                                <TableCell className="py-2 text-sm text-white">
                                   {tx.section?.name || "-"}
                                 </TableCell>
                               )}
@@ -150,7 +150,7 @@ export function SemesterStructuredList({
                               <TableCell className="py-2">
                                 <p className="text-sm text-white font-medium truncate max-w-[150px]">{tx.purpose}</p>
                               </TableCell>
-                              <TableCell className="py-2 text-xs text-slate-500 italic">
+                              <TableCell className="py-2 text-sm text-white">
                                 {tx.store || "-"}
                               </TableCell>
                               <TableCell className="py-2 text-sm text-white whitespace-nowrap">

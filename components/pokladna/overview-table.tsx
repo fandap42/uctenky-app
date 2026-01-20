@@ -138,7 +138,7 @@ export function OverviewTable({ transactions, deposits }: OverviewTableProps) {
               <TableCell className="py-2 text-sm text-white whitespace-nowrap">
                 {row.date.toLocaleDateString("cs-CZ")}
               </TableCell>
-              <TableCell className="py-2 text-xs text-slate-400">
+              <TableCell className="py-2 text-sm text-white">
                 {row.section}
               </TableCell>
               <TableCell className="py-2">
@@ -153,7 +153,7 @@ export function OverviewTable({ transactions, deposits }: OverviewTableProps) {
                   </p>
                 </div>
               </TableCell>
-              <TableCell className="py-2 text-xs text-slate-500 italic">
+              <TableCell className="py-2 text-sm text-white">
                 {row.store}
               </TableCell>
               <TableCell
