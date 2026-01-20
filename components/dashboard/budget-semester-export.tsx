@@ -22,25 +22,30 @@ export function BudgetSemesterExport({ semester, sections }: BudgetSemesterExpor
       return
     }
 
-    // CSV Headers
+    // CSV Headers - semicolon separated for Czech Excel
     const headers = ["Sekce", "Vycerpano", "Cekajici", "Celkem"]
 
-    // CSV Rows
+    // CSV Rows - plain numbers with Czech decimal format
     const rows = sections.map((s) => [
       `"${s.sectionName.replace(/"/g, '""')}"`,
-      s.spent,
-      s.pending,
-      s.spent + s.pending,
+      s.spent.toFixed(2).replace(".", ","),
+      s.pending.toFixed(2).replace(".", ","),
+      (s.spent + s.pending).toFixed(2).replace(".", ","),
     ])
 
     // Add totals row
     const totalSpent = sections.reduce((sum, s) => sum + s.spent, 0)
     const totalPending = sections.reduce((sum, s) => sum + s.pending, 0)
-    rows.push(["CELKEM", totalSpent, totalPending, totalSpent + totalPending])
+    rows.push([
+      "CELKEM",
+      totalSpent.toFixed(2).replace(".", ","),
+      totalPending.toFixed(2).replace(".", ","),
+      (totalSpent + totalPending).toFixed(2).replace(".", ","),
+    ])
 
     const csvContent = [
-      headers.join(","),
-      ...rows.map((r) => r.join(",")),
+      headers.join(";"),
+      ...rows.map((r) => r.join(";")),
     ].join("\n")
 
     // Create download link with BOM for Excel UTF-8 support

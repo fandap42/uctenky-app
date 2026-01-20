@@ -98,13 +98,13 @@ export function CashRegisterExport({
       "Typ",
     ]
 
-    // Format rows
+    // Format rows - plain numbers without formatting for Excel
     const csvRows = rows.map((r) => [
       r.date.toLocaleDateString("cs-CZ"),
       `"${r.section}"`,
       `"${r.purpose.replace(/"/g, '""')}"`,
       `"${r.store.replace(/"/g, '""')}"`,
-      r.amount.toLocaleString("cs-CZ", { minimumFractionDigits: 2 }),
+      r.amount.toFixed(2).replace(".", ","), // Czech decimal separator, no thousands separator
       r.expenseType,
     ])
 
@@ -113,12 +113,12 @@ export function CashRegisterExport({
     const csvContent = [
       `Pokladna - ${monthName} ${year}`,
       "",
-      `Počáteční zůstatek;${beginningBalance.toLocaleString("cs-CZ", { minimumFractionDigits: 2 })} Kč`,
+      `Počáteční zůstatek;${beginningBalance.toFixed(2).replace(".", ",")}`,
       "",
       headers.join(";"),
       ...csvRows.map((r) => r.join(";")),
       "",
-      `Konečný zůstatek;${endingBalance.toLocaleString("cs-CZ", { minimumFractionDigits: 2 })} Kč`,
+      `Konečný zůstatek;${endingBalance.toFixed(2).replace(".", ",")}`,
     ].join("\n")
 
     // Create download link with BOM for Excel UTF-8 support
