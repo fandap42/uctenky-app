@@ -26,6 +26,7 @@ export function ReceiptUpload({ transactionId }: ReceiptUploadProps) {
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [converting, setConverting] = useState(false)
   const [progress, setProgress] = useState(0)
   const [finalAmount, setFinalAmount] = useState("")
   const [store, setStore] = useState("")
@@ -33,22 +34,60 @@ export function ReceiptUpload({ transactionId }: ReceiptUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selectedFile = e.target.files?.[0]
-    if (selectedFile) {
-      // Validate file type
+    if (!selectedFile) return
+
+    // Validate file size (5MB)
+    if (selectedFile.size > 5 * 1024 * 1024) {
+      toast.error("Soubor je příliš velký. Maximum je 5 MB.")
+      return
+    }
+
+    let processedFile = selectedFile
+
+    // Check if HEIC/HEIF and convert to JPEG
+    const fileName = selectedFile.name.toLowerCase()
+    if (fileName.endsWith('.heic') || fileName.endsWith('.heif')) {
+      try {
+        setConverting(true)
+        toast.info("Konvertuji HEIC obrázek...")
+        
+        const heic2any = (await import('heic2any')).default
+        const blob = await heic2any({ 
+          blob: selectedFile, 
+          toType: 'image/jpeg',
+          quality: 0.95 
+        })
+        
+        // heic2any can return array or single blob
+        const resultBlob = Array.isArray(blob) ? blob[0] : blob
+        
+        processedFile = new File(
+          [resultBlob], 
+          selectedFile.name.replace(/\.heic$/i, '.jpg').replace(/\.heif$/i, '.jpg'), 
+          { type: 'image/jpeg' }
+        )
+        
+        toast.success("HEIC konvertován na JPEG")
+      } catch (error) {
+        console.error("HEIC conversion error:", error)
+        toast.error("Nepodařilo se konvertovat HEIC obrázek")
+        setConverting(false)
+        return
+      } finally {
+        setConverting(false)
+      }
+    } else {
+      // Validate file type for non-HEIC
       if (!selectedFile.type.startsWith("image/")) {
         toast.error("Nahrajte prosím obrázek účtenky")
         return
       }
-      // Validate file size (5MB)
-      if (selectedFile.size > 5 * 1024 * 1024) {
-        toast.error("Soubor je příliš velký. Maximum je 5 MB.")
-        return
-      }
-      setFile(selectedFile)
-      setPreview(URL.createObjectURL(selectedFile))
     }
+
+    setFile(processedFile)
+    setPreview(URL.createObjectURL(processedFile))
   }
 
   async function handleUpload() {
@@ -176,7 +215,7 @@ export function ReceiptUpload({ transactionId }: ReceiptUploadProps) {
                     />
                   </svg>
                   <p className="text-slate-400">Klikněte pro výběr obrázku</p>
-                  <p className="text-xs text-slate-500">PNG, JPG do 5 MB</p>
+                  <p className="text-xs text-slate-500">PNG, JPG, HEIC do 5 MB</p>
                 </div>
               )}
             </div>
@@ -184,7 +223,7 @@ export function ReceiptUpload({ transactionId }: ReceiptUploadProps) {
               ref={fileInputRef}
               id="receipt"
               type="file"
-              accept="image/*"
+              accept="image/*,.heic,.heif"
               onChange={handleFileChange}
               className="hidden"
             />
