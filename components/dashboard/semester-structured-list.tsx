@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getSemester, monthNames } from "@/lib/utils/semesters"
 import { PaidStatusSelect } from "./paid-status-select"
+import { FiledStatusSelect } from "./filed-status-select"
 import { ExpenseTypeSelect } from "./expense-type-select"
 import { ApprovalActions } from "@/components/requests/approval-actions"
 import { EditTransactionDialog } from "./edit-transaction-dialog"
@@ -25,6 +26,7 @@ interface Transaction {
   store?: string | null
   status: string
   isPaid: boolean
+  isFiled: boolean
   expenseType: string
   estimatedAmount: any
   finalAmount: any
@@ -128,6 +130,7 @@ export function SemesterStructuredList({
                             <TableHead className="text-slate-400 text-xs py-2">Stav</TableHead>
                             {isAdmin && <TableHead className="text-slate-400 text-xs py-2">Typ</TableHead>}
                             {isAdmin && <TableHead className="text-slate-400 text-xs py-2">Proplaceno</TableHead>}
+                            {isAdmin && <TableHead className="text-slate-400 text-xs py-2">Založeno</TableHead>}
                             {(showActions || isAdmin) && <TableHead className="text-slate-400 text-xs py-2 text-right">Akce</TableHead>}
                           </TableRow>
                         </TableHeader>
@@ -172,6 +175,11 @@ export function SemesterStructuredList({
                               {isAdmin && (
                                 <TableCell className="py-2">
                                   <PaidStatusSelect transactionId={tx.id} initialStatus={tx.isPaid} />
+                                </TableCell>
+                              )}
+                              {isAdmin && (
+                                <TableCell className="py-2">
+                                  <FiledStatusSelect transactionId={tx.id} initialStatus={tx.isFiled} />
                                 </TableCell>
                               )}
                               {(showActions || isAdmin) && (

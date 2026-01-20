@@ -74,6 +74,7 @@ model Transaction {
   finalAmount     Decimal?    @map("final_amount") @db.Decimal(12, 2)
   receiptUrl      String?     @map("receipt_url")
   isPaid          Boolean     @default(false) @map("is_paid")
+  isFiled         Boolean     @default(false) @map("is_filed")
   expenseType     ExpenseType @default(MATERIAL) @map("expense_type")
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")

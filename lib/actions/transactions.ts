@@ -170,6 +170,39 @@ export async function updateTransactionPaidStatus(
   }
 }
 
+export async function updateTransactionFiledStatus(
+  transactionId: string,
+  isFiled: boolean
+) {
+  const session = await auth()
+
+  if (!session?.user?.id) {
+    return { error: "Nepřihlášený uživatel" }
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true },
+    })
+
+    if (user?.role !== "ADMIN") {
+      return { error: "Nemáte oprávnění k této akci" }
+    }
+
+    await prisma.transaction.update({
+      where: { id: transactionId },
+      data: { isFiled },
+    })
+
+    revalidatePath("/dashboard/admin")
+    return { success: true }
+  } catch (error) {
+    console.error("Update transaction filed status error:", error)
+    return { error: "Nepodařilo se aktualizovat stav založení" }
+  }
+}
+
 export async function updateTransactionExpenseType(
   transactionId: string,
   expenseType: "MATERIAL" | "SERVICE"
