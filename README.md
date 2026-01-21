@@ -183,10 +183,40 @@ Podrobnosti viz [Technická dokumentace](docs/TECHNICAL_DOCUMENTATION.md#testing
 
 ## 🔐 Bezpečnost
 
-- Hesla hashována pomocí bcryptjs (10 rounds)
-- HTTP-only session cookies
-- Role-based access control na všech chráněných akcích
-- Validace typů a velikosti nahrávaných souborů
+### Autentizace & Autorizace
+- **Hesla** hashována pomocí bcryptjs (10 rounds)
+- **HTTP-only session cookies** - ochrana proti XSS
+- **Role-based access control** na všech chráněných akcích
+- Všechny API endpointy vyžadují autentizaci
+
+### Ochrana API endpointů
+
+| Endpoint | Ochrana |
+|----------|---------|
+| `/api/upload` | Autentizace + ověření vlastnictví transakce |
+| `/api/auth/*` | Rate limiting + validace vstupu |
+
+### Nahrávání souborů
+- **Extension whitelist**: jpg, jpeg, png, gif, webp, heic, heif
+- **Magic byte validation** pomocí `file-type` knihovny
+- **Max velikost**: 5 MB
+- **Presigned URLs** pro přístup k souborům (7denní expirace)
+- Soubory ukládány v privátním MinIO bucketu
+
+### Rate Limiting
+- Upload endpoint: max 10 požadavků/minutu na IP
+- Ochrana proti brute-force útokům
+
+### CSP & Security Headers
+- Content Security Policy definována v `next.config.ts`
+- Doporučeno vyhněte se `'unsafe-inline'` v produkci
+
+### Doporučení pro produkci
+1. **Nikdy necommitujte** `.env` soubory do Gitu
+2. Používejte **Docker secrets** nebo vault pro citlivé údaje
+3. Nastavte **MinIO bucket policy** na private
+4. Zvažte **Redis** pro rate limiting při horizontálním škálování
+5. Pravidelně spouštějte `npm audit` pro kontrolu závislostí
 
 ## 📄 Licence
 

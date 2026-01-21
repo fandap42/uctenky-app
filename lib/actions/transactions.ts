@@ -4,12 +4,13 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { TransStatus } from "@prisma/client"
+import { MESSAGES } from "@/lib/constants/messages"
 
 export async function createTransaction(formData: FormData) {
   const session = await auth()
 
   if (!session?.user?.id) {
-    return { error: "Nepřihlášený uživatel" }
+    return { error: MESSAGES.AUTH.UNAUTHORIZED }
   }
 
   const purpose = formData.get("purpose") as string
@@ -21,11 +22,11 @@ export async function createTransaction(formData: FormData) {
   const status = (formData.get("status") as TransStatus) || "DRAFT"
 
   if (!purpose || !estimatedAmount) {
-    return { error: "Vyplňte všechna povinná pole" }
+    return { error: MESSAGES.TRANSACTION.MISSING_FIELDS }
   }
 
   if (!sectionId) {
-    return { error: "Vyberte sekci" }
+    return { error: MESSAGES.TRANSACTION.MISSING_SECTION }
   }
 
   try {
@@ -46,7 +47,7 @@ export async function createTransaction(formData: FormData) {
     return { success: true }
   } catch (error) {
     console.error("Create transaction error:", error)
-    return { error: "Nepodařilo se vytvořit žádost" }
+    return { error: MESSAGES.TRANSACTION.CREATE_FAILED }
   }
 }
 
@@ -68,7 +69,7 @@ export async function updateTransactionStatus(
     })
 
     if (user?.role !== "ADMIN") {
-      return { error: "Nemáte oprávnění k této akci. Pouze administrátor může schvalovat žádosti." }
+      return { error: MESSAGES.TRANSACTION.ADMIN_APPROVAL_REQUIRED }
     }
 
     await prisma.transaction.update({
@@ -83,7 +84,7 @@ export async function updateTransactionStatus(
     return { success: true }
   } catch (error) {
     console.error("Update transaction status error:", error)
-    return { error: "Nepodařilo se aktualizovat žádost" }
+    return { error: MESSAGES.TRANSACTION.UPDATE_FAILED }
   }
 }
 
@@ -108,12 +109,12 @@ export async function updateTransactionReceipt(
     })
 
     if (!transaction) {
-      return { error: "Žádost nebyla nalezena" }
+      return { error: MESSAGES.TRANSACTION.NOT_FOUND }
     }
 
     const isAdmin = session.user.role === "ADMIN"
     if (transaction.requesterId !== session.user.id && !isAdmin) {
-      return { error: "Nemáte oprávnění k této akci" }
+      return { error: MESSAGES.AUTH.FORBIDDEN }
     }
 
     await prisma.transaction.update({
@@ -133,7 +134,7 @@ export async function updateTransactionReceipt(
     return { success: true }
   } catch (error) {
     console.error("Update transaction receipt error:", error)
-    return { error: "Nepodařilo se nahrát účtenku" }
+    return { error: MESSAGES.TRANSACTION.RECEIPT_UPLOAD_FAILED }
   }
 }
 
@@ -166,7 +167,7 @@ export async function updateTransactionPaidStatus(
     return { success: true }
   } catch (error) {
     console.error("Update transaction paid status error:", error)
-    return { error: "Nepodařilo se aktualizovat stav proplacení" }
+    return { error: MESSAGES.TRANSACTION.PAID_STATUS_FAILED }
   }
 }
 
@@ -199,7 +200,7 @@ export async function updateTransactionFiledStatus(
     return { success: true }
   } catch (error) {
     console.error("Update transaction filed status error:", error)
-    return { error: "Nepodařilo se aktualizovat stav založení" }
+    return { error: MESSAGES.TRANSACTION.FILED_STATUS_FAILED }
   }
 }
 
@@ -233,7 +234,7 @@ export async function updateTransactionExpenseType(
     return { success: true }
   } catch (error) {
     console.error("Update transaction expense type error:", error)
-    return { error: "Nepodařilo se aktualizovat typ výdaje" }
+    return { error: MESSAGES.TRANSACTION.EXPENSE_TYPE_FAILED }
   }
 }
 
@@ -251,7 +252,7 @@ export async function deleteTransaction(transactionId: string) {
     })
 
     if (!transaction) {
-      return { error: "Žádost nebyla nalezena" }
+      return { error: MESSAGES.TRANSACTION.NOT_FOUND }
     }
 
     const isAdmin = session.user.role === "ADMIN"
@@ -259,7 +260,7 @@ export async function deleteTransaction(transactionId: string) {
     const isDeletableByOwner = isOwner && (transaction.status === "DRAFT" || transaction.status === "PENDING")
 
     if (!isAdmin && !isDeletableByOwner) {
-      return { error: "Nemáte oprávnění k smazání této žádosti v jejím aktuálním stavu." }
+      return { error: MESSAGES.TRANSACTION.DELETE_FORBIDDEN }
     }
 
     await prisma.transaction.delete({
@@ -271,7 +272,7 @@ export async function deleteTransaction(transactionId: string) {
     return { success: true }
   } catch (error) {
     console.error("Delete transaction error:", error)
-    return { error: "Nepodařilo se smazat žádost" }
+    return { error: MESSAGES.TRANSACTION.DELETE_FAILED }
   }
 }
 
@@ -279,7 +280,7 @@ export async function removeReceipt(transactionId: string) {
   const session = await auth()
 
   if (session?.user?.role !== "ADMIN") {
-    return { error: "Oprávnění pouze pro administrátora" }
+    return { error: MESSAGES.AUTH.ADMIN_ONLY }
   }
 
   try {
@@ -296,7 +297,7 @@ export async function removeReceipt(transactionId: string) {
     revalidatePath("/dashboard/admin")
     return { success: true }
   } catch (error) {
-    return { error: "Nepodařilo se odstranit účtenku" }
+    return { error: MESSAGES.TRANSACTION.RECEIPT_REMOVE_FAILED }
   }
 }
 
@@ -341,7 +342,7 @@ export async function updateTransactionDetails(
     return { success: true }
   } catch (error) {
     console.error("Update transaction details error:", error)
-    return { error: "Nepodařilo se aktualizovat žádost" }
+    return { error: MESSAGES.TRANSACTION.UPDATE_FAILED }
   }
 }
 
@@ -355,7 +356,7 @@ export async function deleteUser(userId: string) {
   try {
     // Check if user is deleting themselves
     if (session.user.id === userId) {
-      return { error: "Nelze smazat vlastní účet" }
+      return { error: MESSAGES.USER.CANNOT_DELETE_SELF }
     }
 
     await prisma.user.delete({
@@ -365,6 +366,6 @@ export async function deleteUser(userId: string) {
     revalidatePath("/dashboard/users")
     return { success: true }
   } catch (error) {
-    return { error: "Nepodařilo se smazat uživatele. Uživatel pravděpodobně má existující žádosti." }
+    return { error: MESSAGES.USER.DELETE_FAILED }
   }
 }

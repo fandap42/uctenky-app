@@ -344,22 +344,29 @@ uctenky-app/
 │   │   ├── overview-table.tsx
 │   │   └── cash-register-export.tsx
 │   ├── receipts/                 # Receipt components
-│   │   └── receipt-upload.tsx
+│   │   └── receipt-upload.tsx    # UI component for upload
 │   ├── requests/                 # Request components
 │   │   ├── new-request-dialog.tsx
 │   │   └── approval-actions.tsx
 │   └── ui/                       # Shadcn/UI components
+│
+├── hooks/                        # React hooks
+│   └── useReceiptUpload.ts       # Upload logic and state
 │
 ├── lib/                          # Utilities and configurations
 │   ├── actions/                  # Server actions
 │   │   ├── transactions.ts       # Transaction CRUD
 │   │   ├── cash-register.ts      # Cash register operations
 │   │   └── semesters.ts          # Semester utilities
+│   ├── constants/                # App constants
+│   │   └── messages.ts           # Centralized Czech messages
 │   ├── prisma.ts                 # Prisma client
-│   ├── s3.ts                      # MinIO/S3 storage client
+│   ├── s3.ts                     # MinIO/S3 storage client
 │   └── utils/                    # Utility functions
 │       ├── semesters.ts          # Semester calculations
-│       └── roles.ts              # Role utilities
+│       ├── roles.ts              # Role utilities
+│       ├── rate-limit.ts         # Rate limiting class
+│       └── file-validator.ts     # File validation logic
 │
 ├── prisma/                       # Prisma configuration
 │   ├── schema.prisma             # Database schema
@@ -446,6 +453,12 @@ NextAuth.js authentication endpoints.
 
 ### `/api/upload` (POST)
 Handles receipt file uploads to MinIO S3-compatible storage.
+
+**Security Features:**
+- **Authentication**: Requires a valid user session.
+- **Ownership Verification**: Verifies that the `transactionId` belongs to the authenticated user (or user is ADMIN).
+- **Rate Limiting**: Limited to 10 requests per minute per IP.
+- **Deep Validation**: Inspects file magic bytes (not just MIME type) and whitelists extensions.
 
 **Request:**
 - `FormData` with `file` and `transactionId`
@@ -633,7 +646,9 @@ uctenky-app/
 ├── __tests__/                    # Test directory
 │   ├── unit/                     # Unit tests
 │   │   ├── semesters.test.ts
-│   │   └── roles.test.ts
+│   │   ├── roles.test.ts
+│   │   ├── file-validator.test.ts
+│   │   └── rate-limit.test.ts
 │   ├── integration/              # Integration tests
 │   │   ├── transactions.test.ts
 │   │   └── cash-register.test.ts
@@ -683,9 +698,15 @@ npm run test:watch
 1. **Password Hashing**: bcryptjs with salt rounds of 10
 2. **Session Security**: HTTP-only cookies, secure in production
 3. **CSRF Protection**: Built-in Next.js protection
-4. **Input Validation**: Server-side validation in all actions
+4. **Input Validation**: Server-side validation in all actions using Zod or custom logic
 5. **Role Checks**: Every protected action verifies user role
-6. **File Upload**: Type and size validation (5MB limit)
+6. **File Upload**: 
+   - Strict extension whitelist (`jpg, jpeg, png, gif, webp, heic, heif`)
+   - Magic byte inspection using `file-type`
+   - Size limit (5MB)
+7. **Transaction Ownership**: API endpoints verify user owns the data they are modifying
+8. **Rate Limiting**: Centralized `RateLimiter` class for sensitive endpoints
+9. **Centralized Messaging**: Consistent error messages through `lib/constants/messages.ts`
 
 ---
 
@@ -699,5 +720,5 @@ npm run test:watch
 
 ---
 
-*4FISuctenky Technical Documentation - Version 1.0*
-*Last Updated: January 2026*
+*4FISuctenky Technical Documentation - Version 1.1*
+*Last Updated: January 21, 2026*

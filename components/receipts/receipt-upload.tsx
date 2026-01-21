@@ -1,7 +1,5 @@
 "use client"
 
-import { useState, useRef } from "react"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,8 +12,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { updateTransactionReceipt } from "@/lib/actions/transactions"
-import { toast } from "sonner"
+import { useState } from "react"
+import { useReceiptUpload } from "@/hooks/useReceiptUpload"
 
 interface ReceiptUploadProps {
   transactionId: string
@@ -23,132 +21,17 @@ interface ReceiptUploadProps {
 
 export function ReceiptUpload({ transactionId }: ReceiptUploadProps) {
   const [open, setOpen] = useState(false)
-  const [file, setFile] = useState<File | null>(null)
-  const [preview, setPreview] = useState<string | null>(null)
-  const [uploading, setUploading] = useState(false)
-  const [converting, setConverting] = useState(false)
-  const [progress, setProgress] = useState(0)
-  const [finalAmount, setFinalAmount] = useState("")
-  const [store, setStore] = useState("")
-  const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split('T')[0])
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const router = useRouter()
-
-  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const selectedFile = e.target.files?.[0]
-    if (!selectedFile) return
-
-    // Validate file size (5MB)
-    if (selectedFile.size > 5 * 1024 * 1024) {
-      toast.error("Soubor je příliš velký. Maximum je 5 MB.")
-      return
-    }
-
-    let processedFile = selectedFile
-
-    // Check if HEIC/HEIF and convert to JPEG
-    const fileName = selectedFile.name.toLowerCase()
-    if (fileName.endsWith('.heic') || fileName.endsWith('.heif')) {
-      try {
-        setConverting(true)
-        toast.info("Konvertuji HEIC obrázek...")
-        
-        const heic2any = (await import('heic2any')).default
-        const blob = await heic2any({ 
-          blob: selectedFile, 
-          toType: 'image/jpeg',
-          quality: 0.95 
-        })
-        
-        // heic2any can return array or single blob
-        const resultBlob = Array.isArray(blob) ? blob[0] : blob
-        
-        processedFile = new File(
-          [resultBlob], 
-          selectedFile.name.replace(/\.heic$/i, '.jpg').replace(/\.heif$/i, '.jpg'), 
-          { type: 'image/jpeg' }
-        )
-        
-        toast.success("HEIC konvertován na JPEG")
-      } catch (error) {
-        console.error("HEIC conversion error:", error)
-        toast.error("Nepodařilo se konvertovat HEIC obrázek")
-        setConverting(false)
-        return
-      } finally {
-        setConverting(false)
-      }
-    } else {
-      // Validate file type for non-HEIC
-      if (!selectedFile.type.startsWith("image/")) {
-        toast.error("Nahrajte prosím obrázek účtenky")
-        return
-      }
-    }
-
-    setFile(processedFile)
-    setPreview(URL.createObjectURL(processedFile))
-  }
-
-  async function handleUpload() {
-    if (!file) {
-      toast.error("Vyberte prosím soubor")
-      return
-    }
-
-    setUploading(true)
-    setProgress(10)
-
-    try {
-      // Upload file to API
-      const formData = new FormData()
-      formData.append("file", file)
-      formData.append("transactionId", transactionId)
-
-      setProgress(30)
-
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Upload se nezdařil")
-      }
-
-      setProgress(70)
-
-      const { url } = await response.json()
-
-      // Update transaction with receipt URL
-      const result = await updateTransactionReceipt(
-        transactionId,
-        url,
-        finalAmount ? parseFloat(finalAmount) : undefined,
-        store || undefined,
-        purchaseDate ? new Date(purchaseDate) : undefined
-      )
-
-      setProgress(100)
-
-      if (result.error) {
-        toast.error(result.error)
-      } else {
-        toast.success("Účtenka byla úspěšně nahrána")
-        setOpen(false)
-        router.refresh()
-      }
-    } catch (error) {
-      console.error("Upload error:", error)
-      toast.error(error instanceof Error ? error.message : "Nahrání se nezdařilo")
-    } finally {
-      setUploading(false)
-      setProgress(0)
-      setFile(null)
-      setPreview(null)
-    }
-  }
+  
+  const {
+    state,
+    fileInputRef,
+    updateState,
+    handleFileChange,
+    handleUpload,
+  } = useReceiptUpload({
+    transactionId,
+    onSuccess: () => setOpen(false),
+  })
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -189,14 +72,14 @@ export function ReceiptUpload({ transactionId }: ReceiptUploadProps) {
               className="border-2 border-dashed border-slate-600 rounded-lg p-6 text-center cursor-pointer hover:border-blue-500/50 transition-colors"
               onClick={() => fileInputRef.current?.click()}
             >
-              {preview ? (
+              {state.preview ? (
                 <div className="space-y-2">
                   <img
-                    src={preview}
+                    src={state.preview}
                     alt="Náhled účtenky"
                     className="max-h-48 mx-auto rounded-lg"
                   />
-                  <p className="text-sm text-slate-400">{file?.name}</p>
+                  <p className="text-sm text-slate-400">{state.file?.name}</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -237,14 +120,14 @@ export function ReceiptUpload({ transactionId }: ReceiptUploadProps) {
             <Input
               id="store"
               type="text"
-              value={store}
-              onChange={(e) => setStore(e.target.value)}
+              value={state.store}
+              onChange={(e) => updateState({ store: e.target.value })}
               placeholder="Např. Lidl, Alza..."
               className="bg-slate-900 border-slate-700 text-white"
             />
           </div>
 
-          {/* Purchase date (real date from receipt) */}
+          {/* Purchase date */}
           <div className="space-y-2">
             <Label htmlFor="purchaseDate" className="text-slate-300">
               Datum nákupu (z účtenky) *
@@ -252,8 +135,8 @@ export function ReceiptUpload({ transactionId }: ReceiptUploadProps) {
             <Input
               id="purchaseDate"
               type="date"
-              value={purchaseDate}
-              onChange={(e) => setPurchaseDate(e.target.value)}
+              value={state.purchaseDate}
+              onChange={(e) => updateState({ purchaseDate: e.target.value })}
               required
               className="bg-slate-900 border-slate-700 text-white"
             />
@@ -268,19 +151,19 @@ export function ReceiptUpload({ transactionId }: ReceiptUploadProps) {
               id="finalAmount"
               type="number"
               step="0.01"
-              value={finalAmount}
-              onChange={(e) => setFinalAmount(e.target.value)}
+              value={state.finalAmount}
+              onChange={(e) => updateState({ finalAmount: e.target.value })}
               placeholder="0.00"
               className="bg-slate-900 border-slate-700 text-white"
             />
           </div>
 
           {/* Progress bar */}
-          {uploading && (
+          {state.uploading && (
             <div className="space-y-2">
-              <Progress value={progress} className="h-2" />
+              <Progress value={state.progress} className="h-2" />
               <p className="text-xs text-center text-slate-400">
-                Nahrávání... {progress}%
+                Nahrávání... {state.progress}%
               </p>
             </div>
           )}
@@ -290,17 +173,17 @@ export function ReceiptUpload({ transactionId }: ReceiptUploadProps) {
             <Button
               variant="ghost"
               onClick={() => setOpen(false)}
-              disabled={uploading}
+              disabled={state.uploading}
               className="text-slate-400 hover:text-white"
             >
               Zrušit
             </Button>
             <Button
               onClick={handleUpload}
-              disabled={!file || uploading}
+              disabled={!state.file || state.uploading}
               className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
             >
-              {uploading ? "Nahrávám..." : "Nahrát"}
+              {state.uploading ? "Nahrávám..." : "Nahrát"}
             </Button>
           </div>
         </div>
