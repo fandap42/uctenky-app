@@ -191,9 +191,10 @@ export function SemesterStructuredList({
                                           <DeleteButton
                                             onDelete={() => removeReceipt(tx.id)}
                                             iconOnly
+                                            variant="undo"
                                             title="Odstranit účtenku?"
                                             description="Žádost bude vrácena do stavu 'Schváleno'."
-                                            className="text-yellow-500 hover:text-yellow-600 hover:bg-yellow-500/10"
+                                            className="text-orange-500 hover:text-orange-600 hover:bg-orange-500/10"
                                           />
                                         )}
                                         <EditTransactionDialog transaction={tx} />
