@@ -33,8 +33,10 @@ export function CashOnHandDialog({ currentTotal, onSuccess }: CashOnHandDialogPr
     e.preventDefault()
     setLoading(true)
 
+    const formData = new FormData(e.currentTarget)
+    const honeypot = formData.get("website_honey") as string
     const finalAmount = isAdding ? parseFloat(amount) : -parseFloat(amount)
-    const result = await createCashOnHand(finalAmount, reason)
+    const result = await createCashOnHand(finalAmount, reason, honeypot)
 
     setLoading(false)
 
@@ -80,6 +82,16 @@ export function CashOnHandDialog({ currentTotal, onSuccess }: CashOnHandDialogPr
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            {/* Honeypot field - visually hidden, should not be filled by users */}
+            <div className="hidden" aria-hidden="true">
+              <Label htmlFor="website_honey">Website</Label>
+              <Input
+                id="website_honey"
+                name="website_honey"
+                tabIndex={-1}
+                autoComplete="off"
+              />
+            </div>
             <div className="flex gap-2">
               <Button
                 type="button"

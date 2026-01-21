@@ -48,6 +48,7 @@ export function EditTransactionDialog({ transaction }: EditTransactionDialogProp
     const dueDateStr = formData.get("dueDate") as string
     const dueDate = dueDateStr ? new Date(dueDateStr) : null
     const status = formData.get("status") as TransStatus
+    const honeypot = formData.get("middle_name_honey") as string
 
     const result = await updateTransactionDetails(transaction.id, {
       purpose,
@@ -56,6 +57,7 @@ export function EditTransactionDialog({ transaction }: EditTransactionDialogProp
       finalAmount,
       dueDate,
       status,
+      middle_name_honey: honeypot,
     })
 
     if (result.error) {
@@ -104,6 +106,16 @@ export function EditTransactionDialog({ transaction }: EditTransactionDialogProp
                 name="store"
                 defaultValue={transaction.store || ""}
                 className="bg-slate-900 border-slate-700 text-white"
+              />
+            </div>
+            {/* Honeypot field - visually hidden, should not be filled by users */}
+            <div className="hidden" aria-hidden="true">
+              <Label htmlFor="middle_name_honey">Middle Name</Label>
+              <Input
+                id="middle_name_honey"
+                name="middle_name_honey"
+                tabIndex={-1}
+                autoComplete="off"
               />
             </div>
             <div className="space-y-2">

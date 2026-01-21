@@ -707,6 +707,7 @@ npm run test:watch
 7. **Transaction Ownership**: API endpoints verify user owns the data they are modifying
 8. **Rate Limiting**: Centralized `RateLimiter` class for sensitive endpoints
 9. **Centralized Messaging**: Consistent error messages through `lib/constants/messages.ts`
+10. **Honeypot Protection**: Hidden fields in public and sensitive forms to detect and block automated bot submissions.
 
 ---
 

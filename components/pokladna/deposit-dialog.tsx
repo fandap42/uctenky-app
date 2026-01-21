@@ -32,10 +32,14 @@ export function DepositDialog({ onSuccess }: DepositDialogProps) {
     e.preventDefault()
     setLoading(true)
 
+    const formData = new FormData(e.currentTarget)
+    const honeypot = formData.get("organization_honey") as string
+
     const result = await createDeposit(
       parseFloat(amount),
       description || null,
-      new Date(date)
+      new Date(date),
+      honeypot
     )
 
     setLoading(false)
@@ -82,6 +86,16 @@ export function DepositDialog({ onSuccess }: DepositDialogProps) {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            {/* Honeypot field - visually hidden, should not be filled by users */}
+            <div className="hidden" aria-hidden="true">
+              <Label htmlFor="organization_honey">Organization</Label>
+              <Input
+                id="organization_honey"
+                name="organization_honey"
+                tabIndex={-1}
+                autoComplete="off"
+              />
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="amount" className="text-slate-300">
                 Částka (Kč) *

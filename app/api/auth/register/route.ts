@@ -1,15 +1,25 @@
 import { NextRequest, NextResponse } from "next/server"
 import { hash } from "bcryptjs"
 import { prisma } from "@/lib/prisma"
+import { MESSAGES } from "@/lib/constants/messages"
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email, password, fullName } = body
+    const { email, password, fullName, address_honey } = body
+
+    // Honeypot check
+    if (address_honey) {
+      console.warn("Registration honeypot filled, bot detected")
+      return NextResponse.json(
+        { error: MESSAGES.SECURITY.BOT_DETECTED },
+        { status: 400 }
+      )
+    }
 
     if (!email || !password || !fullName) {
       return NextResponse.json(
-        { error: "Vyplňte všechna povinná pole" },
+        { error: MESSAGES.TRANSACTION.MISSING_FIELDS },
         { status: 400 }
       )
     }

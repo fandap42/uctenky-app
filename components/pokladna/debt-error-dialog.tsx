@@ -33,8 +33,10 @@ export function DebtErrorDialog({ currentTotal, onSuccess }: DebtErrorDialogProp
     e.preventDefault()
     setLoading(true)
 
+    const formData = new FormData(e.currentTarget)
+    const honeypot = formData.get("phone_honey") as string
     const finalAmount = isAdding ? parseFloat(amount) : -parseFloat(amount)
-    const result = await createDebtError(finalAmount, reason)
+    const result = await createDebtError(finalAmount, reason, honeypot)
 
     setLoading(false)
 
@@ -80,6 +82,16 @@ export function DebtErrorDialog({ currentTotal, onSuccess }: DebtErrorDialogProp
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            {/* Honeypot field - visually hidden, should not be filled by users */}
+            <div className="hidden" aria-hidden="true">
+              <Label htmlFor="phone_honey">Phone</Label>
+              <Input
+                id="phone_honey"
+                name="phone_honey"
+                tabIndex={-1}
+                autoComplete="off"
+              />
+            </div>
             <div className="flex gap-2">
               <Button
                 type="button"

@@ -13,6 +13,13 @@ export async function createTransaction(formData: FormData) {
     return { error: MESSAGES.AUTH.UNAUTHORIZED }
   }
 
+  // Honeypot check for bots
+  const honeypot = formData.get("full_name_honey") as string
+  if (honeypot) {
+    console.warn("Honeypot filled, bot detected")
+    return { error: MESSAGES.SECURITY.BOT_DETECTED }
+  }
+
   const purpose = formData.get("purpose") as string
   const store = formData.get("store") as string
   const estimatedAmount = parseFloat(formData.get("estimatedAmount") as string)
@@ -310,12 +317,19 @@ export async function updateTransactionDetails(
     finalAmount?: number
     dueDate?: Date | null
     status?: TransStatus
+    middle_name_honey?: string
   }
 ) {
   const session = await auth()
 
   if (!session?.user?.id) {
-    return { error: "Nepřihlášený uživatel" }
+    return { error: MESSAGES.AUTH.UNAUTHORIZED }
+  }
+
+  // Honeypot check
+  if (data.middle_name_honey) {
+    console.warn("Update transaction honeypot filled, bot detected")
+    return { error: MESSAGES.SECURITY.BOT_DETECTED }
   }
 
   try {
@@ -325,7 +339,7 @@ export async function updateTransactionDetails(
     })
 
     if (user?.role !== "ADMIN") {
-      return { error: "Nemáte oprávnění k této akci" }
+      return { error: MESSAGES.AUTH.FORBIDDEN }
     }
 
     await prisma.transaction.update({

@@ -54,6 +54,10 @@ export const MESSAGES = {
   RATE_LIMIT: {
     TOO_MANY_REQUESTS: "Příliš mnoho požadavků. Zkuste to prosím později.",
   },
+  
+  SECURITY: {
+    BOT_DETECTED: "Detekována podezřelá aktivita botů.",
+  },
 } as const
 
 // Type helper for accessing messages

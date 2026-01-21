@@ -99,6 +99,16 @@ export function RequestForm({ trigger, sections }: RequestFormProps) {
               </SelectContent>
             </Select>
           </div>
+          {/* Honeypot field - visually hidden, should not be filled by users */}
+          <div className="hidden" aria-hidden="true">
+            <Label htmlFor="full_name_honey">Full Name</Label>
+            <Input
+              id="full_name_honey"
+              name="full_name_honey"
+              tabIndex={-1}
+              autoComplete="off"
+            />
+          </div>
           <div className="space-y-2">
             <Label htmlFor="purpose" className="text-slate-300">
               Účel výdaje *

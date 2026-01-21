@@ -3,18 +3,25 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
+import { MESSAGES } from "@/lib/constants/messages"
 
 // ============== DEPOSITS ==============
 
 export async function createDeposit(
   amount: number,
   description: string | null,
-  date: Date
+  date: Date,
+  honeypot?: string
 ) {
   const session = await auth()
 
+  if (honeypot) {
+    console.warn("Deposit honeypot filled, bot detected")
+    return { error: MESSAGES.SECURITY.BOT_DETECTED }
+  }
+
   if (session?.user?.role !== "ADMIN") {
-    return { error: "Oprávnění pouze pro administrátora" }
+    return { error: MESSAGES.AUTH.ADMIN_ONLY }
   }
 
   try {
@@ -30,7 +37,7 @@ export async function createDeposit(
     return { success: true }
   } catch (error) {
     console.error("Create deposit error:", error)
-    return { error: "Nepodařilo se vytvořit vklad" }
+    return { error: "Nepodařilo se vytvořit vklad" } // This can stay or be moved to MESSAGES if I want to be 100% thorough
   }
 }
 
@@ -38,7 +45,7 @@ export async function deleteDeposit(depositId: string) {
   const session = await auth()
 
   if (session?.user?.role !== "ADMIN") {
-    return { error: "Oprávnění pouze pro administrátora" }
+    return { error: MESSAGES.AUTH.ADMIN_ONLY }
   }
 
   try {
@@ -56,11 +63,16 @@ export async function deleteDeposit(depositId: string) {
 
 // ============== DEBT ERRORS ==============
 
-export async function createDebtError(amount: number, reason: string) {
+export async function createDebtError(amount: number, reason: string, honeypot?: string) {
   const session = await auth()
 
+  if (honeypot) {
+    console.warn("Debt error honeypot filled, bot detected")
+    return { error: MESSAGES.SECURITY.BOT_DETECTED }
+  }
+
   if (session?.user?.role !== "ADMIN") {
-    return { error: "Oprávnění pouze pro administrátora" }
+    return { error: MESSAGES.AUTH.ADMIN_ONLY }
   }
 
   if (!reason.trim()) {
@@ -105,11 +117,16 @@ export async function deleteDebtError(debtErrorId: string) {
 
 // ============== CASH ON HAND ==============
 
-export async function createCashOnHand(amount: number, reason: string) {
+export async function createCashOnHand(amount: number, reason: string, honeypot?: string) {
   const session = await auth()
 
+  if (honeypot) {
+    console.warn("Cash on hand honeypot filled, bot detected")
+    return { error: MESSAGES.SECURITY.BOT_DETECTED }
+  }
+
   if (session?.user?.role !== "ADMIN") {
-    return { error: "Oprávnění pouze pro administrátora" }
+    return { error: MESSAGES.AUTH.ADMIN_ONLY }
   }
 
   if (!reason.trim()) {

@@ -22,6 +22,7 @@ export default function RegisterPage() {
     const password = formData.get("password") as string
     const confirmPassword = formData.get("confirmPassword") as string
     const fullName = formData.get("fullName") as string
+    const honeypot = formData.get("address_honey") as string
 
     if (password !== confirmPassword) {
       toast.error("Hesla se neshodují")
@@ -39,7 +40,7 @@ export default function RegisterPage() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, fullName }),
+        body: JSON.stringify({ email, password, fullName, address_honey: honeypot }),
       })
 
       const data = await res.json()
@@ -97,6 +98,16 @@ export default function RegisterPage() {
                 placeholder="Jan Novák"
                 required
                 className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500"
+              />
+            </div>
+            {/* Honeypot field - visually hidden, should not be filled by users */}
+            <div className="hidden" aria-hidden="true">
+              <Label htmlFor="address_honey">Address</Label>
+              <Input
+                id="address_honey"
+                name="address_honey"
+                tabIndex={-1}
+                autoComplete="off"
               />
             </div>
             <div className="space-y-2">
