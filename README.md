@@ -139,6 +139,28 @@ npm run start    # Produkční server
 npm run lint     # ESLint kontrola
 ```
 
+## 🧪 Testování (lokální)
+
+Aplikace používá Vitest pro unit/integration testy a Playwright pro E2E testy. Doporučuje se spouštět tyto testy **ručně před každým nasazením (deployem)** do produkce.
+
+```bash
+npm run test           # Unit a integration testy
+npm run test:e2e       # E2E testy (Playwright)
+npm run test:coverage  # Report pokrytí
+npm run test:watch     # Watch mode
+```
+
+### Co testovat
+
+| Priorita | Oblast | Příklady |
+|----------|--------|----------|
+| 🔴 Vysoká | Utility funkce | `lib/utils/semesters.ts`, `lib/utils/roles.ts` |
+| 🔴 Vysoká | Server actions | `lib/actions/transactions.ts`, oprávnění |
+| 🟡 Střední | E2E workflow | Přihlášení, schválení žádosti, nahrání účtenky |
+| 🟢 Nižší | Komponenty | Interaktivní UI komponenty |
+
+Podrobnosti viz [Technická dokumentace](docs/TECHNICAL_DOCUMENTATION.md#testing).
+
 ## 🔐 Bezpečnost
 
 - Hesla hashována pomocí bcryptjs (10 rounds)

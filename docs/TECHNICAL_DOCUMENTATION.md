@@ -516,6 +516,168 @@ CMD ["npm", "start"]
 
 ---
 
+## Testing
+
+### Testing Strategy Overview
+
+The application should be tested at multiple levels to ensure reliability and maintainability:
+
+```mermaid
+graph TD
+    subgraph Tests["Testing Pyramid"]
+        E2E["E2E Tests<br/>(Playwright)"]
+        INT["Integration Tests<br/>(Vitest + Test DB)"]
+        UNIT["Unit Tests<br/>(Vitest)"]
+    end
+    
+    E2E --> INT
+    INT --> UNIT
+    
+    style UNIT fill:#4ade80
+    style INT fill:#60a5fa
+    style E2E fill:#f472b6
+```
+
+### Recommended Testing Stack
+
+| Test Type | Tool | Purpose |
+|-----------|------|---------|
+| Unit Tests | Vitest | Fast, ESM-native, TypeScript support |
+| Integration Tests | Vitest + Prisma | Server actions with database |
+| E2E Tests | Playwright | Full user flow testing |
+| Component Tests | React Testing Library | UI component behavior |
+
+### What to Test
+
+#### 1. Unit Tests (High Priority)
+
+Pure utility functions that can be tested in isolation:
+
+**`lib/utils/semesters.ts`**
+```typescript
+// Test cases for getSemester():
+// - September 2025 → "ZS25"
+// - January 2026 → "ZS25" (belongs to previous semester)
+// - February 2026 → "LS26"
+// - December 2025 → "ZS25"
+// - Year boundary edge cases
+```
+
+**`lib/utils/roles.ts`**
+```typescript
+// Test cases:
+// - isHeadRole("HEAD_FINANCE") → true
+// - isHeadRole("MEMBER") → false
+// - isAdmin("ADMIN") → true
+// - getSectionForRole("HEAD_HR") → "HR"
+// - canViewSection("ADMIN", "Finance") → true
+// - canViewSection("HEAD_HR", "Finance") → false
+```
+
+#### 2. Integration Tests (High Priority)
+
+Server actions with mocked/test database:
+
+**`lib/actions/transactions.ts`**
+| Function | Key Test Scenarios |
+|----------|-------------------|
+| `createTransaction` | Valid creation, missing fields, unauthorized user |
+| `updateTransactionStatus` | ADMIN-only enforcement, valid state transitions |
+| `updateTransactionReceipt` | Owner vs non-owner access, status change to PURCHASED |
+| `deleteTransaction` | Owner can delete DRAFT/PENDING, ADMIN can delete any |
+
+**`lib/actions/cash-register.ts`**
+| Function | Key Test Scenarios |
+|----------|-------------------|
+| `getAllCashRegisterData` | Balance calculations, real cash formula |
+| `createDeposit` | ADMIN-only, positive amounts |
+| `getBalanceAtDate` | Historical balance accuracy |
+
+**Authorization Matrix Tests:**
+```typescript
+// Verify that non-ADMIN users cannot:
+// - Approve/reject transactions
+// - Update paid/filed status
+// - Modify expense types
+// - Access cash register operations
+```
+
+#### 3. Authentication Tests (High Priority)
+
+**`auth.ts`**
+- Valid credentials return user object
+- Invalid password returns null
+- Non-existent user returns null
+- Password hash comparison
+
+**`middleware.ts`**
+- Unauthenticated user redirected from `/dashboard/*`
+- Authenticated user redirected from `/login`
+- Root path redirects appropriately
+
+#### 4. E2E Tests (Medium Priority)
+
+Complete user workflows using Playwright:
+
+| Flow | Steps |
+|------|-------|
+| Member Request | Login → Create request → Submit → View in list |
+| Admin Approval | Login as ADMIN → View requests → Approve → Verify status |
+| Receipt Upload | Login → Select approved request → Upload image → Confirm |
+| Cash Register | Login as ADMIN → Add deposit → View balance update |
+
+### Test File Structure
+
+```
+uctenky-app/
+├── __tests__/                    # Test directory
+│   ├── unit/                     # Unit tests
+│   │   ├── semesters.test.ts
+│   │   └── roles.test.ts
+│   ├── integration/              # Integration tests
+│   │   ├── transactions.test.ts
+│   │   └── cash-register.test.ts
+│   └── e2e/                      # E2E tests (Playwright)
+│       ├── auth.spec.ts
+│       └── workflows.spec.ts
+├── vitest.config.ts              # Vitest configuration
+└── playwright.config.ts          # Playwright configuration
+```
+
+### Database Testing Strategy
+
+For integration tests involving Prisma:
+
+1. **Option A: Separate Test Database**
+   - Use `DATABASE_URL` pointing to dedicated test PostgreSQL instance
+   - Reset database between test runs with `prisma migrate reset`
+
+2. **Option B: In-Memory Database (SQLite)**
+   - Faster but may have compatibility differences
+   - Use Prisma's `--preview-feature` for SQLite
+
+3. **Option C: Transaction Rollback**
+   - Wrap each test in a transaction
+   - Rollback after test completion
+
+### Running Tests
+
+```bash
+# Unit and Integration tests
+npm run test
+
+# E2E tests
+npm run test:e2e
+
+# Coverage report
+npm run test:coverage
+
+# Watch mode during development
+npm run test:watch
+```
+
+---
+
 ## Security Considerations
 
 1. **Password Hashing**: bcryptjs with salt rounds of 10
