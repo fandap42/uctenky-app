@@ -1,42 +1,17 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { toast } from "sonner"
-import { Section } from "@prisma/client"
 
 export default function RegisterPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
-  const [sections, setSections] = useState<Section[]>([])
-  const [selectedSectionId, setSelectedSectionId] = useState<string>("")
-
-  useEffect(() => {
-    async function fetchSections() {
-      try {
-        const res = await fetch("/api/sections")
-        if (res.ok) {
-          const data = await res.json()
-          setSections(data)
-        }
-      } catch (error) {
-        console.error("Failed to fetch sections:", error)
-      }
-    }
-    fetchSections()
-  }, [])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -47,12 +22,7 @@ export default function RegisterPage() {
     const password = formData.get("password") as string
     const confirmPassword = formData.get("confirmPassword") as string
     const fullName = formData.get("fullName") as string
-
-    if (!selectedSectionId) {
-      toast.error("Prosím vyberte sekci")
-      setIsLoading(false)
-      return
-    }
+    const honeypot = formData.get("address_honey") as string
 
     if (password !== confirmPassword) {
       toast.error("Hesla se neshodují")
@@ -70,7 +40,7 @@ export default function RegisterPage() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, fullName, sectionId: selectedSectionId }),
+        body: JSON.stringify({ email, password, fullName, address_honey: honeypot }),
       })
 
       const data = await res.json()
@@ -130,6 +100,16 @@ export default function RegisterPage() {
                 className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500"
               />
             </div>
+            {/* Honeypot field - visually hidden, should not be filled by users */}
+            <div className="hidden" aria-hidden="true">
+              <Label htmlFor="address_honey">Address</Label>
+              <Input
+                id="address_honey"
+                name="address_honey"
+                tabIndex={-1}
+                autoComplete="off"
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="email" className="text-slate-300">Email</Label>
               <Input
@@ -140,21 +120,6 @@ export default function RegisterPage() {
                 required
                 className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500"
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="section" className="text-slate-300">Sekce</Label>
-              <Select value={selectedSectionId} onValueChange={setSelectedSectionId}>
-                <SelectTrigger className="bg-slate-900 border-slate-700 text-white">
-                  <SelectValue placeholder="Vyberte svou sekci" />
-                </SelectTrigger>
-                <SelectContent className="bg-slate-800 border-slate-700">
-                  {sections.map((section) => (
-                    <SelectItem key={section.id} value={section.id}>
-                      {section.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="password" className="text-slate-300">Heslo</Label>

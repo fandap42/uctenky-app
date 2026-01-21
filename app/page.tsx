@@ -100,7 +100,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="absolute bottom-4 text-slate-500 text-sm">
-        © 2026 StudentOrgFinance. Všechna práva vyhrazena.
+        © 2026 4FISuctenky. Všechna práva vyhrazena.
       </footer>
     </div>
   );

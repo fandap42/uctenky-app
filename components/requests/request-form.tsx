@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
@@ -14,16 +14,30 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { createTransaction } from "@/lib/actions/transactions"
 import { toast } from "sonner"
 
-interface RequestFormProps {
-  trigger?: React.ReactNode
+interface Section {
+  id: string
+  name: string
 }
 
-export function RequestForm({ trigger }: RequestFormProps) {
+interface RequestFormProps {
+  trigger?: React.ReactNode
+  sections: Section[]
+}
+
+export function RequestForm({ trigger, sections }: RequestFormProps) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [selectedSection, setSelectedSection] = useState("")
   const router = useRouter()
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -32,6 +46,7 @@ export function RequestForm({ trigger }: RequestFormProps) {
 
     const formData = new FormData(e.currentTarget)
     formData.set("status", "PENDING") // Submit as pending for approval
+    formData.set("sectionId", selectedSection)
 
     const result = await createTransaction(formData)
 
@@ -40,6 +55,7 @@ export function RequestForm({ trigger }: RequestFormProps) {
     } else {
       toast.success("Žádost byla úspěšně vytvořena")
       setOpen(false)
+      setSelectedSection("")
       router.refresh()
     }
 
@@ -67,6 +83,33 @@ export function RequestForm({ trigger }: RequestFormProps) {
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6 mt-4">
           <div className="space-y-2">
+            <Label htmlFor="section" className="text-slate-300">
+              Sekce *
+            </Label>
+            <Select value={selectedSection} onValueChange={setSelectedSection} required>
+              <SelectTrigger className="bg-slate-900 border-slate-700 text-white">
+                <SelectValue placeholder="Vyberte sekci" />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-900 border-slate-700">
+                {sections.map((section) => (
+                  <SelectItem key={section.id} value={section.id}>
+                    {section.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {/* Honeypot field - visually hidden, should not be filled by users */}
+          <div className="hidden" aria-hidden="true">
+            <Label htmlFor="full_name_honey">Full Name</Label>
+            <Input
+              id="full_name_honey"
+              name="full_name_honey"
+              tabIndex={-1}
+              autoComplete="off"
+            />
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="purpose" className="text-slate-300">
               Účel výdaje *
             </Label>
@@ -93,17 +136,6 @@ export function RequestForm({ trigger }: RequestFormProps) {
               className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500"
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="dueDate" className="text-slate-300">
-              Předpokládané datum nákupu
-            </Label>
-            <Input
-              id="dueDate"
-              name="dueDate"
-              type="date"
-              className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500"
-            />
-          </div>
           <DialogFooter className="gap-2">
             <Button
               type="button"
@@ -115,7 +147,7 @@ export function RequestForm({ trigger }: RequestFormProps) {
             </Button>
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || !selectedSection}
               className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
             >
               {isLoading ? (

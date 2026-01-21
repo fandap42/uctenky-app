@@ -1,4 +1,5 @@
-
+require('dotenv').config();
+require('dotenv').config({ path: '.env.local' });
 const { PrismaClient } = require('@prisma/client');
 const { Pool } = require('pg');
 const { PrismaPg } = require('@prisma/adapter-pg');
@@ -11,11 +12,8 @@ const prisma = new PrismaClient({ adapter });
 
 async function main() {
   // 1. Create Admin User
-  const email = 'pavlik.frantisek42@gmail.com';
-  const password = 'admin'; // Temporary password, should be changed or user should use existing hash if creating from scratch with known hash
-  // Since we are resetting, we need a password hash. I'll use a dummy one or if I can't import hash easily without bcryptjs/node setup in seed (it is a script).
-  // I'll grab the hash from the promote-user.js context if I had it, but I don't.
-  // I will make a new hash for 'password'.
+  const email = 'admin@admin.com';
+  const password = 'admin';
   const passwordHash = await hash(password, 10);
 
   const admin = await prisma.user.upsert({
@@ -23,7 +21,7 @@ async function main() {
     update: { role: 'ADMIN' },
     create: {
       email,
-      fullName: 'František Pavlík',
+      fullName: 'Admin',
       passwordHash,
       role: 'ADMIN',
     },
@@ -33,7 +31,8 @@ async function main() {
 
   // 2. Create Sections
   const sections = [
-    "vedení",
+    "Vedení",
+    "Finance",
     "HR",
     "PR",
     "Nevzdělávací akce",
@@ -44,8 +43,6 @@ async function main() {
   ];
 
   for (const name of sections) {
-
-    
     const existing = await prisma.section.findFirst({ where: { name } });
     if (!existing) {
       await prisma.section.create({
@@ -53,7 +50,33 @@ async function main() {
       });
       console.log(`Created section: ${name}`);
     } else {
-        console.log(`Section already exists: ${name}`);
+      console.log(`Section already exists: ${name}`);
+    }
+  }
+
+  // 3. Create test users for each role
+  const testUsers = [
+    { email: 'vedouci.vedeni@test.com', fullName: 'Vedoucí Vedení', role: 'HEAD_VEDENI' },
+    { email: 'vedouci.hr@test.com', fullName: 'Vedoucí HR', role: 'HEAD_HR' },
+    { email: 'clen@test.com', fullName: 'Běžný Člen', role: 'MEMBER' },
+  ];
+
+  const testPassword = await hash('test123', 10);
+
+  for (const userData of testUsers) {
+    const existing = await prisma.user.findUnique({ where: { email: userData.email } });
+    if (!existing) {
+      await prisma.user.create({
+        data: {
+          email: userData.email,
+          fullName: userData.fullName,
+          passwordHash: testPassword,
+          role: userData.role,
+        },
+      });
+      console.log(`Created test user: ${userData.email} (${userData.role})`);
+    } else {
+      console.log(`User already exists: ${userData.email}`);
     }
   }
 }

@@ -1,8 +1,9 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { SemesterStructuredList } from "@/components/dashboard/semester-structured-list"
+import { isHeadRole, isAdmin, getSectionForRole } from "@/lib/utils/roles"
 
 export const dynamic = "force-dynamic"
 
@@ -13,25 +14,52 @@ export default async function SectionHeadDashboardPage() {
     redirect("/login")
   }
 
-  // Get user's profile to check role and section
+  // Get user's profile to check role
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { id: true, fullName: true, role: true, sectionId: true },
+    select: { id: true, fullName: true, role: true },
   })
 
-  // Redirect if not section head or admin
-  if (!user || (user.role !== "SECTION_HEAD" && user.role !== "ADMIN")) {
+  // Redirect if not HEAD_* or admin
+  if (!user || (!isHeadRole(user.role) && !isAdmin(user.role))) {
     redirect("/dashboard")
   }
 
-  // If no section assigned, show message
-  if (!user.sectionId) {
+  // Get section name from role mapping
+  const sectionName = getSectionForRole(user.role)
+
+  // If admin and no section mapping, show all (or redirect to admin page)
+  if (!sectionName && isAdmin(user.role)) {
+    redirect("/dashboard/admin")
+  }
+
+  // If no section found for role
+  if (!sectionName) {
     return (
       <div className="space-y-8 p-6">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">Žádosti sekce</h1>
           <p className="text-slate-400">
-            Nemáte přiřazenou žádnou sekci. Kontaktujte administrátora.
+            Vaše role není přiřazena k žádné sekci.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // Find section by name
+  const section = await prisma.section.findFirst({
+    where: { name: sectionName, isActive: true },
+    select: { id: true, name: true },
+  })
+
+  if (!section) {
+    return (
+      <div className="space-y-8 p-6">
+        <div>
+          <h1 className="text-3xl font-bold text-white mb-2">Žádosti sekce</h1>
+          <p className="text-slate-400">
+            Sekce "{sectionName}" nebyla nalezena.
           </p>
         </div>
       </div>
@@ -40,7 +68,7 @@ export default async function SectionHeadDashboardPage() {
 
   // Fetch section's transactions
   const rawTxList = await prisma.transaction.findMany({
-    where: { sectionId: user.sectionId },
+    where: { sectionId: section.id },
     orderBy: { createdAt: "desc" },
     include: {
       requester: { select: { id: true, fullName: true } },
@@ -57,18 +85,10 @@ export default async function SectionHeadDashboardPage() {
     dueDate: t.dueDate ? t.dueDate.toISOString() : null,
   })) as any
 
-  // Get section info
-  const section = await prisma.section.findUnique({
-    where: { id: user.sectionId },
-    select: { id: true, name: true, budgetCap: true },
-  })
-
-  // Calculate spent (using ALL transactions for accurate budget)
+  // Calculate spent
   const totalSpent = (transactions as any[])
     .filter((t: any) => t.status === "VERIFIED" || t.status === "PURCHASED")
     .reduce((sum: number, t: any) => sum + Number(t.finalAmount || t.estimatedAmount), 0)
-
-  const remaining = Number(section?.budgetCap || 0) - totalSpent
 
   const pendingTransactions = (transactions as any[]).filter((t: any) => t.status === "PENDING")
 
@@ -77,7 +97,7 @@ export default async function SectionHeadDashboardPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-white mb-2">
-          Žádosti sekce: {section?.name || "Neznámá sekce"}
+          Žádosti sekce: {section.name}
         </h1>
         <p className="text-slate-400">
           Správa a přehled všech žádostí vaší sekce
@@ -85,7 +105,7 @@ export default async function SectionHeadDashboardPage() {
       </div>
 
       {/* Quick stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-1 gap-6 max-w-sm">
         <Card className="bg-slate-800/50 border-slate-700">
           <CardHeader className="pb-2">
             <CardDescription className="text-slate-400">
@@ -96,41 +116,14 @@ export default async function SectionHeadDashboardPage() {
             </CardTitle>
           </CardHeader>
         </Card>
-
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardHeader className="pb-2">
-            <CardDescription className="text-slate-400">
-              Zbývající rozpočet
-            </CardDescription>
-            <CardTitle className={`text-2xl font-bold ${remaining < 1000 ? "text-red-400" : "text-green-400"}`}>
-              {remaining.toLocaleString("cs-CZ")} Kč
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-slate-500 italic">
-              Z celkového limitu {Number(section?.budgetCap || 0).toLocaleString("cs-CZ")} Kč
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardHeader className="pb-2">
-            <CardDescription className="text-slate-400">
-              Vyčerpáno sekcí
-            </CardDescription>
-            <CardTitle className="text-2xl font-bold text-green-400">
-              {totalSpent.toLocaleString("cs-CZ")} Kč
-            </CardTitle>
-          </CardHeader>
-        </Card>
       </div>
 
       {/* Structured Transactions List */}
       <div className="space-y-4">
         <h2 className="text-xl font-semibold text-white">Přehled žádostí sekce</h2>
-        <SemesterStructuredList 
-          transactions={transactions} 
-          showSection={false} 
+        <SemesterStructuredList
+          transactions={transactions}
+          showSection={false}
           showActions={true}
         />
       </div>

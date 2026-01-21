@@ -11,8 +11,9 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getSemester, monthNames } from "@/lib/utils/semesters"
-import { CSVExportButton } from "./csv-export-button"
 import { PaidStatusSelect } from "./paid-status-select"
+import { FiledStatusSelect } from "./filed-status-select"
+import { ExpenseTypeSelect } from "./expense-type-select"
 import { ApprovalActions } from "@/components/requests/approval-actions"
 import { EditTransactionDialog } from "./edit-transaction-dialog"
 import { ReceiptUpload } from "@/components/receipts/receipt-upload"
@@ -25,6 +26,8 @@ interface Transaction {
   store?: string | null
   status: string
   isPaid: boolean
+  isFiled: boolean
+  expenseType: string
   estimatedAmount: any
   finalAmount: any
   receiptUrl: string | null
@@ -71,13 +74,14 @@ export function SemesterStructuredList({
   const semesters: Record<string, Record<number, Transaction[]>> = {}
 
   transactions.forEach((tx) => {
-    const date = new Date(tx.createdAt)
+    // Use real purchase date (dueDate) if available, otherwise creation date
+    const date = new Date(tx.dueDate || tx.createdAt)
     const semKey = getSemester(date)
     const monthKey = date.getMonth() + 1
 
     if (!semesters[semKey]) semesters[semKey] = {}
     if (!semesters[semKey][monthKey]) semesters[semKey][monthKey] = []
-    
+
     semesters[semKey][monthKey].push(tx)
   })
 
@@ -112,12 +116,6 @@ export function SemesterStructuredList({
                       <CardTitle className="text-sm font-medium text-slate-300">
                         {monthNames[monthKey]}
                       </CardTitle>
-                      {isAdmin && (
-                        <CSVExportButton 
-                          transactions={monthTxs} 
-                          filename={`export-${semKey}-${monthKey}.csv`}
-                        />
-                      )}
                     </CardHeader>
                     <CardContent className="p-0 overflow-x-auto">
                       <Table>
@@ -125,12 +123,14 @@ export function SemesterStructuredList({
                           <TableRow className="border-slate-700 hover:bg-transparent">
                             {showRequester && <TableHead className="text-slate-400 text-xs py-2">Žadatel</TableHead>}
                             {showSection && <TableHead className="text-slate-400 text-xs py-2">Sekce</TableHead>}
+                            <TableHead className="text-slate-400 text-xs py-2">Datum</TableHead>
                             <TableHead className="text-slate-400 text-xs py-2">Účel</TableHead>
                             <TableHead className="text-slate-400 text-xs py-2">Obchod</TableHead>
                             <TableHead className="text-slate-400 text-xs py-2">Částka</TableHead>
                             <TableHead className="text-slate-400 text-xs py-2">Stav</TableHead>
-                            <TableHead className="text-slate-400 text-xs py-2">Datum</TableHead>
-                            {isAdmin && <TableHead className="text-slate-400 text-xs py-2 text-right">Proplaceno</TableHead>}
+                            {isAdmin && <TableHead className="text-slate-400 text-xs py-2">Typ</TableHead>}
+                            {isAdmin && <TableHead className="text-slate-400 text-xs py-2">Proplaceno</TableHead>}
+                            {isAdmin && <TableHead className="text-slate-400 text-xs py-2">Založeno</TableHead>}
                             {(showActions || isAdmin) && <TableHead className="text-slate-400 text-xs py-2 text-right">Akce</TableHead>}
                           </TableRow>
                         </TableHeader>
@@ -138,19 +138,22 @@ export function SemesterStructuredList({
                           {monthTxs.map((tx) => (
                             <TableRow key={tx.id} className="border-slate-700/50 hover:bg-slate-700/20">
                               {showRequester && (
-                                <TableCell className="py-2 text-sm text-white">
+                                <TableCell className="py-2 text-sm text-white font-semibold">
                                   {tx.requester?.fullName || "Neznámý"}
                                 </TableCell>
                               )}
                               {showSection && (
-                                <TableCell className="py-2 text-xs text-slate-400">
+                                <TableCell className="py-2 text-sm text-white">
                                   {tx.section?.name || "-"}
                                 </TableCell>
                               )}
+                              <TableCell className="py-2 text-sm text-white whitespace-nowrap">
+                                {new Date(tx.dueDate || tx.createdAt).toLocaleDateString("cs-CZ")}
+                              </TableCell>
                               <TableCell className="py-2">
                                 <p className="text-sm text-white font-medium truncate max-w-[150px]">{tx.purpose}</p>
                               </TableCell>
-                              <TableCell className="py-2 text-xs text-slate-500 italic">
+                              <TableCell className="py-2 text-sm text-white">
                                 {tx.store || "-"}
                               </TableCell>
                               <TableCell className="py-2 text-sm text-white whitespace-nowrap">
@@ -164,12 +167,19 @@ export function SemesterStructuredList({
                                   {statusLabels[tx.status]}
                                 </Badge>
                               </TableCell>
-                              <TableCell className="py-2 text-[10px] text-slate-400 whitespace-nowrap">
-                                {new Date(tx.createdAt).toLocaleDateString("cs-CZ")}
-                              </TableCell>
                               {isAdmin && (
-                                <TableCell className="py-2 text-right">
+                                <TableCell className="py-2">
+                                  <ExpenseTypeSelect transactionId={tx.id} initialType={tx.expenseType || "MATERIAL"} />
+                                </TableCell>
+                              )}
+                              {isAdmin && (
+                                <TableCell className="py-2">
                                   <PaidStatusSelect transactionId={tx.id} initialStatus={tx.isPaid} />
+                                </TableCell>
+                              )}
+                              {isAdmin && (
+                                <TableCell className="py-2">
+                                  <FiledStatusSelect transactionId={tx.id} initialStatus={tx.isFiled} />
                                 </TableCell>
                               )}
                               {(showActions || isAdmin) && (
@@ -178,12 +188,13 @@ export function SemesterStructuredList({
                                     {isAdmin && (
                                       <>
                                         {tx.receiptUrl && (
-                                          <DeleteButton 
-                                            onDelete={() => removeReceipt(tx.id)} 
-                                            iconOnly 
-                                            title="Odstranit účtenku?" 
+                                          <DeleteButton
+                                            onDelete={() => removeReceipt(tx.id)}
+                                            iconOnly
+                                            variant="undo"
+                                            title="Odstranit účtenku?"
                                             description="Žádost bude vrácena do stavu 'Schváleno'."
-                                            className="text-yellow-500 hover:text-yellow-600 hover:bg-yellow-500/10"
+                                            className="text-orange-500 hover:text-orange-600 hover:bg-orange-500/10"
                                           />
                                         )}
                                         <EditTransactionDialog transaction={tx} />
@@ -198,7 +209,7 @@ export function SemesterStructuredList({
                                         )}
                                       </>
                                     )}
-                                    <ApprovalActions transactionId={tx.id} currentStatus={tx.status} />
+                                    {isAdmin && <ApprovalActions transactionId={tx.id} currentStatus={tx.status} />}
                                   </div>
                                 </TableCell>
                               )}

@@ -14,9 +14,6 @@ export async function getUsers() {
 
   const users = await prisma.user.findMany({
     orderBy: { fullName: "asc" },
-    include: {
-      section: true,
-    },
   })
 
   return users
@@ -39,7 +36,7 @@ export async function getSections() {
 
 export async function updateUser(
   userId: string,
-  data: { role: AppRole; sectionId: string | null }
+  data: { role: AppRole }
 ) {
   const session = await auth()
 
@@ -52,7 +49,6 @@ export async function updateUser(
       where: { id: userId },
       data: {
         role: data.role,
-        sectionId: data.sectionId === "none" ? null : data.sectionId,
       },
     })
 
@@ -61,5 +57,37 @@ export async function updateUser(
   } catch (error) {
     console.error("Failed to update user:", error)
     return { success: false, error: "Failed to update user" }
+  }
+}
+
+export async function changeUserPassword(
+  userId: string,
+  newPassword: string
+) {
+  const session = await auth()
+
+  if (session?.user?.role !== "ADMIN") {
+    return { success: false, error: "Neoprávněný přístup" }
+  }
+
+  if (!newPassword || newPassword.length < 6) {
+    return { success: false, error: "Heslo musí mít alespoň 6 znaků" }
+  }
+
+  try {
+    // Hash the password
+    const bcrypt = await import("bcryptjs")
+    const passwordHash = await bcrypt.hash(newPassword, 10)
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    })
+
+    revalidatePath("/dashboard/users")
+    return { success: true }
+  } catch (error) {
+    console.error("Failed to change password:", error)
+    return { success: false, error: "Nepodařilo se změnit heslo" }
   }
 }

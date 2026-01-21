@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { AppRole, Section, User } from "@prisma/client"
+import { AppRole, User } from "@prisma/client"
 import {
   Table,
   TableBody,
@@ -17,47 +17,43 @@ import { Card, CardContent } from "@/components/ui/card"
 import { EditUserDialog } from "./edit-user-dialog"
 import { DeleteButton } from "@/components/dashboard/delete-button"
 import { deleteUser } from "@/lib/actions/transactions"
+import { roleLabels, isHeadRole, isAdmin } from "@/lib/utils/roles"
 
 interface UserManagementProps {
-  initialUsers: (User & { section: Section | null })[]
-  sections: Section[]
+  initialUsers: User[]
 }
 
-const roleLabels: Record<string, string> = {
-  MEMBER: "Člen",
-  SECTION_HEAD: "Vedoucí sekce",
-  ADMIN: "Administrátor",
-}
-
-const roleColors: Record<string, string> = {
-  MEMBER: "bg-slate-500",
-  SECTION_HEAD: "bg-blue-500",
-  ADMIN: "bg-purple-500",
+function getRoleColor(role: string): string {
+  if (isAdmin(role)) return "bg-purple-500"
+  if (isHeadRole(role)) return "bg-blue-500"
+  return "bg-slate-500"
 }
 
 export function UserManagement({
   initialUsers,
-  sections,
 }: UserManagementProps) {
   const [filter, setFilter] = useState("")
-  const [editingUser, setEditingUser] = useState<(User & { section: Section | null }) | null>(null)
+  const [editingUser, setEditingUser] = useState<User | null>(null)
 
   const filteredUsers = initialUsers.filter((user) =>
     user.fullName?.toLowerCase().includes(filter.toLowerCase()) ||
     user.email.toLowerCase().includes(filter.toLowerCase())
   )
 
-  const handleEdit = (user: User & { section: Section | null }) => {
+  const handleEdit = (user: User) => {
     setEditingUser(user)
   }
 
-  const groupedUsers = sections.map(section => ({
-    section,
-    users: filteredUsers.filter(u => u.sectionId === section.id)
-  })).concat({
-    section: { id: "none", name: "Bez sekce" } as Section,
-    users: filteredUsers.filter(u => !u.sectionId)
-  }).filter(group => group.users.length > 0)
+  // Group users by role type
+  const adminUsers = filteredUsers.filter(u => isAdmin(u.role))
+  const headUsers = filteredUsers.filter(u => isHeadRole(u.role))
+  const memberUsers = filteredUsers.filter(u => u.role === "MEMBER")
+
+  const groups = [
+    { name: "Administrátoři", users: adminUsers, color: "bg-purple-500" },
+    { name: "Vedoucí sekcí", users: headUsers, color: "bg-blue-500" },
+    { name: "Členové", users: memberUsers, color: "bg-slate-500" },
+  ].filter(g => g.users.length > 0)
 
   return (
     <div className="space-y-4">
@@ -71,11 +67,11 @@ export function UserManagement({
       </div>
 
       <div className="space-y-8">
-        {groupedUsers.map((group) => (
-          <div key={group.section.id} className="space-y-4">
+        {groups.map((group) => (
+          <div key={group.name} className="space-y-4">
             <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-              <span className="w-2 h-6 bg-blue-500 rounded-full"></span>
-              {group.section.name}
+              <span className={`w-2 h-6 ${group.color} rounded-full`}></span>
+              {group.name}
               <Badge variant="outline" className="ml-2 text-slate-400 border-slate-700">
                 {group.users.length}
               </Badge>
@@ -101,7 +97,7 @@ export function UserManagement({
                           {user.email}
                         </TableCell>
                         <TableCell>
-                          <Badge className={`${roleColors[user.role] || "bg-slate-500"} text-white`}>
+                          <Badge className={`${getRoleColor(user.role)} text-white`}>
                             {roleLabels[user.role] || user.role}
                           </Badge>
                         </TableCell>
@@ -142,7 +138,6 @@ export function UserManagement({
       {editingUser && (
         <EditUserDialog
           user={editingUser}
-          sections={sections}
           open={!!editingUser}
           onOpenChange={(open) => !open && setEditingUser(null)}
           onSuccess={() => {
