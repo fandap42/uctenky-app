@@ -70,7 +70,7 @@ export default async function DashboardPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="bg-slate-800/50 border-slate-700 hover:border-blue-500/50 transition-colors">
+        <Card className="bg-slate-800/50 border-slate-700">
           <CardHeader className="pb-2">
             <CardDescription className="text-slate-400">
               Celkem žádostí
@@ -81,7 +81,7 @@ export default async function DashboardPage() {
           </CardHeader>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700 hover:border-yellow-500/50 transition-colors">
+        <Card className="bg-slate-800/50 border-slate-700">
           <CardHeader className="pb-2">
             <CardDescription className="text-slate-400">
               Čeká na schválení
