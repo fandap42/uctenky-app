@@ -267,11 +267,13 @@ flowchart TD
 | Route | MEMBER | HEAD_* | ADMIN |
 |-------|--------|--------|-------|
 | `/dashboard` | ✅ | ✅ | ✅ |
-| `/dashboard/head` | ❌ | ✅ | ❌ |
+| `/dashboard/head` | ❌ | ✅ (read-only) | ❌ |
 | `/dashboard/admin` | ❌ | ❌ | ✅ |
 | `/dashboard/pokladna` | ❌ | ❌ | ✅ |
 | `/dashboard/budget` | ❌ | ❌ | ✅ |
 | `/dashboard/users` | ❌ | ❌ | ✅ |
+
+> **Note:** Section heads (HEAD_*) can only **view** transactions for their section. Approval is done exclusively by ADMIN.
 
 ### Implementation
 
@@ -381,8 +383,8 @@ uctenky-app/
 stateDiagram-v2
     [*] --> DRAFT: Create request
     DRAFT --> PENDING: Submit
-    PENDING --> APPROVED: Head approves
-    PENDING --> REJECTED: Head rejects
+    PENDING --> APPROVED: Admin approves
+    PENDING --> REJECTED: Admin rejects
     APPROVED --> PURCHASED: Upload receipt
     PURCHASED --> VERIFIED: Admin verifies
     VERIFIED --> [*]

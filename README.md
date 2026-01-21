@@ -108,8 +108,8 @@ uctenky-app/
 | Role | Oprávnění |
 |------|-----------|
 | **MEMBER** | Podávání žádostí o nákup |
-| **HEAD_*** | Schvalování žádostí své sekce |
-| **ADMIN** | Kompletní správa systému |
+| **HEAD_*** | Přehled žádostí své sekce (pouze čtení) |
+| **ADMIN** | Kompletní správa systému včetně schvalování |
 
 ## 📖 Dokumentace
 

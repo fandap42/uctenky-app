@@ -46,7 +46,7 @@ Po přihlášení uvidíte:
 | ✅ **Schváleno** | Můžete provést nákup |
 | ❌ **Zamítnuto** | Žádost byla zamítnuta |
 | 🔵 **Nakoupeno** | Nákup proveden, účtenka nahrána |
-| ✔️ **Ověřeno** | Účtenka zkontrolována administrátorem |
+| ✔️ **Ověřeno** | Účtenka zkontrolována týmem Finance |
 
 ---
 
@@ -85,19 +85,21 @@ Na účtence **MUSÍ být čitelné:**
 
 ## Pro vedoucí sekcí
 
-### Schvalování žádostí
+### Přehled žádostí
+
+Jako vedoucí sekce máte přístup k přehledu všech žádostí vaší sekce:
 
 1. V menu klikněte na **Žádosti sekce**
-2. Uvidíte seznam žádostí od členů vaší sekce
-3. U každé žádosti můžete:
-   - ✅ **Schválit** - žádost bude předána ke zpracování
-   - ❌ **Zamítnout** - žádost bude zamítnuta
+2. Uvidíte seznam všech žádostí od členů vaší sekce
+3. Můžete sledovat stav jednotlivých žádostí
 
-### Co kontrolovat před schválením?
+> ⚠️ **Poznámka:** Schvalování žádostí provádí **pouze tým Finance**. Vedoucí sekce má přístup pouze pro čtení.
 
-- Je nákup **opodstatněný** pro činnost sekce?
-- Je **odhadovaná částka** realistická?
-- Je **datum nákupu** alespoň týden v budoucnosti?
+### Co můžete sledovat?
+
+- Stav žádostí (čeká, schváleno, nakoupeno, ověřeno)
+- Účel a odhadovanou částku
+- Datum plánovaného nákupu
 
 ---
 
@@ -116,13 +118,13 @@ To je v pořádku - při nahrání účtenky zadáte skutečnou částku.
 Podporujeme **JPG, PNG** a **HEIC** (iPhone fotky - automaticky se konvertují).
 
 ### Co když je účtenka nečitelná?
-Administrátor vás kontaktuje a požádá o novou fotografii.
+Tým Finance vás kontaktuje a požádá o novou fotografii.
 
 ---
 
 ## Kontakt a podpora
 
-V případě problémů kontaktujte administrátora organizace.
+V případě problémů kontaktujte tým Finance.
 
 ---
 
