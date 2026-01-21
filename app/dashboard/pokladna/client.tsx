@@ -74,7 +74,7 @@ function groupBySemesterAndMonth<T extends { date?: string; dueDate?: string | n
   const semesters: Record<string, Record<number, T[]>> = {}
 
   items.forEach((item) => {
-    const dateStr = dateField === "date" ? (item as Deposit).date : (item as unknown as Transaction).dueDate
+    const dateStr = dateField === "date" ? item.date : item.dueDate
     if (!dateStr) return
 
     const date = new Date(dateStr)

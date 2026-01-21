@@ -18,25 +18,56 @@
 
 ## 🚀 Rychlý start
 
-### Předpoklady
+### 🐳 Docker (doporučeno)
 
-- Node.js 20+
-- PostgreSQL 14+
-- MinIO nebo S3-kompatibilní storage
-
-### Instalace
+Nejjednodušší způsob spuštění celé aplikace včetně databáze a storage:
 
 ```bash
 # Klonování repozitáře
 git clone https://github.com/your-org/uctenky-app.git
 cd uctenky-app
 
+# Nastavení prostředí
+cp .env.docker.example .env.docker
+# Upravte .env.docker - zejména AUTH_SECRET a hesla
+
+# Spuštění všech služeb
+docker compose --env-file .env.docker up -d
+
+# Migrace databáze (po prvním spuštění)
+docker compose --env-file .env.docker exec app npx prisma db push
+```
+
+Aplikace běží na:
+- **App**: [http://localhost:3000](http://localhost:3000)
+- **MinIO Console**: [http://localhost:9001](http://localhost:9001)
+
+> [!IMPORTANT]
+> Nikdy necommitujte `.env.docker` do Gitu! Obsahuje citlivé údaje.
+
+### 💻 Lokální vývoj
+
+Pro vývoj bez Docker kontejneru pro aplikaci:
+
+#### Předpoklady
+
+- Node.js 20+
+- Docker (pro PostgreSQL a MinIO)
+
+```bash
+# Klonování repozitáře
+git clone https://github.com/your-org/uctenky-app.git
+cd uctenky-app
+
+# Spuštění pouze databáze a storage
+docker compose up -d postgres minio
+
 # Instalace závislostí
 npm install
 
 # Nastavení prostředí
-cp .env.example .env
-# Upravte .env dle vašeho prostředí
+cp .env.local.example .env.local
+# Upravte .env.local dle potřeby
 
 # Migrace databáze
 npx prisma db push
@@ -53,7 +84,7 @@ Aplikace běží na [http://localhost:3000](http://localhost:3000)
 
 ```env
 # Database
-DATABASE_URL="postgresql://user:password@localhost:5432/uctenky_app"
+DATABASE_URL="postgresql://uctenky:uctenky123@localhost:5432/uctenky_app"
 
 # NextAuth
 AUTH_SECRET="your-secret-key-min-32-chars"
@@ -67,20 +98,9 @@ S3_BUCKET="receipts"
 S3_PUBLIC_ENDPOINT="http://localhost:9000"
 ```
 
-### MinIO setup
+### MinIO bucket setup
 
-```bash
-# Docker
-docker run -d \
-  --name minio \
-  -p 9000:9000 \
-  -p 9001:9001 \
-  -e MINIO_ROOT_USER=minioadmin \
-  -e MINIO_ROOT_PASSWORD=minioadmin123 \
-  minio/minio server /data --console-address ":9001"
-
-# Vytvořte bucket "receipts" v MinIO konzoli na http://localhost:9001
-```
+Po spuštění vytvořte bucket "receipts" v MinIO konzoli na [http://localhost:9001](http://localhost:9001)
 
 ## 📁 Struktura projektu
 
