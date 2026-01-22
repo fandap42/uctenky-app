@@ -14,6 +14,13 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "4FISuctenky | Správa financí studentské organizace",
   description: "Systém pro správu účtenek a finančních náhrad pro studentské organizace",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    viewportFit: "cover",
+  },
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({
