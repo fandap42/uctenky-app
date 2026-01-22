@@ -1,6 +1,4 @@
-"use client"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
     Select,
     SelectContent,
@@ -23,6 +21,11 @@ export function ExpenseTypeSelect({
     const [expenseType, setExpenseType] = useState(initialType)
     const [isLoading, setIsLoading] = useState(false)
 
+    // Sync state with props when data is refreshed silently
+    useEffect(() => {
+        setExpenseType(initialType)
+    }, [initialType])
+
     async function handleChange(value: string) {
         setIsLoading(true)
         const result = await updateTransactionExpenseType(transactionId, value as "MATERIAL" | "SERVICE")
@@ -32,6 +35,7 @@ export function ExpenseTypeSelect({
         } else {
             setExpenseType(value)
             toast.success(value === "MATERIAL" ? "Označeno jako materiál" : "Označeno jako služba")
+            window.dispatchEvent(new CustomEvent("app-data-refresh"))
         }
         setIsLoading(false)
     }
@@ -42,12 +46,12 @@ export function ExpenseTypeSelect({
             onValueChange={handleChange}
             disabled={isLoading}
         >
-            <SelectTrigger className={`w-[110px] h-8 bg-slate-900 border-slate-700 text-xs ${expenseType === "MATERIAL" ? "text-blue-400" : "text-purple-400"}`}>
+            <SelectTrigger className={`w-[110px] h-8 bg-background border-border text-xs ${expenseType === "MATERIAL" ? "text-primary" : "text-[oklch(0.55_0.15_290)]"}`}>
                 <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-slate-800 border-slate-700 text-white">
-                <SelectItem value="MATERIAL" className="text-blue-400">Materiál</SelectItem>
-                <SelectItem value="SERVICE" className="text-purple-400">Služba</SelectItem>
+            <SelectContent position="popper" className="bg-card border-border max-h-[none]">
+                <SelectItem value="MATERIAL" className="text-primary">Materiál</SelectItem>
+                <SelectItem value="SERVICE" className="text-[oklch(0.55_0.15_290)]">Služba</SelectItem>
             </SelectContent>
         </Select>
     )

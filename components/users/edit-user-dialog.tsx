@@ -1,18 +1,17 @@
 "use client"
 
 import { useState } from "react"
-import { AppRole, User } from "@prisma/client"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
-  DialogDescription,
+  DialogTrigger,
 } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -20,161 +19,202 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { updateUser, changeUserPassword } from "@/actions/users"
+import { Label } from "@/components/ui/label"
+import { updateUser, changeUserPassword, deleteUser } from "@/actions/users"
 import { toast } from "sonner"
-import { roleLabels } from "@/lib/utils/roles"
+import { UserCog, Trash2, KeyRound } from "lucide-react"
+import { Input } from "@/components/ui/input"
+
+interface User {
+  id: string
+  fullName: string | null
+  email: string | null
+  role: string
+}
 
 interface EditUserDialogProps {
   user: User
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSuccess: () => void
 }
 
-// All available roles for selection
-const allRoles: AppRole[] = [
-  "MEMBER",
-  "HEAD_VEDENI",
-  "HEAD_FINANCE",
-  "HEAD_HR",
-  "HEAD_PR",
-  "HEAD_NEVZDELAVACI",
-  "HEAD_VZDELAVACI",
-  "HEAD_SPORTOVNI",
-  "HEAD_GAMING",
-  "HEAD_KRUHOVE",
-  "ADMIN",
-]
-
-export function EditUserDialog({
-  user,
-  open,
-  onOpenChange,
-  onSuccess,
-}: EditUserDialogProps) {
-  const [role, setRole] = useState<AppRole>(user.role)
+export function EditUserDialog({ user }: EditUserDialogProps) {
+  const [open, setOpen] = useState(false)
+  const [role, setRole] = useState(user.role)
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const router = useRouter()
 
-  const passwordsMatch = newPassword === confirmPassword
-  const passwordValid = newPassword.length === 0 || newPassword.length >= 6
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setIsLoading(true)
 
-  const handleSave = async () => {
-    if (newPassword && !passwordsMatch) {
+    const result = await updateUser(user.id, {
+      role: role as any,
+    })
+
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      toast.success("HOTOVO: Role uživatele byla upravena")
+      setOpen(false)
+      router.refresh()
+    }
+
+    setIsLoading(false)
+  }
+
+  async function handlePasswordChange() {
+    if (!newPassword || newPassword.length < 6) {
+      toast.error("Heslo musí mít alespoň 6 znaků")
+      return
+    }
+
+    if (newPassword !== confirmPassword) {
       toast.error("Hesla se neshodují")
       return
     }
 
     setIsLoading(true)
-    try {
-      // Update role
-      const result = await updateUser(user.id, { role })
-      if (!result.success) {
-        toast.error("Nastala chyba při aktualizaci role")
-        setIsLoading(false)
-        return
-      }
+    const result = await changeUserPassword(user.id, newPassword)
 
-      // Change password if provided
-      if (newPassword.trim()) {
-        const pwResult = await changeUserPassword(user.id, newPassword)
-        if (!pwResult.success) {
-          toast.error(pwResult.error || "Nepodařilo se změnit heslo")
-          setIsLoading(false)
-          return
-        }
-      }
-
-      toast.success("Uživatel byl úspěšně aktualizován")
+    if (result.success) {
+      toast.success("HOTOVO: Heslo bylo změněno")
       setNewPassword("")
       setConfirmPassword("")
-      onSuccess()
-      onOpenChange(false)
-    } catch {
-      toast.error("Nastala neočekávaná chyba")
-    } finally {
-      setIsLoading(false)
+    } else {
+      toast.error(result.error || "Změna hesla se nezdařila")
     }
+    setIsLoading(false)
+  }
+
+  async function handleDelete() {
+    if (!confirm(`Opravdu chcete smazat uživatele ${user.fullName || user.email}?`)) return
+
+    setIsDeleting(true)
+    const result = await deleteUser(user.id)
+
+    if (result.success) {
+      toast.success("HOTOVO: Uživatel byl smazán")
+      setOpen(false)
+      router.refresh()
+    } else {
+      toast.error(result.error || "Smazání uživatele se nezdařilo")
+    }
+    setIsDeleting(false)
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-slate-900 border-slate-800 text-white">
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-10 w-10 p-0 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full transition-colors">
+          <UserCog className="h-5 w-5" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="bg-card border-border sm:max-w-[425px] rounded-[2rem] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Upravit uživatele {user.fullName}</DialogTitle>
-          <DialogDescription className="text-slate-400">
-            {user.email}
+          <DialogTitle className="text-2xl font-black text-foreground">Správa uživatele</DialogTitle>
+          <DialogDescription className="text-muted-foreground font-medium">
+            {user.fullName || user.email}
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="role">Role</Label>
-            <Select value={role} onValueChange={(v) => setRole(v as AppRole)}>
-              <SelectTrigger className="bg-slate-800 border-slate-700">
-                <SelectValue placeholder="Vyberte roli" />
-              </SelectTrigger>
-              <SelectContent className="bg-slate-800 border-slate-700">
-                {allRoles.map((roleKey) => (
-                  <SelectItem key={roleKey} value={roleKey}>
-                    {roleLabels[roleKey] || roleKey}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="password">Nové heslo (volitelné)</Label>
-            <Input
-              id="password"
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Ponechte prázdné pro zachování stávajícího"
-              className="bg-slate-800 border-slate-700"
-            />
-            {newPassword && newPassword.length < 6 && (
-              <p className="text-xs text-red-400">
-                Heslo musí mít alespoň 6 znaků
-              </p>
-            )}
-          </div>
-
-          {newPassword && (
-            <div className="grid gap-2">
-              <Label htmlFor="confirmPassword">Potvrdit heslo</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Zadejte heslo znovu"
-                className="bg-slate-800 border-slate-700"
-              />
-              {confirmPassword && !passwordsMatch && (
-                <p className="text-xs text-red-400">
-                  Hesla se neshodují
-                </p>
-              )}
+        <div className="space-y-8 py-4">
+          {/* Role Section */}
+          <div className="space-y-4">
+            <Label htmlFor="role" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Uživatelská role</Label>
+            <div className="flex gap-2">
+              <Select value={role} onValueChange={setRole}>
+                <SelectTrigger className="bg-background border-border rounded-xl font-bold h-12 flex-1">
+                  <SelectValue placeholder="Vyberte roli" />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-border rounded-xl">
+                  <SelectItem value="MEMBER" className="font-bold">Člen (MEMBER)</SelectItem>
+                  <SelectItem value="ADMIN" className="font-bold">Administrátor (ADMIN)</SelectItem>
+                  <hr className="my-1 border-border" />
+                  <SelectItem value="HEAD_VEDENI" className="font-bold">Vedoucí: Vedení</SelectItem>
+                  <SelectItem value="HEAD_FINANCE" className="font-bold">Vedoucí: Finance</SelectItem>
+                  <SelectItem value="HEAD_HR" className="font-bold">Vedoucí: HR</SelectItem>
+                  <SelectItem value="HEAD_PR" className="font-bold">Vedoucí: PR</SelectItem>
+                  <SelectItem value="HEAD_NEVZDELAVACI" className="font-bold">Vedoucí: Nevzdělávací akce</SelectItem>
+                  <SelectItem value="HEAD_VZDELAVACI" className="font-bold">Vedoucí: Vzdělávací akce</SelectItem>
+                  <SelectItem value="HEAD_SPORTOVNI" className="font-bold">Vedoucí: Sportovní akce</SelectItem>
+                  <SelectItem value="HEAD_GAMING" className="font-bold">Vedoucí: Gaming</SelectItem>
+                  <SelectItem value="HEAD_KRUHOVE" className="font-bold">Vedoucí: Kruhové akce</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button 
+                onClick={handleSubmit} 
+                disabled={isLoading || role === user.role}
+                className="h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-xl px-4"
+              >
+                Uložit
+              </Button>
             </div>
-          )}
+          </div>
+
+          <hr className="border-border" />
+
+          {/* Password Section */}
+          <div className="space-y-4">
+            <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Změna hesla</Label>
+            <div className="space-y-3">
+              <div className="relative">
+                <Input
+                  type="password"
+                  placeholder="Nové heslo"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="bg-background border-border rounded-xl font-bold h-12 pl-10"
+                />
+                <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              </div>
+              <div className="relative">
+                <Input
+                  type="password"
+                  placeholder="Potvrzení hesla"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="bg-background border-border rounded-xl font-bold h-12 pl-10"
+                />
+                <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              </div>
+              <Button 
+                onClick={handlePasswordChange}
+                disabled={isLoading || !newPassword || !confirmPassword}
+                variant="outline"
+                className="w-full h-12 border-border hover:bg-muted text-foreground font-black rounded-xl"
+              >
+                Změnit heslo
+              </Button>
+            </div>
+          </div>
+
+          <hr className="border-border" />
+
+          {/* Danger Zone */}
+          <div className="space-y-4">
+            <Label className="text-xs font-black uppercase tracking-widest text-destructive">Nebezpečná zóna</Label>
+            <Button
+              onClick={handleDelete}
+              disabled={isDeleting}
+              variant="destructive"
+              className="w-full h-12 bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/20 font-black rounded-xl flex items-center justify-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Odstranit uživatele
+            </Button>
+          </div>
         </div>
+
         <DialogFooter>
           <Button
+            type="button"
             variant="ghost"
-            onClick={() => onOpenChange(false)}
-            disabled={isLoading}
-            className="text-slate-400 hover:text-white hover:bg-slate-800"
+            onClick={() => setOpen(false)}
+            className="rounded-full font-bold text-muted-foreground"
           >
-            Zrušit
-          </Button>
-          <Button
-            onClick={handleSave}
-            disabled={isLoading || !passwordValid || (newPassword.length > 0 && !passwordsMatch)}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            {isLoading ? "Ukládání..." : "Uložit"}
+            Zavřít
           </Button>
         </DialogFooter>
       </DialogContent>

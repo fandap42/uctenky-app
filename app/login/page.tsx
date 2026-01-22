@@ -43,62 +43,60 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiMyMDI1MmIiIGZpbGwtb3BhY2l0eT0iMC40Ij48cGF0aCBkPSJNMzYgMzRoLTJ2LTRoMnYtMmg0djJoMnY0aC0ydjJoLTR2LTJ6bTAtNmgtNHYtMmgydi0yaDR2MmgydjJoLTJ2MmgtMnYtMnptLTEwIDEwaC0ydjJoLTR2LTJoLTJ2LTRoMnYtMmg0djJoMnY0em0tMTAtMTBoMnY0aC0ydjJoLTR2LTJoLTJ2LTRoMnYtMmg0djJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-20"></div>
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      {/* Subtle background pattern */}
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM5NDk0YTQiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0aC0ydi00aDJ2LTJoNHYyaDJ2NGgtMnYyaC00di0yem0wLTZoLTR2LTJoMnYtMmg0djJoMnYyaC0ydjJoLTJ2LTJ6bS0xMCAxMGgtMnYyaC00di0yaC0ydi00aDJ2LTJoNHYyaDJ2NHptLTEwLTEwaDJ2NGgtMnYyaC00di0yaC0ydi00aDJ2LTJoNHYyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-60"></div>
 
-      <Card className="w-full max-w-md relative z-10 bg-slate-800/50 backdrop-blur-xl border-slate-700 shadow-2xl shadow-blue-500/10">
+      <Card className="w-full max-w-md relative z-10 bg-card border-border shadow-lg">
         <CardHeader className="text-center space-y-2">
-          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-blue-500/30">
+          <div className="mx-auto w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-primary/20">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-8 w-8 text-white"
+              className="h-8 w-8 text-primary-foreground"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
+              strokeWidth={1.5}
             >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth={2}
                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+          <h1 className="text-2xl font-bold text-primary">
             4FISuctenky
           </h1>
-          <CardDescription className="text-slate-400">
-            Přihlaste se pro správu financí vaší organizace
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-300">Email</Label>
+              <Label htmlFor="email" className="text-foreground">Email</Label>
               <Input
                 id="email"
                 name="email"
                 type="email"
                 placeholder="vas@email.cz"
                 required
-                className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500"
+                className="bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-primary"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-slate-300">Heslo</Label>
+              <Label htmlFor="password" className="text-foreground">Heslo</Label>
               <Input
                 id="password"
                 name="password"
                 type="password"
                 placeholder="••••••••"
                 required
-                className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500"
+                className="bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-primary"
               />
             </div>
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 transition-all duration-300"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300"
             >
               {isLoading ? (
                 <>
@@ -131,9 +129,9 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-slate-400 text-sm">
+            <p className="text-muted-foreground text-sm">
               Nemáte účet?{" "}
-              <Link href="/register" className="text-blue-400 hover:text-blue-300 transition-colors">
+              <Link href="/register" className="text-primary hover:text-primary/80 transition-colors">
                 Registrujte se
               </Link>
             </p>

@@ -11,183 +11,137 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
+import { AlertCircle } from "lucide-react"
+import { cn } from "@/lib/utils"
 
-interface Transaction {
-  id: string
-  purpose: string
-  store?: string | null
-  estimatedAmount: number
-  finalAmount: number | null
-  isPaid: boolean
-  expenseType: string
-  dueDate: string | null
-  section?: { name: string } | null
-}
-
-interface Deposit {
-  id: string
-  amount: number
-  description: string | null
-  date: string
-}
+const dateFormatter = new Intl.DateTimeFormat("cs-CZ", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+})
 
 interface OverviewTableProps {
-  transactions: Transaction[]
-  deposits: Deposit[]
+  transactions: any[]
+  deposits: any[]
+  pageSize?: number | "all"
+  currentPage?: number
 }
 
-type RowItem = {
-  id: string
-  date: Date
-  type: "transaction" | "deposit"
-  section: string
-  purpose: string
-  store: string
-  amount: number
-  expenseType: string
-  isPaid?: boolean
-}
+export function OverviewTable({ 
+  transactions, 
+  deposits,
+  pageSize = "all",
+  currentPage = 1
+}: OverviewTableProps) {
+  // Combine and sort by date
+  const combinedData = [
+    ...transactions.map(t => ({
+      ...t,
+      displayDate: new Date(t.dueDate || t.createdAt),
+      displayType: "TRANSACTION"
+    })),
+    ...deposits.map(d => ({
+      ...d,
+      displayDate: new Date(d.date),
+      displayType: "DEPOSIT"
+    }))
+  ].sort((a, b) => b.displayDate.getTime() - a.displayDate.getTime())
 
-export function OverviewTable({ transactions, deposits }: OverviewTableProps) {
-  // Temporary checkbox state - resets on refresh
-  const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set())
+  // Ephemeral state for checkboxes
+  const [checkedIds, setCheckedIds] = useState<Record<string, boolean>>({})
 
-  // Combine transactions and deposits into a single table
-  const rows: RowItem[] = []
-
-  // Add transactions
-  transactions.forEach((t) => {
-    rows.push({
-      id: t.id,
-      date: new Date(t.dueDate || new Date()),
-      type: "transaction",
-      section: t.section?.name || "-",
-      purpose: t.purpose,
-      store: t.store || "-",
-      amount: t.finalAmount || t.estimatedAmount,
-      expenseType: t.expenseType,
-      isPaid: t.isPaid,
-    })
-  })
-
-  // Add deposits
-  deposits.forEach((d) => {
-    rows.push({
-      id: d.id,
-      date: new Date(d.date),
-      type: "deposit",
-      section: "-",
-      purpose: d.description || "Vklad",
-      store: "-",
-      amount: d.amount,
-      expenseType: "-",
-    })
-  })
-
-  // Sort by date
-  rows.sort((a, b) => a.date.getTime() - b.date.getTime())
-
-  function toggleCheck(id: string) {
-    setCheckedItems((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) {
-        next.delete(id)
-      } else {
-        next.add(id)
-      }
-      return next
-    })
+  const toggleCheck = (id: string) => {
+    setCheckedIds(prev => ({ ...prev, [id]: !prev[id] }))
   }
 
-  if (rows.length === 0) {
-    return (
-      <div className="text-center py-8 text-slate-400">
-        Žádné záznamy v tomto měsíci
-      </div>
-    )
-  }
+  const effectivePageSize = pageSize === "all" ? combinedData.length : pageSize
+  const paginatedData = combinedData.slice((currentPage - 1) * effectivePageSize, currentPage * effectivePageSize)
 
   return (
-    <div className="overflow-x-auto">
+    <div className="w-full">
       <Table>
         <TableHeader>
-          <TableRow className="border-slate-700 hover:bg-transparent">
-            <TableHead className="text-slate-400 text-xs py-2 w-[100px]">
-              Datum
-            </TableHead>
-            <TableHead className="text-slate-400 text-xs py-2">Sekce</TableHead>
-            <TableHead className="text-slate-400 text-xs py-2">Účel</TableHead>
-            <TableHead className="text-slate-400 text-xs py-2">Obchod</TableHead>
-            <TableHead className="text-slate-400 text-xs py-2 text-right">
-              Částka
-            </TableHead>
-            <TableHead className="text-slate-400 text-xs py-2">Typ</TableHead>
-            <TableHead className="text-slate-400 text-xs py-2 w-[50px] text-center">
-              ✓
+          <TableRow className="border-border hover:bg-transparent">
+            <TableHead className="py-2 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground w-[100px]">Datum</TableHead>
+            <TableHead className="py-2 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground">Sekce</TableHead>
+            <TableHead className="py-2 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground min-w-[200px]">Účel</TableHead>
+            <TableHead className="py-2 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground">Obchod</TableHead>
+            <TableHead className="py-2 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground text-right">Částka</TableHead>
+            <TableHead className="py-2 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground text-center">Typ</TableHead>
+            <TableHead className="py-2 px-0 text-center w-12">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="mx-auto text-muted-foreground/30"><polyline points="20 6 9 17 4 12"></polyline></svg>
             </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map((row) => (
-            <TableRow
-              key={row.id}
-              className={`border-slate-700/50 hover:bg-slate-700/20 ${
-                checkedItems.has(row.id) ? "bg-green-900/20" : ""
-              }`}
-            >
-              <TableCell className="py-2 text-sm text-white whitespace-nowrap">
-                {row.date.toLocaleDateString("cs-CZ")}
-              </TableCell>
-              <TableCell className="py-2 text-sm text-white">
-                {row.section}
-              </TableCell>
-              <TableCell className="py-2">
-                <div className="flex items-center gap-2">
-                  {row.type === "deposit" && (
-                    <Badge className="bg-green-600 text-[10px] px-1.5 h-5">
-                      Vklad
+          {paginatedData.map((item) => {
+            const isTr = item.displayType === "TRANSACTION"
+            return (
+              <TableRow key={item.id} className="border-border hover:bg-muted/10 transition-colors group">
+                <TableCell className="py-2 px-4 text-muted-foreground text-xs whitespace-nowrap tabular-nums">
+                  {dateFormatter.format(item.displayDate)}
+                </TableCell>
+                <TableCell className="py-2 px-4">
+                  {isTr ? (
+                    <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10 font-bold text-[9px] h-4 uppercase tracking-wider px-1">
+                      {item.section?.name}
                     </Badge>
+                  ) : (
+                    <span className="text-muted-foreground/30">—</span>
                   )}
-                  <p className="text-sm text-white font-medium truncate max-w-[200px]">
-                    {row.purpose}
-                  </p>
-                </div>
-              </TableCell>
-              <TableCell className="py-2 text-sm text-white">
-                {row.store}
-              </TableCell>
-              <TableCell
-                className={`py-2 text-sm font-medium text-right whitespace-nowrap ${
-                  row.type === "deposit" ? "text-green-400" : "text-white"
-                }`}
-              >
-                {row.type === "deposit" ? "+" : "-"}
-                {row.amount.toLocaleString("cs-CZ")} Kč
-              </TableCell>
-              <TableCell className="py-2">
-                {row.type === "transaction" ? (
-                  <Badge
-                    className={`text-[10px] px-1.5 h-5 ${
-                      row.expenseType === "MATERIAL"
-                        ? "bg-purple-600"
-                        : "bg-blue-600"
-                    }`}
-                  >
-                    {row.expenseType === "MATERIAL" ? "Materiál" : "Služba"}
-                  </Badge>
-                ) : (
-                  <span className="text-slate-500">-</span>
-                )}
-              </TableCell>
-              <TableCell className="py-2 text-center">
-                <Checkbox
-                  checked={checkedItems.has(row.id)}
-                  onCheckedChange={() => toggleCheck(row.id)}
-                  className="border-slate-500 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
-                />
+                </TableCell>
+                <TableCell className="py-2 px-4 text-sm text-foreground">
+                  {isTr ? item.purpose : (item.description || "Vklad do pokladny")}
+                </TableCell>
+                <TableCell className="py-2 px-4 text-xs text-foreground font-medium">
+                  {isTr ? (item.store || "—") : <span className="text-muted-foreground/30">—</span>}
+                </TableCell>
+                <TableCell className="py-2 px-4 text-right tabular-nums">
+                  {isTr ? (
+                    <div className="flex items-center justify-end gap-1.5">
+                      {!item.isPaid && <AlertCircle className="w-3.5 h-3.5 text-warning" />}
+                      <span className="font-bold text-destructive text-sm">
+                        -{Number(item.finalAmount || item.estimatedAmount).toLocaleString("cs-CZ")} Kč
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="font-bold text-success text-sm">
+                      +{Number(item.amount).toLocaleString("cs-CZ")} Kč
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell className="py-2 px-4 text-center">
+                  {isTr ? (
+                    <Badge className={cn(
+                      "font-bold text-[9px] uppercase tracking-wider h-4 px-1",
+                      item.expenseType === "MATERIAL" 
+                        ? "bg-[oklch(0.60_0.20_280)] text-white hover:bg-[oklch(0.60_0.20_280)] border-none" 
+                        : "bg-blue-100 text-blue-700 hover:bg-blue-100 border-none"
+                    )}>
+                      {item.expenseType === "MATERIAL" ? "Materiál" : "Služba"}
+                    </Badge>
+                  ) : (
+                    <span className="text-muted-foreground/30">—</span>
+                  )}
+                </TableCell>
+                <TableCell className="py-2 px-0 text-center">
+                  <Checkbox 
+                    id={`track-${item.id}`} 
+                    checked={!!checkedIds[item.id]} 
+                    onCheckedChange={() => toggleCheck(item.id)}
+                    className="border-muted-foreground/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary rounded-md w-5 h-5 shadow-sm mx-auto opacity-60 group-hover:opacity-100 transition-all scale-110"
+                  />
+                </TableCell>
+              </TableRow>
+            )
+          })}
+          {combinedData.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={7} className="py-20 text-center text-muted-foreground italic">
+                Žádné záznamy o vkladech ani účtenkách nebyly nalezeny
               </TableCell>
             </TableRow>
-          ))}
+          )}
         </TableBody>
       </Table>
     </div>

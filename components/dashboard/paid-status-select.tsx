@@ -1,6 +1,4 @@
-"use client"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Select,
   SelectContent,
@@ -23,6 +21,11 @@ export function PaidStatusSelect({
   const [isPaid, setIsPaid] = useState(initialStatus)
   const [isLoading, setIsLoading] = useState(false)
 
+  // Sync state with props when data is refreshed silently
+  useEffect(() => {
+    setIsPaid(initialStatus)
+  }, [initialStatus])
+
   async function handleToggle(value: string) {
     const checked = value === "paid"
     setIsLoading(true)
@@ -33,6 +36,7 @@ export function PaidStatusSelect({
     } else {
       setIsPaid(checked)
       toast.success(checked ? "Označeno jako proplaceno" : "Označeno jako neproplaceno")
+      window.dispatchEvent(new CustomEvent("app-data-refresh"))
     }
     setIsLoading(false)
   }
@@ -43,12 +47,12 @@ export function PaidStatusSelect({
       onValueChange={handleToggle}
       disabled={isLoading}
     >
-      <SelectTrigger className={`w-[140px] h-8 bg-slate-900 border-slate-700 text-xs ${isPaid ? "text-green-400" : "text-yellow-400"}`}>
+      <SelectTrigger className={`w-[140px] h-8 bg-background border-border text-xs ${isPaid ? "text-[oklch(0.60_0.16_150)]" : "text-[oklch(0.75_0.15_85)]"}`}>
         <SelectValue />
       </SelectTrigger>
-      <SelectContent className="bg-slate-800 border-slate-700 text-white">
-        <SelectItem value="unpaid" className="text-yellow-400">Neproplaceno</SelectItem>
-        <SelectItem value="paid" className="text-green-400">Proplaceno</SelectItem>
+      <SelectContent position="popper" className="bg-card border-border max-h-[none]">
+        <SelectItem value="unpaid" className="text-[oklch(0.75_0.15_85)]">Neproplaceno</SelectItem>
+        <SelectItem value="paid" className="text-[oklch(0.60_0.16_150)]">Proplaceno</SelectItem>
       </SelectContent>
     </Select>
   )

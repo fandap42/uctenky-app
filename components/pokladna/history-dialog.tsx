@@ -19,97 +19,73 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-
-interface HistoryItem {
-  id: string
-  amount: number
-  reason: string
-  createdAt: string
-}
+import { History } from "lucide-react"
 
 interface HistoryDialogProps {
   title: string
-  items: HistoryItem[]
+  transactions: any[]
   type: "debt" | "cash"
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
-export function HistoryDialog({ title, items, type }: HistoryDialogProps) {
-  const [open, setOpen] = useState(false)
+export function HistoryDialog({ title, transactions, type, open: propOpen, onOpenChange: propOnOpenChange }: HistoryDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = propOpen !== undefined ? propOpen : internalOpen
+  const setOpen = propOnOpenChange !== undefined ? propOnOpenChange : setInternalOpen
 
-  const total = items.reduce((sum, item) => sum + item.amount, 0)
+  const total = transactions.reduce((sum, item) => sum + Number(item.amount), 0)
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className={`text-xs ${
-            type === "debt"
-              ? "text-red-400 hover:text-red-300"
-              : "text-yellow-400 hover:text-yellow-300"
-          }`}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-3 w-3 mr-1"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          Historie
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="bg-slate-800 border-slate-700 max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="bg-card border-border max-w-2xl max-h-[80vh] overflow-y-auto rounded-[2rem]">
         <DialogHeader>
-          <DialogTitle className="text-white">{title}</DialogTitle>
-          <DialogDescription className="text-slate-400">
-            Celkem: {total.toLocaleString("cs-CZ")} Kč
+          <DialogTitle className="text-2xl font-black text-foreground">{title}</DialogTitle>
+          <DialogDescription className="text-muted-foreground font-bold tabular-nums">
+            Celkový stav: {total.toLocaleString("cs-CZ")} Kč
           </DialogDescription>
         </DialogHeader>
-        {items.length === 0 ? (
-          <p className="text-slate-400 text-center py-8">Žádné záznamy</p>
+        {transactions.length === 0 ? (
+          <p className="text-muted-foreground text-center py-12 font-bold italic">Žádné záznamy</p>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow className="border-slate-700 hover:bg-transparent">
-                <TableHead className="text-slate-400 text-xs">Datum</TableHead>
-                <TableHead className="text-slate-400 text-xs">Důvod</TableHead>
-                <TableHead className="text-slate-400 text-xs text-right">
-                  Částka
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((item) => (
-                <TableRow key={item.id} className="border-slate-700/50">
-                  <TableCell className="py-2 text-sm text-white whitespace-nowrap">
-                    {new Date(item.createdAt).toLocaleDateString("cs-CZ")}
-                  </TableCell>
-                  <TableCell className="py-2 text-sm text-slate-300">
-                    {item.reason}
-                  </TableCell>
-                  <TableCell className="py-2 text-right">
-                    <Badge
-                      className={`${
-                        item.amount >= 0 ? "bg-red-600" : "bg-green-600"
-                      } text-xs`}
-                    >
-                      {item.amount >= 0 ? "+" : ""}
-                      {item.amount.toLocaleString("cs-CZ")} Kč
-                    </Badge>
-                  </TableCell>
+          <div className="rounded-[1.5rem] border border-border overflow-hidden mt-4">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-border hover:bg-transparent bg-muted/30">
+                  <TableHead className="py-3 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground">Datum</TableHead>
+                  <TableHead className="py-3 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground">Důvod</TableHead>
+                  <TableHead className="py-3 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground text-right">
+                    Částka
+                  </TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {transactions.map((item) => (
+                  <TableRow key={item.id} className="border-border hover:bg-muted/30 transition-colors">
+                    <TableCell className="py-3 px-4 text-sm text-foreground font-bold whitespace-nowrap">
+                      {new Date(item.createdAt).toLocaleDateString("cs-CZ")}
+                    </TableCell>
+                    <TableCell className="py-3 px-4 text-sm text-muted-foreground font-medium">
+                      {item.reason}
+                    </TableCell>
+                    <TableCell className="py-3 px-4 text-right">
+                      <Badge
+                        className={`${
+                          item.amount >= 0 
+                            ? "bg-destructive/10 text-destructive border-destructive/20" 
+                            : "bg-success/10 text-success border-success/20"
+                        } text-xs font-black tabular-nums border`}
+                        variant="outline"
+                      >
+                        {item.amount >= 0 ? "+" : ""}
+                        {item.amount.toLocaleString("cs-CZ")} Kč
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </DialogContent>
     </Dialog>

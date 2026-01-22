@@ -84,10 +84,6 @@ export async function updateTransactionStatus(
       data: { status },
     })
 
-    revalidatePath("/dashboard")
-    revalidatePath("/dashboard/head")
-    revalidatePath("/dashboard/admin")
-    revalidatePath("/dashboard/finance")
     return { success: true }
   } catch (error) {
     console.error("Update transaction status error:", error)
@@ -135,9 +131,6 @@ export async function updateTransactionReceipt(
       },
     })
 
-    revalidatePath("/dashboard")
-    revalidatePath("/dashboard/head")
-    revalidatePath("/dashboard/admin")
     return { success: true }
   } catch (error) {
     console.error("Update transaction receipt error:", error)
@@ -170,7 +163,6 @@ export async function updateTransactionPaidStatus(
       data: { isPaid },
     })
 
-    revalidatePath("/dashboard/admin")
     return { success: true }
   } catch (error) {
     console.error("Update transaction paid status error:", error)
@@ -203,7 +195,6 @@ export async function updateTransactionFiledStatus(
       data: { isFiled },
     })
 
-    revalidatePath("/dashboard/admin")
     return { success: true }
   } catch (error) {
     console.error("Update transaction filed status error:", error)
@@ -236,8 +227,6 @@ export async function updateTransactionExpenseType(
       data: { expenseType } as any,
     })
 
-    revalidatePath("/dashboard/admin")
-    revalidatePath("/dashboard")
     return { success: true }
   } catch (error) {
     console.error("Update transaction expense type error:", error)
@@ -274,8 +263,6 @@ export async function deleteTransaction(transactionId: string) {
       where: { id: transactionId },
     })
 
-    revalidatePath("/dashboard")
-    revalidatePath("/dashboard/admin")
     return { success: true }
   } catch (error) {
     console.error("Delete transaction error:", error)
@@ -300,8 +287,6 @@ export async function removeReceipt(transactionId: string) {
       },
     })
 
-    revalidatePath("/dashboard")
-    revalidatePath("/dashboard/admin")
     return { success: true }
   } catch (error) {
     return { error: MESSAGES.TRANSACTION.RECEIPT_REMOVE_FAILED }
@@ -350,9 +335,6 @@ export async function updateTransactionDetails(
       },
     })
 
-    revalidatePath("/dashboard")
-    revalidatePath("/dashboard/head")
-    revalidatePath("/dashboard/admin")
     return { success: true }
   } catch (error) {
     console.error("Update transaction details error:", error)
@@ -360,26 +342,97 @@ export async function updateTransactionDetails(
   }
 }
 
-export async function deleteUser(userId: string) {
+import { getSemester, getSemesterRange } from "@/lib/utils/semesters"
+
+export async function getTransactionsBySemester(
+  semesterKey: string,
+  filters: {
+    requesterId?: string
+    sectionId?: string
+    status?: TransStatus | TransStatus[]
+  } = {}
+) {
   const session = await auth()
 
-  if (session?.user?.role !== "ADMIN") {
-    return { error: "Oprávnění pouze pro administrátora" }
+  if (!session?.user?.id) {
+    return { error: MESSAGES.AUTH.UNAUTHORIZED }
+  }
+
+  const { start, end } = getSemesterRange(semesterKey)
+
+  try {
+    const transactions = await prisma.transaction.findMany({
+      where: {
+        createdAt: { gte: start, lte: end },
+        ...(filters.requesterId && { requesterId: filters.requesterId }),
+        ...(filters.sectionId && { sectionId: filters.sectionId }),
+        ...(filters.status && {
+          status: Array.isArray(filters.status)
+            ? { in: filters.status }
+            : filters.status,
+        }),
+      },
+      include: {
+        requester: { select: { id: true, fullName: true } },
+        section: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    })
+
+    // Serialize Decimals and Dates
+    const serialized = transactions.map((t) => ({
+      ...t,
+      estimatedAmount: Number(t.estimatedAmount),
+      finalAmount: t.finalAmount ? Number(t.finalAmount) : null,
+      createdAt: t.createdAt.toISOString(),
+      updatedAt: t.updatedAt.toISOString(),
+      dueDate: t.dueDate ? t.dueDate.toISOString() : null,
+    }))
+
+    return { transactions: serialized }
+  } catch (error) {
+    console.error("Get transactions by semester error:", error)
+    return { error: "Nepodařilo se načíst transakce pro daný semestr" }
+  }
+}
+export async function getSemesterTotals(
+  filters: {
+    requesterId?: string
+    sectionId?: string
+  } = {}
+) {
+  const session = await auth()
+
+  if (!session?.user?.id) {
+    return { error: MESSAGES.AUTH.UNAUTHORIZED }
   }
 
   try {
-    // Check if user is deleting themselves
-    if (session.user.id === userId) {
-      return { error: MESSAGES.USER.CANNOT_DELETE_SELF }
-    }
-
-    await prisma.user.delete({
-      where: { id: userId },
+    const transactions = await prisma.transaction.findMany({
+      where: {
+        ...(filters.requesterId && { requesterId: filters.requesterId }),
+        ...(filters.sectionId && { sectionId: filters.sectionId }),
+        status: { notIn: ["REJECTED", "DRAFT"] },
+      },
+      select: {
+        estimatedAmount: true,
+        finalAmount: true,
+        createdAt: true,
+        dueDate: true,
+      },
     })
 
-    revalidatePath("/dashboard/users")
-    return { success: true }
+    const totals: Record<string, number> = {}
+
+    transactions.forEach((t) => {
+      const key = getSemester(new Date(t.dueDate || t.createdAt))
+      const amount = t.finalAmount ? Number(t.finalAmount) : Number(t.estimatedAmount)
+      totals[key] = (totals[key] || 0) + amount
+    })
+
+    return { totals }
   } catch (error) {
-    return { error: MESSAGES.USER.DELETE_FAILED }
+    console.error("Get semester totals error:", error)
+    return { error: "Nepodařilo se načíst součty semestrů" }
   }
 }

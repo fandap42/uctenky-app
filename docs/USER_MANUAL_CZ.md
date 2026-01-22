@@ -15,11 +15,11 @@
 3. Klikněte na **Přihlásit se**
 
 ### Přehled (Dashboard)
-
 Po přihlášení uvidíte:
-- **Počet vašich žádostí** - celkový počet podaných žádostí
-- **Čeká na schválení** - žádosti čekající na vyřízení
-- **Moje žádosti** - tabulka všech vašich žádostí
+- **Počet vašich žádostí** - počet žádostí podaných v **aktuálním semestru**
+- **Čeká na schválení** - Celkový počet vašich žádostí čekajících na vyřízení (napříč všemi semestry)
+- **Celkem vyčerpáno** - Suma financí za schválené a nakoupené položky v daném semestru
+- **Moje žádosti** - tabulka všech vašich žádostí, rozdělená podle semestrů a měsíců
 
 ---
 
@@ -87,13 +87,15 @@ Na účtence **MUSÍ být čitelné:**
 
 ### Přehled žádostí
 
-Jako vedoucí sekce máte přístup k přehledu všech žádostí vaší sekce:
+Jako vedoucí sekce máte přístup k přehledu všech žádostí vaší sekce. Administrátoři mají navíc přístup ke všem sekcím najednou:
 
 1. V menu klikněte na **Žádosti sekce**
-2. Uvidíte seznam všech žádostí od členů vaší sekce
-3. Můžete sledovat stav jednotlivých žádostí
+2. Vedoucí sekce uvidí seznam všech žádostí od členů své sekce
+3. **Administrátoři** mohou v horní části stránky přepínat mezi jednotlivými sekcemi pomocí výběrového pole
+4. Statistiky v horní části (**Celkem žádostí sekce**) se vztahují k **aktuálně rozbalenému semestru**, zatímco počet **čekajících žádostí** je celkový.
+5. Můžete sledovat stav jednotlivých žádostí
 
-> ⚠️ **Poznámka:** Schvalování žádostí provádí **pouze tým Finance**. Vedoucí sekce má přístup pouze pro čtení.
+> ⚠️ **Poznámka:** Schvalování žádostí provádí **pouze tým Finance**. Vedoucí sekce má přístup pouze pro čtení. Administrátoři mohou žádosti schvalovat přímo v tomto přehledu.
 
 ### Co můžete sledovat?
 
