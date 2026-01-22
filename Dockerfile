@@ -1,44 +1,43 @@
 # syntax=docker/dockerfile:1
 
-# Stage 1: Dependencies
-FROM node:20-alpine AS deps
+# Stage 1: Build
+FROM node:20-bookworm-slim AS builder
 WORKDIR /app
 
-# Install dependencies needed for node-gyp
-RUN apk add --no-cache libc6-compat
+# Install dependencies needed for native modules and Prisma
+RUN apt-get update && apt-get install -y openssl ca-certificates libssl-dev
 
-# Copy package files
-COPY package.json package-lock.json ./
+# Copy configuration files
+COPY package.json ./
+COPY prisma ./prisma/
 
 # Install dependencies
-RUN npm ci
+# Using npm install without lockfile to ensure fresh resolution for Linux
+ENV PRISMA_SKIP_POSTINSTALL_GENERATE=1
+RUN npm install
 
-# Stage 2: Builder
-FROM node:20-alpine AS builder
-WORKDIR /app
-
-# Copy dependencies from deps stage
-COPY --from=deps /app/node_modules ./node_modules
+# Copy the rest of the application
 COPY . .
 
-# Generate Prisma client
-RUN npx prisma generate
-
-# Build the application
+# Generate Prisma client and build
 ENV NEXT_TELEMETRY_DISABLED=1
+RUN npx prisma generate
 RUN npm run build
 
-# Stage 3: Runner
-FROM node:20-alpine AS runner
+# Stage 2: Runner
+FROM node:20-bookworm-slim AS runner
 WORKDIR /app
+
+# Install openssl for production
+RUN apt-get update && apt-get install -y openssl
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN groupadd --system --gid 1001 nodejs
+RUN useradd --system --uid 1001 nextjs
 
-# Copy necessary files
+# Copy necessary files from builder
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
