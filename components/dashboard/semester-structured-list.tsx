@@ -105,23 +105,23 @@ function MonthlyTransactionCard({
       <CardContent className="p-0 overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow className="border-border hover:bg-transparent">
-              {showRequester && <TableHead className="py-2">Žadatel</TableHead>}
-              {showSection && <TableHead className="py-2">Sekce</TableHead>}
-              <TableHead className="py-2">Datum</TableHead>
-              <TableHead className="py-2">Účel</TableHead>
-              <TableHead className="py-2">Obchod</TableHead>
-              <TableHead className="py-2">Částka</TableHead>
-              <TableHead className="py-2">Stav</TableHead>
-              {isAdmin && <TableHead className="py-2">Typ</TableHead>}
-              {isAdmin && <TableHead className="py-2">Proplaceno</TableHead>}
-              {isAdmin && <TableHead className="py-2">Založeno</TableHead>}
-              {(showActions || isAdmin) && <TableHead className="py-2 text-right">Akce</TableHead>}
+            <TableRow className="border-border hover:bg-transparent text-xs font-black uppercase tracking-widest text-muted-foreground">
+              {showRequester && <TableHead className="py-2 px-4">Žadatel</TableHead>}
+              {showSection && <TableHead className="py-2 px-4">Sekce</TableHead>}
+              <TableHead className="py-2 px-4">Datum</TableHead>
+              <TableHead className="py-2 px-4">Účel</TableHead>
+              <TableHead className="py-2 px-4">Obchod</TableHead>
+              <TableHead className="py-2 px-4">Částka</TableHead>
+              <TableHead className="py-2 px-4">Stav</TableHead>
+              {isAdmin && <TableHead className="py-2 px-4">Typ</TableHead>}
+              {isAdmin && <TableHead className="py-2 px-4">Proplaceno</TableHead>}
+              {isAdmin && <TableHead className="py-2 px-4">Založeno</TableHead>}
+              {(showActions || isAdmin) && <TableHead className="py-2 px-4 text-right">Akce</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedTxs.map((tx) => (
-              <TableRow key={tx.id} className="border-border hover:bg-muted/50">
+              <TableRow key={tx.id} className="border-border hover:bg-muted/50 transition-colors h-[52px]">
                 {showRequester && (
                   <TableCell className="py-2 text-sm text-foreground font-semibold">
                     {tx.requester?.fullName || "Neznámý"}
@@ -148,7 +148,7 @@ function MonthlyTransactionCard({
                   )}
                 </TableCell>
                 <TableCell className="py-2">
-                  <Badge className={`${statusColors[tx.status]} text-[10px] px-1.5 h-5 text-white`}>
+                  <Badge className={`${statusColors[tx.status]} text-[10px] px-1.5 h-5 text-white uppercase tracking-wider font-bold`}>
                     {statusLabels[tx.status]}
                   </Badge>
                 </TableCell>

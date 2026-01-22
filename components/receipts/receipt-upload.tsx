@@ -87,7 +87,7 @@ export function ReceiptUpload({ transactionId }: ReceiptUploadProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-full gap-2">
+        <Button className="h-8 px-4 text-xs bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-full gap-2">
           <Upload className="w-4 h-4" />
           Nahrát účtenku
         </Button>
