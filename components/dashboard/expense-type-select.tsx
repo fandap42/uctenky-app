@@ -1,6 +1,4 @@
-"use client"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
     Select,
     SelectContent,
@@ -23,6 +21,11 @@ export function ExpenseTypeSelect({
     const [expenseType, setExpenseType] = useState(initialType)
     const [isLoading, setIsLoading] = useState(false)
 
+    // Sync state with props when data is refreshed silently
+    useEffect(() => {
+        setExpenseType(initialType)
+    }, [initialType])
+
     async function handleChange(value: string) {
         setIsLoading(true)
         const result = await updateTransactionExpenseType(transactionId, value as "MATERIAL" | "SERVICE")
@@ -32,6 +35,7 @@ export function ExpenseTypeSelect({
         } else {
             setExpenseType(value)
             toast.success(value === "MATERIAL" ? "Označeno jako materiál" : "Označeno jako služba")
+            window.dispatchEvent(new CustomEvent("app-data-refresh"))
         }
         setIsLoading(false)
     }

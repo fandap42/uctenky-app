@@ -56,6 +56,7 @@ export function DepositDialog() {
     } else {
       toast.success("Pohyb byl úspěšně zaznamenán")
       setOpen(false)
+      window.dispatchEvent(new CustomEvent("app-data-refresh"))
       router.refresh()
     }
 

@@ -1,6 +1,4 @@
-"use client"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Select,
   SelectContent,
@@ -23,6 +21,11 @@ export function FiledStatusSelect({
   const [isFiled, setIsFiled] = useState(initialStatus)
   const [isLoading, setIsLoading] = useState(false)
 
+  // Sync state with props when data is refreshed silently
+  useEffect(() => {
+    setIsFiled(initialStatus)
+  }, [initialStatus])
+
   async function handleToggle(value: string) {
     const checked = value === "filed"
     setIsLoading(true)
@@ -33,6 +36,7 @@ export function FiledStatusSelect({
     } else {
       setIsFiled(checked)
       toast.success(checked ? "Označeno jako založeno" : "Označeno jako nezaloženo")
+      window.dispatchEvent(new CustomEvent("app-data-refresh"))
     }
     setIsLoading(false)
   }

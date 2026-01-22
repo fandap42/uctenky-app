@@ -1,6 +1,4 @@
-"use client"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Select,
   SelectContent,
@@ -23,6 +21,11 @@ export function PaidStatusSelect({
   const [isPaid, setIsPaid] = useState(initialStatus)
   const [isLoading, setIsLoading] = useState(false)
 
+  // Sync state with props when data is refreshed silently
+  useEffect(() => {
+    setIsPaid(initialStatus)
+  }, [initialStatus])
+
   async function handleToggle(value: string) {
     const checked = value === "paid"
     setIsLoading(true)
@@ -33,6 +36,7 @@ export function PaidStatusSelect({
     } else {
       setIsPaid(checked)
       toast.success(checked ? "Označeno jako proplaceno" : "Označeno jako neproplaceno")
+      window.dispatchEvent(new CustomEvent("app-data-refresh"))
     }
     setIsLoading(false)
   }

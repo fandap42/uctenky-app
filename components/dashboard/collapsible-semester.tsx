@@ -36,7 +36,7 @@ export function CollapsibleSemester({
   useEffect(() => {
     const handleRefresh = () => {
       if (isExpanded) {
-        loadData()
+        loadData(true)
       } else {
         // If not expanded, just clear data so it refetches when expanded next time
         setData(null)
@@ -47,8 +47,8 @@ export function CollapsibleSemester({
     return () => window.removeEventListener("app-data-refresh", handleRefresh)
   }, [isExpanded])
 
-  const loadData = async () => {
-    setIsLoading(true)
+  const loadData = async (silent = false) => {
+    if (!silent) setIsLoading(true)
     setError(null)
     try {
       const result = await fetchData()
@@ -58,9 +58,9 @@ export function CollapsibleSemester({
         setData(result)
       }
     } catch (err) {
-      setError("Nepodařilo se načíst data")
+      if (!silent) setError("Nepodařilo se načíst data")
     } finally {
-      setIsLoading(false)
+      if (!silent) setIsLoading(false)
     }
   }
 
@@ -95,7 +95,7 @@ export function CollapsibleSemester({
             <div className="py-12 text-center text-destructive font-medium">
               {error}
               <button 
-                onClick={loadData}
+                onClick={() => loadData()}
                 className="ml-4 text-sm underline hover:no-underline"
               >
                 Zkusit znovu

@@ -91,7 +91,7 @@ export default async function PokladnaPage() {
       unpaidCount={unpaidCount}
       currentUsers={usersWithBalance}
       registerData={registerData}
-      semesterKeys={semesterKeys}
+      semesterKeys={sortedKeys}
       initialSemesterData={initialSemesterData}
     />
   )
