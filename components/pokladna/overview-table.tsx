@@ -57,8 +57,9 @@ export function OverviewTable({ transactions, deposits }: OverviewTableProps) {
             <TableHead className="py-4 px-6 text-xs font-black uppercase tracking-widest text-muted-foreground">Obchod</TableHead>
             <TableHead className="py-4 px-6 text-xs font-black uppercase tracking-widest text-muted-foreground text-right">Částka</TableHead>
             <TableHead className="py-4 px-6 text-xs font-black uppercase tracking-widest text-muted-foreground text-center">Typ</TableHead>
-            <TableHead className="py-4 px-6 text-xs font-black uppercase tracking-widest text-muted-foreground text-right">Vklady</TableHead>
-            <TableHead className="py-4 px-6 w-12"></TableHead>
+            <TableHead className="py-4 px-0 text-center w-12">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="mx-auto text-muted-foreground/50"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -90,7 +91,9 @@ export function OverviewTable({ transactions, deposits }: OverviewTableProps) {
                       -{Number(item.finalAmount || item.estimatedAmount).toLocaleString("cs-CZ")} Kč
                     </span>
                   ) : (
-                    <span className="text-muted-foreground/30">—</span>
+                    <span className="font-black text-success text-base">
+                      +{Number(item.amount).toLocaleString("cs-CZ")} Kč
+                    </span>
                   )}
                 </TableCell>
                 <TableCell className="py-4 px-6 text-center">
@@ -98,7 +101,7 @@ export function OverviewTable({ transactions, deposits }: OverviewTableProps) {
                     <Badge className={cn(
                       "font-black text-[10px] uppercase tracking-wider h-5",
                       item.expenseType === "MATERIAL" 
-                        ? "bg-amber-100 text-amber-700 hover:bg-amber-100 border-none" 
+                        ? "bg-[oklch(0.60_0.20_280)] text-white hover:bg-[oklch(0.60_0.20_280)] border-none" 
                         : "bg-blue-100 text-blue-700 hover:bg-blue-100 border-none"
                     )}>
                       {item.expenseType === "MATERIAL" ? "Materiál" : "Služba"}
@@ -107,21 +110,12 @@ export function OverviewTable({ transactions, deposits }: OverviewTableProps) {
                     <span className="text-muted-foreground/30">—</span>
                   )}
                 </TableCell>
-                <TableCell className="py-4 px-6 text-right tabular-nums">
-                  {!isTr ? (
-                    <span className="font-black text-success text-base">
-                      +{Number(item.amount).toLocaleString("cs-CZ")} Kč
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground/30">—</span>
-                  )}
-                </TableCell>
-                <TableCell className="py-4 px-6 text-right">
+                <TableCell className="py-4 px-0 text-center">
                   <Checkbox 
                     id={`track-${item.id}`} 
                     checked={!!checkedIds[item.id]} 
                     onCheckedChange={() => toggleCheck(item.id)}
-                    className="border-muted-foreground/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary rounded-md w-5 h-5 shadow-none"
+                    className="border-muted-foreground/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary rounded-md w-5 h-5 shadow-none mx-auto"
                   />
                 </TableCell>
               </TableRow>
@@ -129,7 +123,7 @@ export function OverviewTable({ transactions, deposits }: OverviewTableProps) {
           })}
           {combinedData.length === 0 && (
             <TableRow>
-              <TableCell colSpan={8} className="py-20 text-center text-muted-foreground italic">
+              <TableCell colSpan={7} className="py-20 text-center text-muted-foreground italic">
                 Žádné záznamy o vkladech ani účtenkách nebyly nalezeny
               </TableCell>
             </TableRow>

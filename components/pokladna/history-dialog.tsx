@@ -38,16 +38,6 @@ export function HistoryDialog({ title, transactions, type, open: propOpen, onOpe
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className="rounded-full border-border font-bold text-xs"
-        >
-          <History className="h-3 w-3 mr-1" />
-          Historie {type === "debt" ? "dluhu" : "hotovosti"}
-        </Button>
-      </DialogTrigger>
       <DialogContent className="bg-card border-border max-w-2xl max-h-[80vh] overflow-y-auto rounded-[2rem]">
         <DialogHeader>
           <DialogTitle className="text-2xl font-black text-foreground">{title}</DialogTitle>

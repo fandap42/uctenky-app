@@ -60,19 +60,10 @@ export function CashOnHandDialog({ currentTotal, onSuccess, open: propOpen, onOp
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="rounded-full border-[#FFD700]/50 text-[#B8860B] hover:bg-[#FFD700]/10 font-bold">
-          <Coins className="h-4 w-4 mr-1" />
-          Upravit hotovost
-        </Button>
-      </DialogTrigger>
       <DialogContent className="bg-card border-border max-w-md rounded-[2.5rem]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle className="text-2xl font-black text-foreground">Stav hotovosti v pokladně</DialogTitle>
-            <DialogDescription className="text-muted-foreground font-bold tabular-nums">
-              Aktuální stav: {currentTotal.toLocaleString("cs-CZ")} Kč
-            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-6 py-6">
             {/* Honeypot field - visually hidden, should not be filled by users */}
@@ -97,7 +88,7 @@ export function CashOnHandDialog({ currentTotal, onSuccess, open: propOpen, onOp
               </Button>
               <Button
                 type="button"
-                className={`flex-1 rounded-xl h-10 font-black ${!isAdding ? "bg-success text-success-foreground shadow-lg shadow-success/20" : "bg-transparent text-muted-foreground hover:text-foreground"}`}
+                className={`flex-1 rounded-xl h-10 font-black ${!isAdding ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "bg-transparent text-muted-foreground hover:text-foreground"}`}
                 variant={!isAdding ? "default" : "ghost"}
                 onClick={() => setIsAdding(false)}
               >

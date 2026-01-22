@@ -1,17 +1,18 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Card, CardHeader, CardDescription, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { OverviewTable } from "@/components/pokladna/overview-table"
 import { getBalanceAtDate } from "@/lib/actions/cash-register"
-import { AlertCircle, Wallet, ArrowRightLeft, Landmark } from "lucide-react"
+import { AlertCircle, Wallet, History, Pencil, FileDown, Plus } from "lucide-react"
 import { DepositDialog } from "@/components/pokladna/deposit-dialog"
 import { DebtErrorDialog } from "@/components/pokladna/debt-error-dialog"
 import { CashOnHandDialog } from "@/components/pokladna/cash-on-hand-dialog"
+import { HistoryDialog } from "@/components/pokladna/history-dialog"
+import { CashRegisterExport } from "@/components/pokladna/cash-register-export"
+import { getSemester } from "@/lib/utils/semesters"
 import { cn } from "@/lib/utils"
 
 interface PokladnaClientProps {
@@ -20,6 +21,11 @@ interface PokladnaClientProps {
   currentUsers: any[]
   registerData: any
 }
+
+const MONTH_NAMES = [
+  "Leden", "Únor", "Březen", "Duben", "Květen", "Červen",
+  "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec"
+]
 
 export function PokladnaClient({ 
   initialBalance, 
@@ -30,257 +36,240 @@ export function PokladnaClient({
   const [balance, setBalance] = useState(initialBalance)
   const [showDebtError, setShowDebtError] = useState(false)
   const [showCashOnHand, setShowCashOnHand] = useState(false)
-  const [startMonthBalance, setStartMonthBalance] = useState<number | null>(null)
+  const [showDebtHistory, setShowDebtHistory] = useState(false)
+  const [showCashHistory, setShowCashHistory] = useState(false)
 
-  // Calculate stats
-  const totalDebt = currentUsers.reduce((sum, u) => sum + (Number(u.pokladnaBalance) > 0 ? Number(u.pokladnaBalance) : 0), 0)
-  
-  // Calculate beginning of month balance
-  useEffect(() => {
-    const firstDay = new Date()
-    firstDay.setDate(1)
-    firstDay.setHours(0, 0, 0, 0)
-    getBalanceAtDate(firstDay).then(res => {
-      if (res && 'balance' in res && typeof res.balance === 'number') {
-        setStartMonthBalance(res.balance)
+  // Group data by Semester and then by Month
+  const semesterGroups = useMemo(() => {
+    const semesters: Record<string, Record<string, { 
+      monthName: string, 
+      month: number,
+      year: number, 
+      transactions: any[], 
+      deposits: any[],
+      sortKey: number,
+      endBalance: number,
+      startBalance: number
+    }>> = {}
+
+    const allData = [
+      ...registerData.transactions.map((t: any) => ({ ...t, displayDate: new Date(t.dueDate || t.createdAt), type: 'TR', amount: -(t.finalAmount || t.estimatedAmount) })),
+      ...registerData.deposits.map((d: any) => ({ ...d, displayDate: new Date(d.date), type: 'DEP', amount: d.amount }))
+    ].sort((a, b) => a.displayDate.getTime() - b.displayDate.getTime())
+
+    let runningBalance = 0
+    
+    allData.forEach(item => {
+      const startBalance = runningBalance
+      runningBalance += Number(item.amount)
+      
+      const date = item.displayDate
+      const month = date.getMonth()
+      const year = date.getFullYear()
+      const semKey = getSemester(date)
+      const monthKey = `${year}-${month}`
+
+      if (!semesters[semKey]) semesters[semKey] = {}
+      if (!semesters[semKey][monthKey]) {
+        semesters[semKey][monthKey] = {
+          monthName: MONTH_NAMES[month],
+          month: month + 1,
+          year,
+          transactions: [],
+          deposits: [],
+          sortKey: year * 100 + month,
+          endBalance: 0,
+          startBalance: startBalance
+        }
       }
+
+      if (item.type === 'TR') {
+        semesters[semKey][monthKey].transactions.push(item)
+      } else {
+        semesters[semKey][monthKey].deposits.push(item)
+      }
+      
+      semesters[semKey][monthKey].endBalance = runningBalance
     })
-  }, [])
+
+    // Transform into sorted array structure
+    const sortedSemesters = Object.entries(semesters)
+      .map(([semKey, months]) => ({
+        semKey,
+        months: Object.values(months).sort((a, b) => b.sortKey - a.sortKey)
+      }))
+      .sort((a, b) => {
+        // Sort semesters (standard logic from SemesterStructuredList)
+        const yearA = parseInt(a.semKey.slice(2))
+        const yearB = parseInt(b.semKey.slice(2))
+        if (yearA !== yearB) return yearB - yearA
+        return b.semKey.charAt(0).localeCompare(a.semKey.charAt(0))
+      })
+
+    return sortedSemesters
+  }, [registerData.transactions, registerData.deposits])
 
   return (
     <div className="space-y-8 pb-10">
-      {/* Header section with primary action */}
+      {/* Header section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-black text-foreground">Pokladna</h1>
-          <p className="text-muted-foreground font-medium flex items-center gap-2">
-            <Landmark className="w-4 h-4 text-primary" />
-            Správa financí a pokladní knihy 4FIS
-          </p>
+          <h1 className="text-3xl font-black text-foreground">Správa pokladny a přehled financí</h1>
         </div>
         <div className="flex items-center gap-3">
           <DepositDialog />
         </div>
       </div>
 
-      <Tabs defaultValue="real" className="space-y-8">
-        <TabsList className="bg-muted/50 p-1 rounded-2xl h-14 w-full md:w-auto overflow-x-auto overflow-y-hidden">
-          <TabsTrigger value="real" className="rounded-xl px-8 font-bold data-[state=active]:bg-card data-[state=active]:shadow-sm h-full">
-            Reálná pokladna
-          </TabsTrigger>
-          <TabsTrigger value="debt-errors" className="rounded-xl px-8 font-bold data-[state=active]:bg-card data-[state=active]:shadow-sm h-full">
-            Dluh z chyb
-          </TabsTrigger>
-          <TabsTrigger value="cash-on-hand" className="rounded-xl px-8 font-bold data-[state=active]:bg-card data-[state=active]:shadow-sm h-full">
-            Hotovost u pokladníka
-          </TabsTrigger>
-          <TabsTrigger value="users" className="rounded-xl px-8 font-bold data-[state=active]:bg-card data-[state=active]:shadow-sm h-full">
-            Zůstatky členů
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="real" className="space-y-8 outline-none">
-          {/* Real Pokladna Summary */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="bg-primary text-primary-foreground border-none shadow-xl shadow-primary/20 relative overflow-hidden h-32">
-              <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
-              <CardHeader className="py-4">
-                <CardDescription className="text-primary-foreground/70 font-black uppercase tracking-widest text-[10px]">
-                  Stav reálné pokladny
-                </CardDescription>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-black tabular-nums">
-                    {registerData.currentBalance.toLocaleString("cs-CZ")}
-                  </span>
-                  <span className="text-sm font-bold opacity-80">Kč</span>
-                </div>
-              </CardHeader>
-            </Card>
-
-            <Card className="bg-card border-border shadow-sm h-32 flex flex-col justify-center">
-              <CardHeader className="py-4">
-                <CardDescription className="text-muted-foreground font-black uppercase tracking-widest text-[10px]">
-                  Neproplacené účtenky
-                </CardDescription>
-                <div className="flex items-center gap-3">
-                  <span className={cn(
-                    "text-3xl font-black tabular-nums",
-                    unpaidCount > 0 ? "text-red-500" : "text-success"
-                  )}>
-                    {unpaidCount}
-                  </span>
-                  <Badge className={cn(
-                    "font-black text-[10px] uppercase tracking-wider h-5",
-                    unpaidCount > 0 ? "bg-red-500/10 text-red-500 border-red-500/20" : "bg-success/10 text-success border-success/20"
-                  )} variant="outline">
-                    {unpaidCount > 0 ? "K proplacení" : "Vše vyřízeno"}
-                  </Badge>
-                </div>
-              </CardHeader>
-            </Card>
-
-            <Card className="bg-card border-border shadow-sm h-32 flex flex-col justify-center">
-              <CardHeader className="py-4">
-                <CardDescription className="text-muted-foreground font-black uppercase tracking-widest text-[10px]">
-                  Celkem dluží organizace
-                </CardDescription>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-black text-foreground tabular-nums">
-                    {totalDebt.toLocaleString("cs-CZ")}
-                  </span>
-                  <span className="text-sm font-bold text-muted-foreground">Kč</span>
-                </div>
-              </CardHeader>
-            </Card>
-          </div>
-
-          {/* Monthly Overview Table */}
+      {/* Top Cards Grid - Single Row */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card className="bg-card border-border shadow-sm rounded-[2.5rem] p-8 flex flex-col justify-between min-h-[160px]">
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-black text-foreground">Pokladní kniha</h2>
-                <p className="text-sm text-muted-foreground font-medium">
-                  Zůstatek na začátku měsíce: <span className="font-black text-foreground">{startMonthBalance?.toLocaleString("cs-CZ") ?? "—"} Kč</span>
-                </p>
+            <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Reálná pokladna</h3>
+            <div className="text-xs text-muted-foreground font-medium">
+              Aktuální zůstatek - Dluh z chyb - Hotovost
+            </div>
+            {unpaidCount > 0 && (
+              <div className="flex items-center gap-2 text-warning font-black text-sm">
+                <AlertCircle className="w-4 h-4" />
+                Neproplacených: {unpaidCount}
               </div>
-              <div className="flex items-baseline gap-2 bg-muted/50 px-4 py-2 rounded-xl">
-                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Aktuální bilanční stav:</span>
-                <span className="text-lg font-black text-foreground tabular-nums">{registerData.currentBalance.toLocaleString("cs-CZ")} Kč</span>
-              </div>
-            </div>
-            
-            <OverviewTable 
-              transactions={registerData.transactions} 
-              deposits={registerData.deposits} 
-            />
+            )}
           </div>
-        </TabsContent>
+          <div className="flex items-baseline gap-2 mt-auto">
+            <span className="text-4xl font-black text-foreground tabular-nums">
+              {registerData.realCash.toLocaleString("cs-CZ")}
+            </span>
+            <span className="text-xl font-bold text-muted-foreground">Kč</span>
+          </div>
+        </Card>
 
-        <TabsContent value="debt-errors" className="space-y-6 outline-none">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-black text-foreground flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-destructive" />
-                Dluh z chyb
+        <Card className="bg-card border-border shadow-sm rounded-[2.5rem] p-8 flex flex-col justify-between min-h-[160px]">
+          <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Aktuální zůstatek</h3>
+          <div className="flex items-baseline gap-2 mt-auto">
+            <span className="text-4xl font-black text-foreground tabular-nums">
+              {registerData.currentBalance.toLocaleString("cs-CZ")}
+            </span>
+            <span className="text-xl font-bold text-muted-foreground">Kč</span>
+          </div>
+        </Card>
+
+        <Card className="bg-card border-border shadow-sm rounded-[2.5rem] p-8 flex flex-col min-h-[160px]">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Dluh z chyb</h3>
+            <div className="flex items-center gap-1">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowDebtHistory(true)}
+                className="text-muted-foreground hover:text-foreground font-bold text-xs flex items-center gap-1 h-6 px-1"
+              >
+                <History className="w-3 h-3" />
+                Historie
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowDebtError(true)}
+                className="border-border rounded-xl font-bold text-xs flex items-center gap-1 h-7 px-2"
+              >
+                <Pencil className="w-2.5 h-2.5" />
+                Upravit
+              </Button>
+            </div>
+          </div>
+          <div className="flex items-baseline gap-2 mt-auto">
+            <span className="text-3xl font-black text-foreground tabular-nums">
+              {registerData.totalDebtErrors.toLocaleString("cs-CZ")}
+            </span>
+            <span className="text-lg font-bold text-muted-foreground">Kč</span>
+          </div>
+        </Card>
+
+        <Card className="bg-card border-border shadow-sm rounded-[2.5rem] p-8 flex flex-col min-h-[160px]">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Hotovost</h3>
+            <div className="flex items-center gap-1">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowCashHistory(true)}
+                className="text-muted-foreground hover:text-foreground font-bold text-xs flex items-center gap-1 h-6 px-1"
+              >
+                <History className="w-3 h-3" />
+                Historie
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowCashOnHand(true)}
+                className="border-border rounded-xl font-bold text-xs flex items-center gap-1 h-7 px-2"
+              >
+                <Pencil className="w-2.5 h-2.5" />
+                Upravit
+              </Button>
+            </div>
+          </div>
+          <div className="flex items-baseline gap-2 mt-auto">
+            <span className="text-3xl font-black text-foreground tabular-nums">
+              {registerData.totalCashOnHand.toLocaleString("cs-CZ")}
+            </span>
+            <span className="text-lg font-bold text-muted-foreground">Kč</span>
+          </div>
+        </Card>
+      </div>
+
+      {/* Semester Sections */}
+      <div className="space-y-16">
+        {semesterGroups.map((semester) => (
+          <div key={semester.semKey} className="space-y-10">
+            {/* Semester Header */}
+            <div className="flex items-center gap-6">
+              <h2 className="text-3xl font-black text-foreground bg-primary px-6 py-2 rounded-2xl text-primary-foreground">
+                {semester.semKey}
               </h2>
-              <p className="text-muted-foreground font-medium">Extra výdaje vzniklé administrativní chybou</p>
+              <div className="h-0.5 flex-1 bg-border/60" />
             </div>
-            <Button 
-              onClick={() => setShowDebtError(true)} 
-              className="bg-destructive/10 hover:bg-destructive/20 text-destructive font-black rounded-full"
-            >
-              + Přidat záznam
-            </Button>
-          </div>
-          
-          <Card className="bg-card border-border overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/30 border-border hover:bg-transparent">
-                  <TableHead className="py-4 px-6 text-xs font-black uppercase tracking-widest text-muted-foreground">Důvod</TableHead>
-                  <TableHead className="py-4 px-6 text-xs font-black uppercase tracking-widest text-muted-foreground text-right w-[150px]">Částka</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {registerData.debtErrors.map((de: any) => (
-                  <TableRow key={de.id} className="border-border hover:bg-muted/30">
-                    <TableCell className="py-4 px-6 font-bold">{de.reason}</TableCell>
-                    <TableCell className="py-4 px-6 text-right font-black text-destructive tabular-nums">
-                      -{Number(de.amount).toLocaleString("cs-CZ")} Kč
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {registerData.debtErrors.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={2} className="py-12 text-center text-muted-foreground italic">Žádné záznamy o chybách</TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </Card>
-        </TabsContent>
 
-        <TabsContent value="cash-on-hand" className="space-y-6 outline-none">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-black text-foreground flex items-center gap-2">
-                <Wallet className="w-5 h-5 text-success" />
-                Hotovost u pokladníka
-              </h2>
-              <p className="text-muted-foreground font-medium">Fyzické peníze držené u odpovědné osoby</p>
+            {/* Monthly Groups within Semester */}
+            <div className="space-y-12">
+              {semester.months.map((group) => (
+                <div key={`${group.year}-${group.monthName}`} className="space-y-4">
+                  <div className="flex items-center justify-between px-4">
+                    <div className="flex items-baseline gap-3">
+                      <h3 className="text-2xl font-black text-foreground">{group.monthName}</h3>
+                      <div className="text-sm font-medium text-muted-foreground">
+                        Zůstatek na konci měsíce: <span className="text-foreground font-black">{group.endBalance.toLocaleString("cs-CZ")} Kč</span>
+                      </div>
+                    </div>
+                    <CashRegisterExport 
+                      transactions={group.transactions}
+                      deposits={group.deposits}
+                      beginningBalance={group.startBalance}
+                      endingBalance={group.endBalance}
+                      year={group.year}
+                      month={group.month}
+                    />
+                  </div>
+                  
+                  <OverviewTable 
+                    transactions={group.transactions} 
+                    deposits={group.deposits} 
+                  />
+                </div>
+              ))}
             </div>
-            <Button 
-              onClick={() => setShowCashOnHand(true)} 
-              className="bg-primary/10 hover:bg-primary/20 text-primary font-black rounded-full"
-            >
-              + Přidat záznam
-            </Button>
           </div>
+        ))}
 
-          <Card className="bg-card border-border overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/30 border-border hover:bg-transparent">
-                  <TableHead className="py-4 px-6 text-xs font-black uppercase tracking-widest text-muted-foreground">Důvod / Kdo</TableHead>
-                  <TableHead className="py-4 px-6 text-xs font-black uppercase tracking-widest text-muted-foreground text-right w-[150px]">Částka</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {registerData.cashOnHand.map((co: any) => (
-                  <TableRow key={co.id} className="border-border hover:bg-muted/30">
-                    <TableCell className="py-4 px-6 font-bold">{co.reason}</TableCell>
-                    <TableCell className="py-4 px-6 text-right font-black text-success tabular-nums">
-                      +{Number(co.amount).toLocaleString("cs-CZ")} Kč
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {registerData.cashOnHand.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={2} className="py-12 text-center text-muted-foreground italic">Žádná hotovost není evidována u pokladníků</TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </Card>
-        </TabsContent>
+        {semesterGroups.length === 0 && (
+          <div className="py-20 text-center text-muted-foreground italic font-medium">
+            Žádné pokladní záznamy k zobrazení
+          </div>
+        )}
+      </div>
 
-        <TabsContent value="users" className="outline-none">
-          <Card className="bg-card border-border overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/30 border-border hover:bg-transparent">
-                  <TableHead className="py-4 px-6 text-xs font-black uppercase tracking-widest text-muted-foreground">Jméno člena</TableHead>
-                  <TableHead className="py-4 px-6 text-xs font-black uppercase tracking-widest text-muted-foreground text-right">Dluh / Zůstatek</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {currentUsers
-                  .filter(u => Number(u.pokladnaBalance) !== 0)
-                  .sort((a, b) => Number(b.pokladnaBalance) - Number(a.pokladnaBalance))
-                  .map((user) => (
-                    <TableRow key={user.id} className="border-border hover:bg-muted/30">
-                      <TableCell className="py-4 px-6 font-bold text-foreground">{user.fullName}</TableCell>
-                      <TableCell className={cn(
-                        "py-4 px-6 text-right font-black tabular-nums",
-                        Number(user.pokladnaBalance) > 0 ? "text-destructive" : "text-success"
-                      )}>
-                        {Number(user.pokladnaBalance).toLocaleString("cs-CZ")} Kč
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                {currentUsers.filter(u => Number(u.pokladnaBalance) !== 0).length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={2} className="py-12 text-center text-muted-foreground italic">
-                      Žádné aktivní dluhy nebo zůstatky u členů
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </Card>
-        </TabsContent>
-      </Tabs>
-
+      {/* Dialogs */}
       <DebtErrorDialog 
         open={showDebtError} 
         onOpenChange={setShowDebtError} 
@@ -290,6 +279,22 @@ export function PokladnaClient({
         open={showCashOnHand} 
         onOpenChange={setShowCashOnHand} 
         currentTotal={balance}
+      />
+      
+      <HistoryDialog
+        open={showDebtHistory}
+        onOpenChange={setShowDebtHistory}
+        title="Historie dluhu z chyb"
+        transactions={registerData.debtErrors}
+        type="debt"
+      />
+      
+      <HistoryDialog
+        open={showCashHistory}
+        onOpenChange={setShowCashHistory}
+        title="Historie hotovosti u pokladníka"
+        transactions={registerData.cashOnHand}
+        type="cash"
       />
     </div>
   )

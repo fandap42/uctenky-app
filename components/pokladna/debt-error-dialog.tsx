@@ -60,19 +60,10 @@ export function DebtErrorDialog({ currentTotal, onSuccess, open: propOpen, onOpe
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="rounded-full border-destructive/20 text-destructive hover:bg-destructive/10 font-bold">
-          <AlertCircle className="h-4 w-4 mr-1" />
-          Upravit dluh
-        </Button>
-      </DialogTrigger>
       <DialogContent className="bg-card border-border max-w-md rounded-[2.5rem]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle className="text-2xl font-black text-foreground">Oprava chybného dluhu</DialogTitle>
-            <DialogDescription className="text-muted-foreground font-bold tabular-nums">
-              Aktuální stav: {currentTotal.toLocaleString("cs-CZ")} Kč
-            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-6 py-6">
             {/* Honeypot field - visually hidden, should not be filled by users */}
@@ -88,7 +79,7 @@ export function DebtErrorDialog({ currentTotal, onSuccess, open: propOpen, onOpe
             <div className="flex gap-3 bg-muted/30 p-1 rounded-2xl border border-border">
               <Button
                 type="button"
-                className={`flex-1 rounded-xl h-10 font-black ${isAdding ? "bg-destructive text-white shadow-lg shadow-destructive/20" : "bg-transparent text-muted-foreground hover:text-foreground"}`}
+                className={`flex-1 rounded-xl h-10 font-black ${isAdding ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "bg-transparent text-muted-foreground hover:text-foreground"}`}
                 variant={isAdding ? "default" : "ghost"}
                 onClick={() => setIsAdding(true)}
               >
@@ -96,7 +87,7 @@ export function DebtErrorDialog({ currentTotal, onSuccess, open: propOpen, onOpe
               </Button>
               <Button
                 type="button"
-                className={`flex-1 rounded-xl h-10 font-black ${!isAdding ? "bg-success text-success-foreground shadow-lg shadow-success/20" : "bg-transparent text-muted-foreground hover:text-foreground"}`}
+                className={`flex-1 rounded-xl h-10 font-black ${!isAdding ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "bg-transparent text-muted-foreground hover:text-foreground"}`}
                 variant={!isAdding ? "default" : "ghost"}
                 onClick={() => setIsAdding(false)}
               >
@@ -146,7 +137,7 @@ export function DebtErrorDialog({ currentTotal, onSuccess, open: propOpen, onOpe
             <Button
               type="submit"
               disabled={loading || !amount || !reason}
-              className={`rounded-full px-8 font-black ${isAdding ? "bg-destructive hover:bg-destructive/90 text-white" : "bg-success hover:bg-success/90 text-success-foreground"}`}
+              className="rounded-full px-8 font-black bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               {loading ? "Ukládám..." : isAdding ? "Potvrdit dluh" : "Potvrdit odečet"}
             </Button>
