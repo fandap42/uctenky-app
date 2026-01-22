@@ -79,7 +79,7 @@ export function ReceiptUpload({ transactionId }: ReceiptUploadProps) {
     } else {
       toast.success("HOTOVO: Účtenka byla uložena")
       setOpen(false)
-      router.refresh()
+      window.dispatchEvent(new CustomEvent("app-data-refresh"))
     }
     setIsLoading(false)
   }

@@ -65,7 +65,7 @@ export function EditTransactionDialog({ transaction }: EditTransactionDialogProp
     } else {
       toast.success("HOTOVO: Údaje byly upraveny")
       setOpen(false)
-      router.refresh()
+      window.dispatchEvent(new CustomEvent("app-data-refresh"))
     }
 
     setIsLoading(false)

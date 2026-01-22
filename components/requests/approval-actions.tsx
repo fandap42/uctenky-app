@@ -33,7 +33,7 @@ export function ApprovalActions({ transactionId, currentStatus }: ApprovalAction
           ? "Žádost byla ověřena"
           : "Stav žádosti byl aktualizován"
       )
-      router.refresh()
+      window.dispatchEvent(new CustomEvent("app-data-refresh"))
     }
     setIsLoading(null)
   }

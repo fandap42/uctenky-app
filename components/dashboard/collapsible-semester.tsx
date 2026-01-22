@@ -33,6 +33,20 @@ export function CollapsibleSemester({
     }
   }, [isExpanded])
 
+  useEffect(() => {
+    const handleRefresh = () => {
+      if (isExpanded) {
+        loadData()
+      } else {
+        // If not expanded, just clear data so it refetches when expanded next time
+        setData(null)
+      }
+    }
+
+    window.addEventListener("app-data-refresh", handleRefresh)
+    return () => window.removeEventListener("app-data-refresh", handleRefresh)
+  }, [isExpanded])
+
   const loadData = async () => {
     setIsLoading(true)
     setError(null)

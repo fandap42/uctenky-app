@@ -44,7 +44,7 @@ export function DeleteButton({
       toast.error(result.error)
     } else {
       toast.success("HOTOVO: Smazáno")
-      router.refresh()
+      window.dispatchEvent(new CustomEvent("app-data-refresh"))
     }
     setIsDeleting(false)
   }
