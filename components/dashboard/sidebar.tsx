@@ -22,6 +22,7 @@ import { isHeadRole, isAdmin } from "@/lib/utils/roles"
 interface SidebarProps {
   isOpen: boolean
   onClose: () => void
+  onNavClick?: () => void
 }
 
 const mainNavigation = [
@@ -33,7 +34,7 @@ const mainNavigation = [
   { name: "Uživatelé", href: "/dashboard/users", icon: <Users className="w-5 h-5" />, role: "ADMIN" },
 ]
 
-export function Sidebar({ isOpen, onClose }: SidebarProps) {
+export function Sidebar({ isOpen, onClose, onNavClick }: SidebarProps) {
   const pathname = usePathname()
   const { data: session } = useSession()
   const userRole = session?.user?.role || ""
@@ -48,6 +49,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const handleNavClick = () => {
     if (window.innerWidth < 768) {
       onClose()
+    }
+    if (onNavClick) {
+      onNavClick()
     }
   }
 
