@@ -42,7 +42,7 @@ export function Sidebar({ isOpen, onClose, onNavClick }: SidebarProps) {
   const filteredNavigation = mainNavigation.filter(item => {
     if (!item.role) return true
     if (item.role === "ADMIN") return isAdmin(userRole)
-    if (item.role === "HEAD") return isHeadRole(userRole)
+    if (item.role === "HEAD") return isHeadRole(userRole) || isAdmin(userRole)
     return false
   })
 

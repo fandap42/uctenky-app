@@ -342,7 +342,7 @@ export async function updateTransactionDetails(
   }
 }
 
-import { getSemesterRange } from "@/lib/utils/semesters"
+import { getSemester, getSemesterRange } from "@/lib/utils/semesters"
 
 export async function getTransactionsBySemester(
   semesterKey: string,
@@ -393,5 +393,46 @@ export async function getTransactionsBySemester(
   } catch (error) {
     console.error("Get transactions by semester error:", error)
     return { error: "Nepodařilo se načíst transakce pro daný semestr" }
+  }
+}
+export async function getSemesterTotals(
+  filters: {
+    requesterId?: string
+    sectionId?: string
+  } = {}
+) {
+  const session = await auth()
+
+  if (!session?.user?.id) {
+    return { error: MESSAGES.AUTH.UNAUTHORIZED }
+  }
+
+  try {
+    const transactions = await prisma.transaction.findMany({
+      where: {
+        ...(filters.requesterId && { requesterId: filters.requesterId }),
+        ...(filters.sectionId && { sectionId: filters.sectionId }),
+        status: { notIn: ["REJECTED", "DRAFT"] },
+      },
+      select: {
+        estimatedAmount: true,
+        finalAmount: true,
+        createdAt: true,
+        dueDate: true,
+      },
+    })
+
+    const totals: Record<string, number> = {}
+
+    transactions.forEach((t) => {
+      const key = getSemester(new Date(t.dueDate || t.createdAt))
+      const amount = t.finalAmount ? Number(t.finalAmount) : Number(t.estimatedAmount)
+      totals[key] = (totals[key] || 0) + amount
+    })
+
+    return { totals }
+  } catch (error) {
+    console.error("Get semester totals error:", error)
+    return { error: "Nepodařilo se načíst součty semestrů" }
   }
 }

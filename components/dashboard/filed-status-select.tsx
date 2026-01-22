@@ -50,7 +50,7 @@ export function FiledStatusSelect({
       <SelectTrigger className={`w-[130px] h-8 bg-background border-border text-xs ${isFiled ? "text-[oklch(0.60_0.16_150)]" : "text-[oklch(0.75_0.15_85)]"}`}>
         <SelectValue />
       </SelectTrigger>
-      <SelectContent className="bg-card border-border">
+      <SelectContent position="popper" className="bg-card border-border max-h-[none]">
         <SelectItem value="unfiled" className="text-[oklch(0.75_0.15_85)]">Nezaloženo</SelectItem>
         <SelectItem value="filed" className="text-[oklch(0.60_0.16_150)]">Založeno</SelectItem>
       </SelectContent>

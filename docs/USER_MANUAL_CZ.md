@@ -87,13 +87,14 @@ Na účtence **MUSÍ být čitelné:**
 
 ### Přehled žádostí
 
-Jako vedoucí sekce máte přístup k přehledu všech žádostí vaší sekce:
+Jako vedoucí sekce máte přístup k přehledu všech žádostí vaší sekce. Administrátoři mají navíc přístup ke všem sekcím najednou:
 
 1. V menu klikněte na **Žádosti sekce**
-2. Uvidíte seznam všech žádostí od členů vaší sekce
-3. Můžete sledovat stav jednotlivých žádostí
+2. Vedoucí sekce uvidí seznam všech žádostí od členů své sekce
+3. **Administrátoři** mohou v horní části stránky přepínat mezi jednotlivými sekcemi pomocí výběrového pole
+4. Můžete sledovat stav jednotlivých žádostí
 
-> ⚠️ **Poznámka:** Schvalování žádostí provádí **pouze tým Finance**. Vedoucí sekce má přístup pouze pro čtení.
+> ⚠️ **Poznámka:** Schvalování žádostí provádí **pouze tým Finance**. Vedoucí sekce má přístup pouze pro čtení. Administrátoři mohou žádosti schvalovat přímo v tomto přehledu.
 
 ### Co můžete sledovat?
 

@@ -5,6 +5,8 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 import { SemesterStructuredList } from "@/components/dashboard/semester-structured-list"
 import { getSemester, sortSemesterKeys, getSemesterRange } from "@/lib/utils/semesters"
 
+import { getSemesterTotals } from "@/lib/actions/transactions"
+
 export const dynamic = "force-dynamic"
 
 export default async function FinanceDashboardPage() {
@@ -61,6 +63,10 @@ export default async function FinanceDashboardPage() {
     dueDate: t.dueDate ? t.dueDate.toISOString() : null,
   })) as any
 
+  // Fetch global semester totals
+  const totalsResult = await getSemesterTotals()
+  const semesterTotals = "totals" in totalsResult ? totalsResult.totals : {}
+
   // Stats across all time
   const pendingCount = await prisma.transaction.count({
     where: { status: "PENDING" }
@@ -104,6 +110,7 @@ export default async function FinanceDashboardPage() {
         <SemesterStructuredList
           initialTransactions={initialTransactions}
           semesterKeys={semesterKeys}
+          semesterTotals={semesterTotals}
           isAdmin={true}
           showActions={true}
         />

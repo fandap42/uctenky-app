@@ -44,6 +44,7 @@ interface Transaction {
 interface StructuredListProps {
   initialTransactions?: Transaction[] // For the first expanded semester
   semesterKeys: string[]
+  semesterTotals?: Record<string, number>
   isAdmin?: boolean
   showActions?: boolean
   showSection?: boolean
@@ -116,7 +117,7 @@ function MonthlyTransactionCard({
               {isAdmin && <TableHead className="py-2 px-4">Typ</TableHead>}
               {isAdmin && <TableHead className="py-2 px-4">Proplaceno</TableHead>}
               {isAdmin && <TableHead className="py-2 px-4">Založeno</TableHead>}
-              {(showActions || isAdmin) && <TableHead className="py-2 px-4 text-right">Akce</TableHead>}
+              {showActions && <TableHead className="py-2 px-4 text-right">Akce</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -167,7 +168,7 @@ function MonthlyTransactionCard({
                     <FiledStatusSelect transactionId={tx.id} initialStatus={tx.isFiled} />
                   </TableCell>
                 )}
-                {(showActions || isAdmin) && (
+                {showActions && (
                   <TableCell className="py-2 text-right">
                     <div className="flex items-center justify-end gap-1">
                       {isAdmin && (
@@ -222,6 +223,7 @@ function MonthlyTransactionCard({
 export function SemesterStructuredList({
   initialTransactions = [],
   semesterKeys,
+  semesterTotals = {},
   isAdmin = false,
   showActions = false,
   showSection = true,
@@ -230,9 +232,10 @@ export function SemesterStructuredList({
 }: StructuredListProps) {
   const sortedKeys = sortSemesterKeys(semesterKeys)
 
-  const renderSemesterContent = (data: { transactions: Transaction[] }) => {
+  const renderSemesterContent = (data: { transactions: Transaction[] }, semesterKey: string) => {
     const { transactions } = data
     const monthGroups: Record<number, Transaction[]> = {}
+    const semesterTotal = semesterTotals[semesterKey] || 0
 
     transactions.forEach((tx) => {
       const date = new Date(tx.dueDate || tx.createdAt)
@@ -248,38 +251,51 @@ export function SemesterStructuredList({
       .sort((a, b) => b - a)
 
     return (
-      <div className="grid gap-6">
-        {sortedMonthKeys.map((monthKey) => {
-          const monthTxs = monthGroups[monthKey]
-          const month = monthKey % 100
-          return (
-            <MonthlyTransactionCard
-              key={monthKey}
-              month={month}
-              monthTxs={monthTxs}
-              isAdmin={isAdmin}
-              showRequester={showRequester}
-              showSection={showSection}
-              showActions={showActions}
-            />
-          )
-        })}
+      <div className="space-y-6">
+        <div className="flex justify-start pl-2">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Celkem vyčerpáno:</span>
+            <span className="text-lg font-black text-foreground tabular-nums">
+              {semesterTotal.toLocaleString("cs-CZ")} <span className="text-xs font-bold text-muted-foreground">Kč</span>
+            </span>
+          </div>
+        </div>
+
+        <div className="grid gap-6">
+          {sortedMonthKeys.map((monthKey) => {
+            const monthTxs = monthGroups[monthKey]
+            const month = monthKey % 100
+            return (
+              <MonthlyTransactionCard
+                key={monthKey}
+                month={month}
+                monthTxs={monthTxs}
+                isAdmin={isAdmin}
+                showRequester={showRequester}
+                showSection={showSection}
+                showActions={showActions}
+              />
+            )
+          })}
+        </div>
       </div>
     )
   }
 
   return (
     <div className="space-y-12">
-      {sortedKeys.map((key, index) => (
-        <CollapsibleSemester
-          key={key}
-          semesterKey={key}
-          defaultExpanded={index === 0}
-          initialData={index === 0 ? { transactions: initialTransactions } : undefined}
-          fetchData={() => getTransactionsBySemester(key, filters)}
-          renderContent={renderSemesterContent}
-        />
-      ))}
+      {sortedKeys.map((key, index) => {
+        return (
+          <CollapsibleSemester
+            key={key}
+            semesterKey={key}
+            defaultExpanded={index === 0}
+            initialData={index === 0 ? { transactions: initialTransactions } : undefined}
+            fetchData={() => getTransactionsBySemester(key, filters)}
+            renderContent={(data) => renderSemesterContent(data, key)}
+          />
+        )
+      })}
       {sortedKeys.length === 0 && (
         <div className="py-20 text-center text-muted-foreground italic font-medium">
           Žádné žádosti k zobrazení

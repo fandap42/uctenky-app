@@ -50,7 +50,7 @@ export function PaidStatusSelect({
       <SelectTrigger className={`w-[140px] h-8 bg-background border-border text-xs ${isPaid ? "text-[oklch(0.60_0.16_150)]" : "text-[oklch(0.75_0.15_85)]"}`}>
         <SelectValue />
       </SelectTrigger>
-      <SelectContent className="bg-card border-border">
+      <SelectContent position="popper" className="bg-card border-border max-h-[none]">
         <SelectItem value="unpaid" className="text-[oklch(0.75_0.15_85)]">Neproplaceno</SelectItem>
         <SelectItem value="paid" className="text-[oklch(0.60_0.16_150)]">Proplaceno</SelectItem>
       </SelectContent>

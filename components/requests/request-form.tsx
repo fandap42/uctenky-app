@@ -90,7 +90,7 @@ export function RequestForm({ trigger, sections }: RequestFormProps) {
               <SelectTrigger className="bg-background border-border text-foreground">
                 <SelectValue placeholder="Vyberte sekci" />
               </SelectTrigger>
-              <SelectContent className="bg-card border-border">
+              <SelectContent position="popper" className="bg-card border-border max-h-[none]">
                 {sections.map((section) => (
                   <SelectItem key={section.id} value={section.id}>
                     {section.name}

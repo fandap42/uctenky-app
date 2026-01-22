@@ -129,7 +129,7 @@ uctenky-app/
 |------|-----------|
 | **MEMBER** | Podávání žádostí o nákup |
 | **HEAD_*** | Přehled žádostí své sekce (pouze čtení) |
-| **ADMIN** | Kompletní správa systému včetně schvalování |
+| **ADMIN** | Kompletní správa systému, schvalování, přehled všech sekcí |
 
 ## 📖 Dokumentace
 

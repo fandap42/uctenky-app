@@ -5,6 +5,8 @@ import { RequestForm } from "@/components/requests/request-form"
 import { SemesterStructuredList } from "@/components/dashboard/semester-structured-list"
 import { getSemester, sortSemesterKeys, getSemesterRange } from "@/lib/utils/semesters"
 
+import { getSemesterTotals } from "@/lib/actions/transactions"
+
 export const dynamic = "force-dynamic"
 
 export default async function DashboardPage() {
@@ -19,6 +21,10 @@ export default async function DashboardPage() {
     where: { id: userId },
     select: { id: true, fullName: true, role: true },
   })
+
+  // Fetch semester totals for the user
+  const totalsResult = await getSemesterTotals({ requesterId: userId })
+  const semesterTotals = "totals" in totalsResult ? totalsResult.totals : {}
 
   // Get all active sections for the form dropdown
   const sections = await prisma.section.findMany({
@@ -114,6 +120,7 @@ export default async function DashboardPage() {
         <SemesterStructuredList 
           initialTransactions={initialTransactions}
           semesterKeys={semesterKeys}
+          semesterTotals={semesterTotals}
           showSection={true} 
           showRequester={false}
           showActions={true}
