@@ -177,7 +177,7 @@ export function PokladnaClient({
           <div className="space-y-4">
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Reálná pokladna</h3>
             <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">
-              Zůstatek - Dluhy - Hotovost
+              Zůstatek - Dluh u chyb - Hotovost
             </div>
             {unpaidCount > 0 && (
               <div className="flex items-center gap-2 text-warning font-black text-xs uppercase tracking-wider">

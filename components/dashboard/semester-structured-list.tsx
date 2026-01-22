@@ -240,7 +240,7 @@ export function SemesterStructuredList({
     transactions.forEach((tx) => {
       const date = new Date(tx.dueDate || tx.createdAt)
       const year = date.getFullYear()
-      const month = date.getUTCMonth() + 1
+      const month = date.getMonth() + 1
       const sortKey = year * 100 + month
       if (!monthGroups[sortKey]) monthGroups[sortKey] = []
       monthGroups[sortKey].push(tx)
