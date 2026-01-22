@@ -28,6 +28,7 @@ import { Plus } from "lucide-react"
 export function DepositDialog() {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const router = useRouter()
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -35,18 +36,18 @@ export function DepositDialog() {
     setIsLoading(true)
 
     const formData = new FormData(e.currentTarget)
-    const type = formData.get("type") as "INCOME" | "EXPENSE"
     const amountVal = parseFloat(formData.get("amount") as string)
-    const note = formData.get("note") as string
+    const note = "Vklad do pokladny"
+    const selectedDate = new Date(formData.get("date") as string)
     const honeypot = formData.get("email_honey") as string
 
-    // Postive for INCOME, negative for EXPENSE
-    const amount = type === "INCOME" ? amountVal : -amountVal
+    // It's always a deposit (INCOME) per user request
+    const amount = amountVal
 
     const result = await createDeposit(
       amount,
       note,
-      new Date(),
+      selectedDate,
       honeypot
     )
 
@@ -64,16 +65,15 @@ export function DepositDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full font-bold px-6 shadow-lg shadow-primary/20">
-          <Plus className="w-4 h-4 mr-2" />
+        <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
           Vložit vklad
         </Button>
       </DialogTrigger>
       <DialogContent className="bg-card border-border sm:max-w-[425px] rounded-[2.5rem]">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-black text-foreground">Nový pohyb v pokladně</DialogTitle>
-          <DialogDescription className="text-muted-foreground font-medium">
-            Zadejte příjem nebo výdej hotovosti z hlavní pokladny.
+          <DialogTitle className="text-foreground text-xl">Vložit vklad</DialogTitle>
+          <DialogDescription className="text-muted-foreground">
+            Zadejte údaje pro nový vklad do hlavní pokladny.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6 py-4">
@@ -89,16 +89,16 @@ export function DepositDialog() {
           </div>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="type" className="text-sm font-black uppercase tracking-widest text-muted-foreground">Typ pohybu</Label>
-              <Select name="type" defaultValue="INCOME">
-                <SelectTrigger className="bg-background border-border rounded-xl font-bold h-12">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-card border-border rounded-xl">
-                  <SelectItem value="INCOME" className="font-bold text-success font-black">Příjem (+)</SelectItem>
-                  <SelectItem value="EXPENSE" className="font-bold text-destructive font-black">Výdej (-)</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="date" className="text-sm font-black uppercase tracking-widest text-muted-foreground">Datum vkladu *</Label>
+              <Input
+                id="date"
+                name="date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                required
+                className="bg-background border-border rounded-xl font-bold h-12"
+              />
             </div>
 
             <div className="space-y-2">
@@ -114,17 +114,7 @@ export function DepositDialog() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="note" className="text-sm font-black uppercase tracking-widest text-muted-foreground">Poznámka / Účel *</Label>
-              <Input
-                id="note"
-                name="note"
-                placeholder="Např. Výběr z účtu, Nákup drobností..."
-                required
-                className="bg-background border-border rounded-xl font-bold h-12"
-              />
             </div>
-          </div>
           <DialogFooter className="gap-2">
             <Button
               type="button"
@@ -137,9 +127,9 @@ export function DepositDialog() {
             <Button
               type="submit"
               disabled={isLoading}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-full px-8"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
-              {isLoading ? "Ukládám..." : "Uložit pohyb"}
+              {isLoading ? "Ukládám..." : "Vložit vklad"}
             </Button>
           </DialogFooter>
         </form>
