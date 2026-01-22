@@ -24,9 +24,6 @@ export default async function UsersPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-black text-foreground mb-2">Správa uživatelů</h1>
-        <p className="text-muted-foreground font-medium">
-          Správa rolí a přístupů všech členů týmu
-        </p>
       </div>
 
       <UserManagement initialUsers={serializedUsers} />

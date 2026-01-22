@@ -39,9 +39,6 @@ export default async function SectionHeadDashboardPage() {
       <div className="space-y-8">
         <div>
           <h1 className="text-3xl font-black text-foreground mb-2">Žádosti sekce</h1>
-          <p className="text-muted-foreground font-medium">
-            Vaše role není přiřazena k žádné sekci.
-          </p>
         </div>
       </div>
     )
@@ -58,9 +55,6 @@ export default async function SectionHeadDashboardPage() {
       <div className="space-y-8">
         <div>
           <h1 className="text-3xl font-black text-foreground mb-2">Žádosti sekce</h1>
-          <p className="text-muted-foreground font-medium">
-            Sekce "{sectionName}" nebyla nalezena.
-          </p>
         </div>
       </div>
     )
@@ -99,9 +93,6 @@ export default async function SectionHeadDashboardPage() {
         <h1 className="text-3xl font-black text-foreground mb-2">
           Žádosti sekce: {section.name}
         </h1>
-        <p className="text-muted-foreground font-medium">
-          Správa a přehled všech žádostí vaší sekce
-        </p>
       </div>
 
       {/* Quick stats */}

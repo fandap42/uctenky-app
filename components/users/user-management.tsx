@@ -67,14 +67,7 @@ export function UserManagement({ initialUsers }: UserManagementProps) {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-black text-foreground mb-2">Uživatelé</h1>
-          <p className="text-muted-foreground">
-            Správa členů a jejich přístupových rolí v systému
-          </p>
-        </div>
-      </div>
+
 
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">

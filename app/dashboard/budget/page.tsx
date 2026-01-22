@@ -116,9 +116,6 @@ export default async function BudgetPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-black text-foreground mb-2">Rozpočty</h1>
-        <p className="text-muted-foreground">
-          Přehled čerpání rozpočtu po sekcích pro každý semestr
-        </p>
       </div>
 
       {/* Semester sections */}

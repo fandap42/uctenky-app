@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
+import { AlertCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const dateFormatter = new Intl.DateTimeFormat("cs-CZ", {
@@ -47,18 +48,18 @@ export function OverviewTable({ transactions, deposits }: OverviewTableProps) {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
+    <div className="w-full">
       <Table>
         <TableHeader>
-          <TableRow className="bg-muted/30 border-border hover:bg-transparent">
-            <TableHead className="py-4 px-6 text-xs font-black uppercase tracking-widest text-muted-foreground w-[120px]">Datum</TableHead>
-            <TableHead className="py-4 px-6 text-xs font-black uppercase tracking-widest text-muted-foreground">Sekce</TableHead>
-            <TableHead className="py-4 px-6 text-xs font-black uppercase tracking-widest text-muted-foreground min-w-[200px]">Účel</TableHead>
-            <TableHead className="py-4 px-6 text-xs font-black uppercase tracking-widest text-muted-foreground">Obchod</TableHead>
-            <TableHead className="py-4 px-6 text-xs font-black uppercase tracking-widest text-muted-foreground text-right">Částka</TableHead>
-            <TableHead className="py-4 px-6 text-xs font-black uppercase tracking-widest text-muted-foreground text-center">Typ</TableHead>
-            <TableHead className="py-4 px-0 text-center w-12">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="mx-auto text-muted-foreground/50"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <TableRow className="border-border hover:bg-transparent">
+            <TableHead className="py-2 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground w-[100px]">Datum</TableHead>
+            <TableHead className="py-2 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground">Sekce</TableHead>
+            <TableHead className="py-2 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground min-w-[200px]">Účel</TableHead>
+            <TableHead className="py-2 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground">Obchod</TableHead>
+            <TableHead className="py-2 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground text-right">Částka</TableHead>
+            <TableHead className="py-2 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground text-center">Typ</TableHead>
+            <TableHead className="py-2 px-0 text-center w-12">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="mx-auto text-muted-foreground/30"><polyline points="20 6 9 17 4 12"></polyline></svg>
             </TableHead>
           </TableRow>
         </TableHeader>
@@ -66,40 +67,43 @@ export function OverviewTable({ transactions, deposits }: OverviewTableProps) {
           {combinedData.map((item) => {
             const isTr = item.displayType === "TRANSACTION"
             return (
-              <TableRow key={item.id} className="border-border hover:bg-muted/30 transition-colors group">
-                <TableCell className="py-4 px-6 font-bold text-muted-foreground text-sm whitespace-nowrap">
+              <TableRow key={item.id} className="border-border hover:bg-muted/10 transition-colors group">
+                <TableCell className="py-2 px-4 text-muted-foreground text-xs whitespace-nowrap tabular-nums">
                   {dateFormatter.format(item.displayDate)}
                 </TableCell>
-                <TableCell className="py-4 px-6">
+                <TableCell className="py-2 px-4">
                   {isTr ? (
-                    <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10 font-black text-[10px] uppercase tracking-wider">
+                    <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10 font-bold text-[9px] h-4 uppercase tracking-wider px-1">
                       {item.section?.name}
                     </Badge>
                   ) : (
                     <span className="text-muted-foreground/30">—</span>
                   )}
                 </TableCell>
-                <TableCell className="py-4 px-6 font-bold text-foreground">
+                <TableCell className="py-2 px-4 text-sm text-foreground">
                   {isTr ? item.purpose : (item.description || "Vklad do pokladny")}
                 </TableCell>
-                <TableCell className="py-4 px-6 text-muted-foreground font-medium">
+                <TableCell className="py-2 px-4 text-xs text-foreground font-medium">
                   {isTr ? (item.store || "—") : <span className="text-muted-foreground/30">—</span>}
                 </TableCell>
-                <TableCell className="py-4 px-6 text-right tabular-nums">
+                <TableCell className="py-2 px-4 text-right tabular-nums">
                   {isTr ? (
-                    <span className="font-black text-destructive text-base">
-                      -{Number(item.finalAmount || item.estimatedAmount).toLocaleString("cs-CZ")} Kč
-                    </span>
+                    <div className="flex items-center justify-end gap-1.5">
+                      {!item.isPaid && <AlertCircle className="w-3.5 h-3.5 text-warning" />}
+                      <span className="font-bold text-destructive text-sm">
+                        -{Number(item.finalAmount || item.estimatedAmount).toLocaleString("cs-CZ")} Kč
+                      </span>
+                    </div>
                   ) : (
-                    <span className="font-black text-success text-base">
+                    <span className="font-bold text-success text-sm">
                       +{Number(item.amount).toLocaleString("cs-CZ")} Kč
                     </span>
                   )}
                 </TableCell>
-                <TableCell className="py-4 px-6 text-center">
+                <TableCell className="py-2 px-4 text-center">
                   {isTr ? (
                     <Badge className={cn(
-                      "font-black text-[10px] uppercase tracking-wider h-5",
+                      "font-bold text-[9px] uppercase tracking-wider h-4 px-1",
                       item.expenseType === "MATERIAL" 
                         ? "bg-[oklch(0.60_0.20_280)] text-white hover:bg-[oklch(0.60_0.20_280)] border-none" 
                         : "bg-blue-100 text-blue-700 hover:bg-blue-100 border-none"
@@ -110,12 +114,12 @@ export function OverviewTable({ transactions, deposits }: OverviewTableProps) {
                     <span className="text-muted-foreground/30">—</span>
                   )}
                 </TableCell>
-                <TableCell className="py-4 px-0 text-center">
+                <TableCell className="py-2 px-0 text-center">
                   <Checkbox 
                     id={`track-${item.id}`} 
                     checked={!!checkedIds[item.id]} 
                     onCheckedChange={() => toggleCheck(item.id)}
-                    className="border-muted-foreground/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary rounded-md w-5 h-5 shadow-none mx-auto"
+                    className="border-muted-foreground/20 data-[state=checked]:bg-primary data-[state=checked]:border-primary rounded-md w-4 h-4 shadow-none mx-auto opacity-30 group-hover:opacity-100 transition-opacity"
                   />
                 </TableCell>
               </TableRow>

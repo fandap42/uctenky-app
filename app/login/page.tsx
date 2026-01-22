@@ -68,9 +68,6 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold text-primary">
             4FISuctenky
           </h1>
-          <CardDescription className="text-muted-foreground">
-            Přihlaste se pro správu financí vaší organizace
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

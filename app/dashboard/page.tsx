@@ -58,38 +58,30 @@ export default async function DashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            Vítejte, {user?.fullName?.split(" ")[0] || "uživateli"}!
+          <h1 className="text-3xl font-black text-foreground mb-2">
+            Přehled
           </h1>
-          <p className="text-muted-foreground">
-            Přehled vašich finančních žádostí a aktivit
-          </p>
         </div>
         <RequestForm sections={sections} />
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="bg-card border-border">
-          <CardHeader className="pb-2">
-            <CardDescription className="text-muted-foreground">
-              Celkem žádostí
-            </CardDescription>
-            <CardTitle className="text-4xl font-bold text-foreground tabular-nums">
+        <Card className="bg-card border-border shadow-sm rounded-[2.5rem] p-8 flex flex-col justify-between min-h-[160px]">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Celkem žádostí</h3>
+          <div className="flex items-baseline gap-2 mt-auto">
+            <span className="text-4xl font-black text-foreground tabular-nums">
               {totalCount}
-            </CardTitle>
-          </CardHeader>
+            </span>
+          </div>
         </Card>
 
-        <Card className="bg-card border-border">
-          <CardHeader className="pb-2">
-            <CardDescription className="text-muted-foreground">
-              Čeká na schválení
-            </CardDescription>
-            <CardTitle className="text-4xl font-bold text-[oklch(0.75_0.15_85)] tabular-nums">
+        <Card className="bg-card border-border shadow-sm rounded-[2.5rem] p-8 flex flex-col justify-between min-h-[160px]">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Čeká na schválení</h3>
+          <div className="flex items-baseline gap-2 mt-auto">
+            <span className="text-4xl font-black text-[oklch(0.75_0.15_85)] tabular-nums">
               {pendingCount}
-            </CardTitle>
-          </CardHeader>
+            </span>
+          </div>
         </Card>
       </div>
 

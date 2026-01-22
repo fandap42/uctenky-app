@@ -84,9 +84,6 @@ export default function RegisterPage() {
           <CardTitle className="text-2xl font-bold text-primary">
             Registrace
           </CardTitle>
-          <CardDescription className="text-muted-foreground">
-            Vytvořte si účet pro správu financí
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

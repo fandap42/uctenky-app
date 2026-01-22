@@ -70,19 +70,20 @@ export function SemesterStructuredList({
   showSection = true,
   showRequester = true,
 }: StructuredListProps) {
-  // 1. Group by Semester
+  // 1. Group by Semester and then by a numeric Month key (year * 100 + month)
   const semesters: Record<string, Record<number, Transaction[]>> = {}
 
   transactions.forEach((tx) => {
-    // Use real purchase date (dueDate) if available, otherwise creation date
     const date = new Date(tx.dueDate || tx.createdAt)
     const semKey = getSemester(date)
-    const monthKey = date.getMonth() + 1
+    const year = date.getFullYear()
+    const month = date.getMonth() + 1
+    const sortKey = year * 100 + month
 
     if (!semesters[semKey]) semesters[semKey] = {}
-    if (!semesters[semKey][monthKey]) semesters[semKey][monthKey] = []
+    if (!semesters[semKey][sortKey]) semesters[semKey][sortKey] = []
 
-    semesters[semKey][monthKey].push(tx)
+    semesters[semKey][sortKey].push(tx)
   })
 
   // 2. Sort semesters (newest first)
@@ -108,13 +109,14 @@ export function SemesterStructuredList({
             {Object.keys(semesters[semKey])
               .map(Number)
               .sort((a, b) => b - a)
-              .map((monthKey) => {
-                const monthTxs = semesters[semKey][monthKey]
+              .map((sortKey) => {
+                const monthTxs = semesters[semKey][sortKey]
+                const month = sortKey % 100
                 return (
-                  <Card key={`${semKey}-${monthKey}`} className="bg-card border-border overflow-hidden">
+                  <Card key={`${semKey}-${sortKey}`} className="bg-card border-border overflow-hidden">
                     <CardHeader className="py-3 px-4 bg-muted/30 flex flex-row items-center justify-between">
                       <CardTitle className="text-sm font-medium text-muted-foreground">
-                        {monthNames[monthKey]}
+                        {monthNames[month]}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="p-0 overflow-x-auto">
