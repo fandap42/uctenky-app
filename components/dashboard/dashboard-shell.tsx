@@ -1,11 +1,13 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { cn } from "@/lib/utils"
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [headerVisible, setHeaderVisible] = useState(true)
   const lastScrollTop = useRef(0)
@@ -13,6 +15,15 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const scrollTimeout = useRef<NodeJS.Timeout | null>(null)
   const isNavigatingRef = useRef(false)
   const navTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Auto-scroll to top when pathname changes
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0
+      lastScrollTop.current = 0
+    }
+    handleNavClick()
+  }, [pathname])
 
   const handleNavClick = () => {
     if (navTimeoutRef.current) {
