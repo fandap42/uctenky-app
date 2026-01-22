@@ -234,10 +234,17 @@ export function SemesterStructuredList({
 
   const renderSemesterContent = (data: { transactions: Transaction[] }, semesterKey: string) => {
     const { transactions } = data
+    // Sort transactions by date (newest first) before grouping
+    const sortedTxs = [...transactions].sort((a, b) => {
+      const dateA = new Date(a.dueDate || a.createdAt).getTime()
+      const dateB = new Date(b.dueDate || b.createdAt).getTime()
+      return dateB - dateA
+    })
+
     const monthGroups: Record<number, Transaction[]> = {}
     const semesterTotal = semesterTotals[semesterKey] || 0
 
-    transactions.forEach((tx) => {
+    sortedTxs.forEach((tx) => {
       const date = new Date(tx.dueDate || tx.createdAt)
       const year = date.getFullYear()
       const month = date.getMonth() + 1
