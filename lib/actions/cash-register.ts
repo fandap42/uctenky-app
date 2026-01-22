@@ -318,3 +318,74 @@ export async function getBalanceAtDate(targetDate: Date) {
     return { error: "Nepodařilo se vypočítat zůstatek" }
   }
 }
+import { getSemesterRange } from "@/lib/utils/semesters"
+
+export async function getPokladnaSemesterData(semesterKey: string) {
+  const session = await auth()
+
+  if (session?.user?.role !== "ADMIN") {
+    return { error: "Oprávnění pouze pro administrátora" }
+  }
+
+  const { start, end } = getSemesterRange(semesterKey)
+
+  try {
+    // 1. Get opening balance (deposits - paid transactions BEFORE this semester)
+    const prevDeposits = await prisma.deposit.aggregate({
+      where: { date: { lt: start } },
+      _sum: { amount: true },
+    })
+    const prevExpenses = await prisma.transaction.aggregate({
+      where: {
+        OR: [{ status: "PURCHASED" }, { status: "VERIFIED" }],
+        isPaid: true,
+        dueDate: { lt: start },
+      },
+      _sum: { finalAmount: true, estimatedAmount: true },
+    })
+
+    const openingBalance =
+      Number(prevDeposits._sum.amount || 0) -
+      Number(prevExpenses._sum.finalAmount || prevExpenses._sum.estimatedAmount || 0)
+
+    // 2. Get deposits within this semester
+    const deposits = await prisma.deposit.findMany({
+      where: { date: { gte: start, lte: end } },
+      orderBy: { date: "asc" },
+    })
+
+    // 3. Get transactions within this semester
+    const transactions = await prisma.transaction.findMany({
+      where: {
+        OR: [{ status: "PURCHASED" }, { status: "VERIFIED" }],
+        dueDate: { gte: start, lte: end },
+      },
+      include: {
+        section: { select: { name: true } },
+        requester: { select: { fullName: true } },
+      },
+      orderBy: { dueDate: "asc" },
+    })
+
+    return {
+      openingBalance,
+      deposits: deposits.map((d) => ({
+        ...d,
+        amount: Number(d.amount),
+        date: d.date.toISOString(),
+        createdAt: d.createdAt.toISOString(),
+      })),
+      transactions: transactions.map((t) => ({
+        ...t,
+        estimatedAmount: Number(t.estimatedAmount),
+        finalAmount: t.finalAmount ? Number(t.finalAmount) : null,
+        createdAt: t.createdAt.toISOString(),
+        updatedAt: t.updatedAt.toISOString(),
+        dueDate: t.dueDate?.toISOString() || null,
+      })),
+    }
+  } catch (error) {
+    console.error("Get pokladna semester data error:", error)
+    return { error: "Nepodařilo se načíst data pokladny pro daný semestr" }
+  }
+}

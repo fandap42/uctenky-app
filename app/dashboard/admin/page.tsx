@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { SemesterStructuredList } from "@/components/dashboard/semester-structured-list"
+import { getSemester, sortSemesterKeys, getSemesterRange } from "@/lib/utils/semesters"
 
 export const dynamic = "force-dynamic"
 
@@ -24,17 +25,34 @@ export default async function FinanceDashboardPage() {
     redirect("/dashboard")
   }
 
-  // Fetch all transactions
-  const rawTransactionsList = await prisma.transaction.findMany({
+  // Get all unique semester keys
+  const transactionDates = await prisma.transaction.findMany({
+    select: { createdAt: true, dueDate: true },
+  })
+
+  const semesterKeys = Array.from(new Set(
+    transactionDates.map(d => getSemester(new Date(d.dueDate || d.createdAt)))
+  ))
+
+  const sortedKeys = sortSemesterKeys(semesterKeys)
+  const currentSem = sortedKeys[0]
+
+  // Get initial transactions (only for the expanded semester)
+  const initialTransactionsRaw = currentSem ? await prisma.transaction.findMany({
+    where: { 
+      createdAt: { 
+        gte: getSemesterRange(currentSem).start, 
+        lte: getSemesterRange(currentSem).end 
+      }
+    },
     orderBy: { createdAt: "desc" },
     include: {
       requester: { select: { id: true, fullName: true } },
       section: { select: { id: true, name: true } },
     },
-  })
+  }) : []
 
-  // Serialize Decimals for Client Components
-  const transactions = rawTransactionsList.map(t => ({
+  const initialTransactions = initialTransactionsRaw.map(t => ({
     ...t,
     estimatedAmount: Number(t.estimatedAmount),
     finalAmount: t.finalAmount ? Number(t.finalAmount) : null,
@@ -43,8 +61,13 @@ export default async function FinanceDashboardPage() {
     dueDate: t.dueDate ? t.dueDate.toISOString() : null,
   })) as any
 
-  const pendingTransactions = (transactions as any[]).filter((t: any) => t.status === "PENDING")
-  const purchasedTransactions = (transactions as any[]).filter((t: any) => t.status === "PURCHASED")
+  // Stats across all time
+  const pendingCount = await prisma.transaction.count({
+    where: { status: "PENDING" }
+  })
+  const purchasedCount = await prisma.transaction.count({
+    where: { status: "PURCHASED" }
+  })
 
   return (
     <div className="space-y-8">
@@ -61,7 +84,7 @@ export default async function FinanceDashboardPage() {
           <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Čeká na schválení</h3>
           <div className="flex items-baseline gap-2 mt-auto">
             <span className="text-4xl font-black text-[oklch(0.75_0.15_85)] tabular-nums">
-              {pendingTransactions.length}
+              {pendingCount}
             </span>
           </div>
         </Card>
@@ -70,7 +93,7 @@ export default async function FinanceDashboardPage() {
           <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">K ověření</h3>
           <div className="flex items-baseline gap-2 mt-auto">
             <span className="text-4xl font-black text-foreground tabular-nums">
-              {purchasedTransactions.length}
+              {purchasedCount}
             </span>
           </div>
         </Card>
@@ -79,7 +102,8 @@ export default async function FinanceDashboardPage() {
       {/* Structured Transactions List */}
       <div className="space-y-4">
         <SemesterStructuredList
-          transactions={transactions}
+          initialTransactions={initialTransactions}
+          semesterKeys={semesterKeys}
           isAdmin={true}
           showActions={true}
         />

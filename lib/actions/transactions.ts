@@ -360,3 +360,56 @@ export async function updateTransactionDetails(
   }
 }
 
+import { getSemesterRange } from "@/lib/utils/semesters"
+
+export async function getTransactionsBySemester(
+  semesterKey: string,
+  filters: {
+    requesterId?: string
+    sectionId?: string
+    status?: TransStatus | TransStatus[]
+  } = {}
+) {
+  const session = await auth()
+
+  if (!session?.user?.id) {
+    return { error: MESSAGES.AUTH.UNAUTHORIZED }
+  }
+
+  const { start, end } = getSemesterRange(semesterKey)
+
+  try {
+    const transactions = await prisma.transaction.findMany({
+      where: {
+        createdAt: { gte: start, lte: end },
+        ...(filters.requesterId && { requesterId: filters.requesterId }),
+        ...(filters.sectionId && { sectionId: filters.sectionId }),
+        ...(filters.status && {
+          status: Array.isArray(filters.status)
+            ? { in: filters.status }
+            : filters.status,
+        }),
+      },
+      include: {
+        requester: { select: { id: true, fullName: true } },
+        section: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    })
+
+    // Serialize Decimals and Dates
+    const serialized = transactions.map((t) => ({
+      ...t,
+      estimatedAmount: Number(t.estimatedAmount),
+      finalAmount: t.finalAmount ? Number(t.finalAmount) : null,
+      createdAt: t.createdAt.toISOString(),
+      updatedAt: t.updatedAt.toISOString(),
+      dueDate: t.dueDate ? t.dueDate.toISOString() : null,
+    }))
+
+    return { transactions: serialized }
+  } catch (error) {
+    console.error("Get transactions by semester error:", error)
+    return { error: "Nepodařilo se načíst transakce pro daný semestr" }
+  }
+}

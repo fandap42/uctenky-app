@@ -27,37 +27,53 @@ const MONTH_NAMES = [
   "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec"
 ]
 
+import { getPokladnaSemesterData } from "@/lib/actions/cash-register"
+import { CollapsibleSemester } from "@/components/dashboard/collapsible-semester"
+
+interface PokladnaClientProps {
+  initialBalance: number
+  unpaidCount: number
+  currentUsers: any[]
+  registerData: any // Context (debtErrors, cashOnHand, etc.)
+  semesterKeys: string[]
+  initialSemesterData: any
+}
+
 export function PokladnaClient({ 
   initialBalance, 
   unpaidCount, 
   currentUsers,
-  registerData 
+  registerData,
+  semesterKeys,
+  initialSemesterData
 }: PokladnaClientProps) {
-  const [balance, setBalance] = useState(initialBalance)
   const [showDebtError, setShowDebtError] = useState(false)
   const [showCashOnHand, setShowCashOnHand] = useState(false)
   const [showDebtHistory, setShowDebtHistory] = useState(false)
   const [showCashHistory, setShowCashHistory] = useState(false)
 
-  // Group data by Semester and then by Month
-  const semesterGroups = useMemo(() => {
-    const semesters: Record<string, Record<string, { 
-      monthName: string, 
+  const renderSemesterContent = (data: any) => {
+    // data contains openingBalance, deposits, transactions
+    const { openingBalance, deposits, transactions } = data
+    
+    // Monthly grouping within the semester
+    const monthlyGroups: Record<string, {
+      monthName: string,
       month: number,
-      year: number, 
-      transactions: any[], 
+      year: number,
+      transactions: any[],
       deposits: any[],
       sortKey: number,
       endBalance: number,
       startBalance: number
-    }>> = {}
+    }> = {}
 
     const allData = [
-      ...registerData.transactions.map((t: any) => ({ ...t, displayDate: new Date(t.dueDate || t.createdAt), type: 'TR', amount: -(t.finalAmount || t.estimatedAmount) })),
-      ...registerData.deposits.map((d: any) => ({ ...d, displayDate: new Date(d.date), type: 'DEP', amount: d.amount }))
+      ...transactions.map((t: any) => ({ ...t, displayDate: new Date(t.dueDate || t.createdAt), type: 'TR', amount: -(t.finalAmount || t.estimatedAmount) })),
+      ...deposits.map((d: any) => ({ ...d, displayDate: new Date(d.date), type: 'DEP', amount: d.amount }))
     ].sort((a, b) => a.displayDate.getTime() - b.displayDate.getTime())
 
-    let runningBalance = 0
+    let runningBalance = openingBalance
     
     allData.forEach(item => {
       const startBalance = runningBalance
@@ -66,12 +82,10 @@ export function PokladnaClient({
       const date = item.displayDate
       const month = date.getMonth()
       const year = date.getFullYear()
-      const semKey = getSemester(date)
       const monthKey = `${year}-${month}`
 
-      if (!semesters[semKey]) semesters[semKey] = {}
-      if (!semesters[semKey][monthKey]) {
-        semesters[semKey][monthKey] = {
+      if (!monthlyGroups[monthKey]) {
+        monthlyGroups[monthKey] = {
           monthName: MONTH_NAMES[month],
           month: month + 1,
           year,
@@ -84,30 +98,50 @@ export function PokladnaClient({
       }
 
       if (item.type === 'TR') {
-        semesters[semKey][monthKey].transactions.push(item)
+        monthlyGroups[monthKey].transactions.push(item)
       } else {
-        semesters[semKey][monthKey].deposits.push(item)
+        monthlyGroups[monthKey].deposits.push(item)
       }
       
-      semesters[semKey][monthKey].endBalance = runningBalance
+      monthlyGroups[monthKey].endBalance = runningBalance
     })
 
-    // Transform into sorted array structure
-    const sortedSemesters = Object.entries(semesters)
-      .map(([semKey, months]) => ({
-        semKey,
-        months: Object.values(months).sort((a, b) => b.sortKey - a.sortKey)
-      }))
-      .sort((a, b) => {
-        // Sort semesters (standard logic from SemesterStructuredList)
-        const yearA = parseInt(a.semKey.slice(2))
-        const yearB = parseInt(b.semKey.slice(2))
-        if (yearA !== yearB) return yearB - yearA
-        return b.semKey.charAt(0).localeCompare(a.semKey.charAt(0))
-      })
+    const sortedMonths = Object.values(monthlyGroups).sort((a, b) => b.sortKey - a.sortKey)
 
-    return sortedSemesters
-  }, [registerData.transactions, registerData.deposits])
+    return (
+      <div className="space-y-12">
+        {sortedMonths.map((group) => (
+          <Card key={`${group.year}-${group.monthName}`} className="bg-card border-border overflow-hidden">
+            <CardHeader className="py-3 px-4 bg-muted/30 flex flex-row items-center justify-between">
+              <div className="flex items-center gap-3">
+                <CardTitle className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
+                  {group.monthName}
+                </CardTitle>
+                <div className="h-4 w-px bg-border/60 mx-1 hidden sm:block" />
+                <div className="text-xs font-medium text-muted-foreground">
+                  Zůstatek: <span className="text-foreground font-black">{group.endBalance.toLocaleString("cs-CZ")} Kč</span>
+                </div>
+              </div>
+              <CashRegisterExport 
+                transactions={group.transactions}
+                deposits={group.deposits}
+                beginningBalance={group.startBalance}
+                endingBalance={group.endBalance}
+                year={group.year}
+                month={group.month}
+              />
+            </CardHeader>
+            <CardContent className="p-0 overflow-x-auto">
+              <OverviewTable 
+                transactions={group.transactions} 
+                deposits={group.deposits} 
+              />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-8 pb-10">
@@ -121,7 +155,7 @@ export function PokladnaClient({
         </div>
       </div>
 
-      {/* Top Cards Grid - Single Row */}
+      {/* Top Cards Grid - Same as before */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="bg-card border-border shadow-sm rounded-[2.5rem] p-8 flex flex-col justify-between min-h-[160px]">
           <div className="space-y-4">
@@ -219,54 +253,20 @@ export function PokladnaClient({
         </Card>
       </div>
 
-      {/* Semester Sections */}
+      {/* Lazy Loaded Semester Sections */}
       <div className="space-y-12">
-        {semesterGroups.map((semester) => (
-          <div key={semester.semKey} className="space-y-10">
-            {/* Semester Header */}
-            <div className="flex items-center gap-6">
-              <h2 className="text-2xl font-bold text-foreground bg-primary px-4 py-1 rounded-lg text-primary-foreground">
-                {semester.semKey}
-              </h2>
-              <div className="h-0.5 flex-1 bg-border/60" />
-            </div>
-
-            {/* Monthly Groups within Semester */}
-            <div className="space-y-12">
-              {semester.months.map((group) => (
-                <Card key={`${group.year}-${group.monthName}`} className="bg-card border-border overflow-hidden translate-y-0">
-                  <CardHeader className="py-3 px-4 bg-muted/30 flex flex-row items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <CardTitle className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
-                        {group.monthName}
-                      </CardTitle>
-                      <div className="h-4 w-px bg-border/60 mx-1 hidden sm:block" />
-                      <div className="text-xs font-medium text-muted-foreground">
-                        Zůstatek: <span className="text-foreground font-black">{group.endBalance.toLocaleString("cs-CZ")} Kč</span>
-                      </div>
-                    </div>
-                    <CashRegisterExport 
-                      transactions={group.transactions}
-                      deposits={group.deposits}
-                      beginningBalance={group.startBalance}
-                      endingBalance={group.endBalance}
-                      year={group.year}
-                      month={group.month}
-                    />
-                  </CardHeader>
-                  <CardContent className="p-0 overflow-x-auto">
-                    <OverviewTable 
-                      transactions={group.transactions} 
-                      deposits={group.deposits} 
-                    />
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
+        {semesterKeys.map((key, index) => (
+          <CollapsibleSemester
+            key={key}
+            semesterKey={key}
+            defaultExpanded={index === 0}
+            initialData={index === 0 ? initialSemesterData : undefined}
+            fetchData={() => getPokladnaSemesterData(key)}
+            renderContent={renderSemesterContent}
+          />
         ))}
 
-        {semesterGroups.length === 0 && (
+        {semesterKeys.length === 0 && (
           <div className="py-20 text-center text-muted-foreground italic font-medium">
             Žádné pokladní záznamy k zobrazení
           </div>
@@ -277,12 +277,12 @@ export function PokladnaClient({
       <DebtErrorDialog 
         open={showDebtError} 
         onOpenChange={setShowDebtError} 
-        currentTotal={balance} 
+        currentTotal={initialBalance} 
       />
       <CashOnHandDialog 
         open={showCashOnHand} 
         onOpenChange={setShowCashOnHand} 
-        currentTotal={balance}
+        currentTotal={initialBalance}
       />
       
       <HistoryDialog
