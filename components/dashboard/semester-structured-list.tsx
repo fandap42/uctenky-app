@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import {
   Table,
   TableBody,
@@ -21,6 +22,7 @@ import { DeleteButton } from "./delete-button"
 import { deleteTransaction, removeReceipt } from "@/lib/actions/transactions"
 import { CollapsibleSemester } from "./collapsible-semester"
 import { getTransactionsBySemester } from "@/lib/actions/transactions"
+import { TablePagination } from "@/components/ui/table-pagination"
 
 interface Transaction {
   id: string
@@ -71,6 +73,152 @@ const statusLabels: Record<string, string> = {
   REJECTED: "Zamítnuto",
 }
 
+function MonthlyTransactionCard({ 
+  monthTxs, 
+  month,
+  showRequester,
+  showSection,
+  isAdmin,
+  showActions
+}: { 
+  monthTxs: Transaction[], 
+  month: number,
+  showRequester: boolean,
+  showSection: boolean,
+  isAdmin: boolean,
+  showActions: boolean
+}) {
+  const [pageSize, setPageSize] = useState<number | "all">(10)
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const effectivePageSize = pageSize === "all" ? monthTxs.length : pageSize
+  const totalPages = pageSize === "all" ? 1 : Math.ceil(monthTxs.length / (pageSize as number))
+  const paginatedTxs = monthTxs.slice((currentPage - 1) * effectivePageSize, currentPage * effectivePageSize)
+
+  return (
+    <Card className="bg-card border-border overflow-hidden">
+      <CardHeader className="py-3 px-4 bg-muted/30 flex flex-row items-center justify-between">
+        <CardTitle className="text-sm font-medium text-muted-foreground">
+          {monthNames[month]}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0 overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-border hover:bg-transparent">
+              {showRequester && <TableHead className="py-2">Žadatel</TableHead>}
+              {showSection && <TableHead className="py-2">Sekce</TableHead>}
+              <TableHead className="py-2">Datum</TableHead>
+              <TableHead className="py-2">Účel</TableHead>
+              <TableHead className="py-2">Obchod</TableHead>
+              <TableHead className="py-2">Částka</TableHead>
+              <TableHead className="py-2">Stav</TableHead>
+              {isAdmin && <TableHead className="py-2">Typ</TableHead>}
+              {isAdmin && <TableHead className="py-2">Proplaceno</TableHead>}
+              {isAdmin && <TableHead className="py-2">Založeno</TableHead>}
+              {(showActions || isAdmin) && <TableHead className="py-2 text-right">Akce</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedTxs.map((tx) => (
+              <TableRow key={tx.id} className="border-border hover:bg-muted/50">
+                {showRequester && (
+                  <TableCell className="py-2 text-sm text-foreground font-semibold">
+                    {tx.requester?.fullName || "Neznámý"}
+                  </TableCell>
+                )}
+                {showSection && (
+                  <TableCell className="py-2 text-sm text-foreground">
+                    {tx.section?.name || "-"}
+                  </TableCell>
+                )}
+                <TableCell className="py-2 text-sm text-foreground whitespace-nowrap tabular-nums">
+                  {new Date(tx.dueDate || tx.createdAt).toLocaleDateString("cs-CZ")}
+                </TableCell>
+                <TableCell className="py-2">
+                  <p className="text-sm text-foreground font-medium truncate max-w-[150px]">{tx.purpose}</p>
+                </TableCell>
+                <TableCell className="py-2 text-sm text-foreground">
+                  {tx.store || "-"}
+                </TableCell>
+                <TableCell className="py-2 text-sm text-foreground whitespace-nowrap tabular-nums font-semibold">
+                  {Number(tx.finalAmount || tx.estimatedAmount).toLocaleString("cs-CZ")} Kč
+                  {tx.receiptUrl && (
+                    <a href={tx.receiptUrl} target="_blank" rel="noopener" className="ml-1 text-primary">📎</a>
+                  )}
+                </TableCell>
+                <TableCell className="py-2">
+                  <Badge className={`${statusColors[tx.status]} text-[10px] px-1.5 h-5 text-white`}>
+                    {statusLabels[tx.status]}
+                  </Badge>
+                </TableCell>
+                {isAdmin && (
+                  <TableCell className="py-2">
+                    <ExpenseTypeSelect transactionId={tx.id} initialType={tx.expenseType || "MATERIAL"} />
+                  </TableCell>
+                )}
+                {isAdmin && (
+                  <TableCell className="py-2">
+                    <PaidStatusSelect transactionId={tx.id} initialStatus={tx.isPaid} />
+                  </TableCell>
+                )}
+                {isAdmin && (
+                  <TableCell className="py-2">
+                    <FiledStatusSelect transactionId={tx.id} initialStatus={tx.isFiled} />
+                  </TableCell>
+                )}
+                {(showActions || isAdmin) && (
+                  <TableCell className="py-2 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      {isAdmin && (
+                        <>
+                          {tx.receiptUrl && (
+                            <DeleteButton
+                              onDelete={() => removeReceipt(tx.id)}
+                              iconOnly
+                              variant="undo"
+                              title="Odstranit účtenku?"
+                              description="Žádost bude vrácena do stavu 'Schváleno'."
+                              className="text-[oklch(0.75_0.15_85)] hover:text-[oklch(0.65_0.15_85)] hover:bg-[oklch(0.75_0.15_85)]/10"
+                            />
+                          )}
+                          <EditTransactionDialog transaction={tx} />
+                          <DeleteButton onDelete={() => deleteTransaction(tx.id)} iconOnly />
+                        </>
+                      )}
+                      {!isAdmin && (
+                        <>
+                          {tx.status === "APPROVED" && <ReceiptUpload transactionId={tx.id} />}
+                          {(tx.status === "PENDING" || tx.status === "DRAFT") && (
+                            <DeleteButton onDelete={() => deleteTransaction(tx.id)} iconOnly />
+                          )}
+                        </>
+                      )}
+                      {isAdmin && <ApprovalActions transactionId={tx.id} currentStatus={tx.status} />}
+                    </div>
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        {monthTxs.length > 0 && (
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(size) => {
+              setPageSize(size)
+              setCurrentPage(1)
+            }}
+          />
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
 export function SemesterStructuredList({
   initialTransactions = [],
   semesterKeys,
@@ -105,114 +253,15 @@ export function SemesterStructuredList({
           const monthTxs = monthGroups[monthKey]
           const month = monthKey % 100
           return (
-            <Card key={monthKey} className="bg-card border-border overflow-hidden">
-              <CardHeader className="py-3 px-4 bg-muted/30 flex flex-row items-center justify-between">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {monthNames[month]}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0 overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-border hover:bg-transparent">
-                      {showRequester && <TableHead className="py-2">Žadatel</TableHead>}
-                      {showSection && <TableHead className="py-2">Sekce</TableHead>}
-                      <TableHead className="py-2">Datum</TableHead>
-                      <TableHead className="py-2">Účel</TableHead>
-                      <TableHead className="py-2">Obchod</TableHead>
-                      <TableHead className="py-2">Částka</TableHead>
-                      <TableHead className="py-2">Stav</TableHead>
-                      {isAdmin && <TableHead className="py-2">Typ</TableHead>}
-                      {isAdmin && <TableHead className="py-2">Proplaceno</TableHead>}
-                      {isAdmin && <TableHead className="py-2">Založeno</TableHead>}
-                      {(showActions || isAdmin) && <TableHead className="py-2 text-right">Akce</TableHead>}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {monthTxs.map((tx) => (
-                      <TableRow key={tx.id} className="border-border hover:bg-muted/50">
-                        {showRequester && (
-                          <TableCell className="py-2 text-sm text-foreground font-semibold">
-                            {tx.requester?.fullName || "Neznámý"}
-                          </TableCell>
-                        )}
-                        {showSection && (
-                          <TableCell className="py-2 text-sm text-foreground">
-                            {tx.section?.name || "-"}
-                          </TableCell>
-                        )}
-                        <TableCell className="py-2 text-sm text-foreground whitespace-nowrap tabular-nums">
-                          {new Date(tx.dueDate || tx.createdAt).toLocaleDateString("cs-CZ")}
-                        </TableCell>
-                        <TableCell className="py-2">
-                          <p className="text-sm text-foreground font-medium truncate max-w-[150px]">{tx.purpose}</p>
-                        </TableCell>
-                        <TableCell className="py-2 text-sm text-foreground">
-                          {tx.store || "-"}
-                        </TableCell>
-                        <TableCell className="py-2 text-sm text-foreground whitespace-nowrap tabular-nums font-semibold">
-                          {Number(tx.finalAmount || tx.estimatedAmount).toLocaleString("cs-CZ")} Kč
-                          {tx.receiptUrl && (
-                            <a href={tx.receiptUrl} target="_blank" rel="noopener" className="ml-1 text-primary">📎</a>
-                          )}
-                        </TableCell>
-                        <TableCell className="py-2">
-                          <Badge className={`${statusColors[tx.status]} text-[10px] px-1.5 h-5 text-white`}>
-                            {statusLabels[tx.status]}
-                          </Badge>
-                        </TableCell>
-                        {isAdmin && (
-                          <TableCell className="py-2">
-                            <ExpenseTypeSelect transactionId={tx.id} initialType={tx.expenseType || "MATERIAL"} />
-                          </TableCell>
-                        )}
-                        {isAdmin && (
-                          <TableCell className="py-2">
-                            <PaidStatusSelect transactionId={tx.id} initialStatus={tx.isPaid} />
-                          </TableCell>
-                        )}
-                        {isAdmin && (
-                          <TableCell className="py-2">
-                            <FiledStatusSelect transactionId={tx.id} initialStatus={tx.isFiled} />
-                          </TableCell>
-                        )}
-                        {(showActions || isAdmin) && (
-                          <TableCell className="py-2 text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              {isAdmin && (
-                                <>
-                                  {tx.receiptUrl && (
-                                    <DeleteButton
-                                      onDelete={() => removeReceipt(tx.id)}
-                                      iconOnly
-                                      variant="undo"
-                                      title="Odstranit účtenku?"
-                                      description="Žádost bude vrácena do stavu 'Schváleno'."
-                                      className="text-[oklch(0.75_0.15_85)] hover:text-[oklch(0.65_0.15_85)] hover:bg-[oklch(0.75_0.15_85)]/10"
-                                    />
-                                  )}
-                                  <EditTransactionDialog transaction={tx} />
-                                  <DeleteButton onDelete={() => deleteTransaction(tx.id)} iconOnly />
-                                </>
-                              )}
-                              {!isAdmin && (
-                                <>
-                                  {tx.status === "APPROVED" && <ReceiptUpload transactionId={tx.id} />}
-                                  {(tx.status === "PENDING" || tx.status === "DRAFT") && (
-                                    <DeleteButton onDelete={() => deleteTransaction(tx.id)} iconOnly />
-                                  )}
-                                </>
-                              )}
-                              {isAdmin && <ApprovalActions transactionId={tx.id} currentStatus={tx.status} />}
-                            </div>
-                          </TableCell>
-                        )}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+            <MonthlyTransactionCard
+              key={monthKey}
+              month={month}
+              monthTxs={monthTxs}
+              isAdmin={isAdmin}
+              showRequester={showRequester}
+              showSection={showSection}
+              showActions={showActions}
+            />
           )
         })}
       </div>

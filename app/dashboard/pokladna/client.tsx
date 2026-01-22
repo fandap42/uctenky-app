@@ -1,32 +1,16 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
-import { Card, CardHeader, CardDescription, CardTitle, CardContent } from "@/components/ui/card"
+import { useState, useMemo } from "react"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { OverviewTable } from "@/components/pokladna/overview-table"
-import { getBalanceAtDate } from "@/lib/actions/cash-register"
-import { AlertCircle, Wallet, History, Pencil, FileDown, Plus } from "lucide-react"
+import { AlertCircle, History, Pencil } from "lucide-react"
 import { DepositDialog } from "@/components/pokladna/deposit-dialog"
 import { DebtErrorDialog } from "@/components/pokladna/debt-error-dialog"
 import { CashOnHandDialog } from "@/components/pokladna/cash-on-hand-dialog"
 import { HistoryDialog } from "@/components/pokladna/history-dialog"
 import { CashRegisterExport } from "@/components/pokladna/cash-register-export"
-import { getSemester } from "@/lib/utils/semesters"
-import { cn } from "@/lib/utils"
-
-interface PokladnaClientProps {
-  initialBalance: number
-  unpaidCount: number
-  currentUsers: any[]
-  registerData: any
-}
-
-const MONTH_NAMES = [
-  "Leden", "Únor", "Březen", "Duben", "Květen", "Červen",
-  "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec"
-]
-
+import { TablePagination } from "@/components/ui/table-pagination"
 import { getPokladnaSemesterData } from "@/lib/actions/cash-register"
 import { CollapsibleSemester } from "@/components/dashboard/collapsible-semester"
 
@@ -37,6 +21,64 @@ interface PokladnaClientProps {
   registerData: any // Context (debtErrors, cashOnHand, etc.)
   semesterKeys: string[]
   initialSemesterData: any
+}
+
+const MONTH_NAMES = [
+  "Leden", "Únor", "Březen", "Duben", "Květen", "Červen",
+  "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec"
+]
+
+function MonthlyPokladnaCard({ group }: { group: any }) {
+  const [pageSize, setPageSize] = useState<number | "all">(10)
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const totalItems = group.transactions.length + group.deposits.length
+  const effectivePageSize = pageSize === "all" ? Math.max(totalItems, 1) : pageSize
+  const totalPages = pageSize === "all" ? 1 : Math.ceil(totalItems / (pageSize as number))
+
+  return (
+    <Card className="bg-card border-border overflow-hidden">
+      <CardHeader className="py-3 px-4 bg-muted/30 flex flex-row items-center justify-between">
+        <div className="flex items-center gap-3">
+          <CardTitle className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
+            {group.monthName}
+          </CardTitle>
+          <div className="h-4 w-px bg-border/60 mx-1 hidden sm:block" />
+          <div className="text-xs font-medium text-muted-foreground">
+            Zůstatek: <span className="text-foreground font-black">{group.endBalance.toLocaleString("cs-CZ")} Kč</span>
+          </div>
+        </div>
+        <CashRegisterExport 
+          transactions={group.transactions}
+          deposits={group.deposits}
+          beginningBalance={group.startBalance}
+          endingBalance={group.endBalance}
+          year={group.year}
+          month={group.month}
+        />
+      </CardHeader>
+      <CardContent className="p-0 overflow-x-auto">
+        <OverviewTable 
+          transactions={group.transactions} 
+          deposits={group.deposits} 
+          pageSize={pageSize}
+          currentPage={currentPage}
+        />
+        {totalItems > 0 && (
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(size) => {
+              setPageSize(size)
+              setCurrentPage(1)
+            }}
+          />
+        )}
+      </CardContent>
+    </Card>
+  )
 }
 
 export function PokladnaClient({ 
@@ -111,33 +153,7 @@ export function PokladnaClient({
     return (
       <div className="space-y-12">
         {sortedMonths.map((group) => (
-          <Card key={`${group.year}-${group.monthName}`} className="bg-card border-border overflow-hidden">
-            <CardHeader className="py-3 px-4 bg-muted/30 flex flex-row items-center justify-between">
-              <div className="flex items-center gap-3">
-                <CardTitle className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
-                  {group.monthName}
-                </CardTitle>
-                <div className="h-4 w-px bg-border/60 mx-1 hidden sm:block" />
-                <div className="text-xs font-medium text-muted-foreground">
-                  Zůstatek: <span className="text-foreground font-black">{group.endBalance.toLocaleString("cs-CZ")} Kč</span>
-                </div>
-              </div>
-              <CashRegisterExport 
-                transactions={group.transactions}
-                deposits={group.deposits}
-                beginningBalance={group.startBalance}
-                endingBalance={group.endBalance}
-                year={group.year}
-                month={group.month}
-              />
-            </CardHeader>
-            <CardContent className="p-0 overflow-x-auto">
-              <OverviewTable 
-                transactions={group.transactions} 
-                deposits={group.deposits} 
-              />
-            </CardContent>
-          </Card>
+          <MonthlyPokladnaCard key={`${group.year}-${group.monthName}`} group={group} />
         ))}
       </div>
     )

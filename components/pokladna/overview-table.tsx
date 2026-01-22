@@ -23,9 +23,16 @@ const dateFormatter = new Intl.DateTimeFormat("cs-CZ", {
 interface OverviewTableProps {
   transactions: any[]
   deposits: any[]
+  pageSize?: number | "all"
+  currentPage?: number
 }
 
-export function OverviewTable({ transactions, deposits }: OverviewTableProps) {
+export function OverviewTable({ 
+  transactions, 
+  deposits,
+  pageSize = "all",
+  currentPage = 1
+}: OverviewTableProps) {
   // Combine and sort by date
   const combinedData = [
     ...transactions.map(t => ({
@@ -47,6 +54,9 @@ export function OverviewTable({ transactions, deposits }: OverviewTableProps) {
     setCheckedIds(prev => ({ ...prev, [id]: !prev[id] }))
   }
 
+  const effectivePageSize = pageSize === "all" ? combinedData.length : pageSize
+  const paginatedData = combinedData.slice((currentPage - 1) * effectivePageSize, currentPage * effectivePageSize)
+
   return (
     <div className="w-full">
       <Table>
@@ -64,7 +74,7 @@ export function OverviewTable({ transactions, deposits }: OverviewTableProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {combinedData.map((item) => {
+          {paginatedData.map((item) => {
             const isTr = item.displayType === "TRANSACTION"
             return (
               <TableRow key={item.id} className="border-border hover:bg-muted/10 transition-colors group">
@@ -119,7 +129,7 @@ export function OverviewTable({ transactions, deposits }: OverviewTableProps) {
                     id={`track-${item.id}`} 
                     checked={!!checkedIds[item.id]} 
                     onCheckedChange={() => toggleCheck(item.id)}
-                    className="border-muted-foreground/20 data-[state=checked]:bg-primary data-[state=checked]:border-primary rounded-md w-4 h-4 shadow-none mx-auto opacity-30 group-hover:opacity-100 transition-opacity"
+                    className="border-muted-foreground/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary rounded-md w-5 h-5 shadow-sm mx-auto opacity-60 group-hover:opacity-100 transition-all scale-110"
                   />
                 </TableCell>
               </TableRow>
