@@ -40,10 +40,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     if (!container) return
 
     const handleScroll = () => {
-      if (scrollTimeout.current) {
-        clearTimeout(scrollTimeout.current)
-      }
-
       const currentScrollTop = container.scrollTop
       
       // During navigation, always keep visible
@@ -52,24 +48,21 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         return
       }
 
+      // Always show at the very top
       if (currentScrollTop < 10) {
         setHeaderVisible(true)
       } else {
-        // Hide when scrolling down (current > last + 5)
-        if (currentScrollTop > lastScrollTop.current + 5 && currentScrollTop > 64) {
+        // Hide when scrolling down (current > last + threshold)
+        // Using a threshold of 10px to avoid jitter
+        if (currentScrollTop > lastScrollTop.current + 10 && currentScrollTop > 64) {
           setHeaderVisible(false)
-        } else if (currentScrollTop < lastScrollTop.current - 5) {
+        } else if (currentScrollTop < lastScrollTop.current - 10) {
           // Show when scrolling up
           setHeaderVisible(true)
         }
       }
       
       lastScrollTop.current = currentScrollTop
-
-      // Show navbar after user stops scrolling
-      scrollTimeout.current = setTimeout(() => {
-        setHeaderVisible(true)
-      }, 300)
     }
 
     container.addEventListener("scroll", handleScroll)
@@ -92,7 +85,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         {/* Mobile header with menu button */}
         <header 
           className={cn(
-            "flex-none h-[calc(4rem+env(safe-area-inset-top))] flex items-end pb-3 gap-4 px-6 border-b border-border md:hidden bg-card/80 backdrop-blur-md sticky top-0 z-30 transition-all duration-300 pt-[env(safe-area-inset-top)]",
+            "h-[calc(4rem+env(safe-area-inset-top))] flex items-end pb-3 gap-4 px-6 border-b border-border md:hidden bg-card/80 backdrop-blur-md absolute top-0 inset-x-0 z-30 transition-all duration-300 pt-[env(safe-area-inset-top)]",
             headerVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
           )}
         >
@@ -112,7 +105,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         {/* Main content */}
         <main 
           ref={scrollContainerRef}
-          className="flex-1 overflow-auto"
+          className="flex-1 overflow-auto pt-[calc(4rem+env(safe-area-inset-top))] md:pt-0"
         >
           <div className="p-4 md:p-8">{children}</div>
         </main>
