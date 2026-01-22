@@ -1,9 +1,10 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { getSemester } from "@/lib/utils/semesters"
 import { BudgetSemesterExport } from "@/components/dashboard/budget-semester-export"
+import { cn } from "@/lib/utils"
 
 export const dynamic = "force-dynamic"
 
@@ -111,11 +112,11 @@ export default async function BudgetPage() {
     })
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-10">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white mb-2">Rozpočty</h1>
-        <p className="text-slate-400">
+        <h1 className="text-3xl font-black text-foreground mb-2">Rozpočty</h1>
+        <p className="text-muted-foreground">
           Přehled čerpání rozpočtu po sekcích pro každý semestr
         </p>
       </div>
@@ -123,9 +124,9 @@ export default async function BudgetPage() {
       {/* Semester sections */}
       {semesterData.length > 0 ? (
         semesterData.map((sem) => (
-          <Card key={sem.semester} className="bg-slate-800/50 border-slate-700">
-            <CardHeader className="flex flex-row items-center justify-between pb-4">
-              <CardTitle className="text-xl font-bold text-white">
+          <Card key={sem.semester} className="bg-card border-border shadow-sm overflow-hidden rounded-[2.5rem]">
+            <CardHeader className="flex flex-row items-center justify-between pb-6 border-b border-border bg-muted/20">
+              <CardTitle className="text-2xl font-black text-foreground">
                 {sem.semester}
               </CardTitle>
               <BudgetSemesterExport 
@@ -133,43 +134,43 @@ export default async function BudgetPage() {
                 sections={sem.sections}
               />
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-slate-700">
-                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-400">Sekce</th>
-                      <th className="text-right py-3 px-4 text-sm font-medium text-slate-400">Vyčerpáno</th>
-                      <th className="text-right py-3 px-4 text-sm font-medium text-slate-400">Čekající</th>
-                      <th className="text-right py-3 px-4 text-sm font-medium text-slate-400">Celkem</th>
+                    <tr className="bg-muted/10 border-b border-border">
+                      <th className="text-left py-4 px-6 text-xs font-black uppercase tracking-widest text-muted-foreground">Sekce</th>
+                      <th className="text-right py-4 px-6 text-xs font-black uppercase tracking-widest text-muted-foreground">Vyčerpáno</th>
+                      <th className="text-right py-4 px-6 text-xs font-black uppercase tracking-widest text-muted-foreground">Čekající</th>
+                      <th className="text-right py-4 px-6 text-xs font-black uppercase tracking-widest text-muted-foreground">Celkem</th>
                     </tr>
                   </thead>
                   <tbody>
                     {sem.sections.map((section) => (
-                      <tr key={section.sectionId} className="border-b border-slate-700/50 hover:bg-slate-700/20">
-                        <td className="py-3 px-4 text-sm text-white">{section.sectionName}</td>
-                        <td className="py-3 px-4 text-sm text-right text-green-400">
+                      <tr key={section.sectionId} className="border-b border-border hover:bg-muted/30 transition-colors">
+                        <td className="py-4 px-6 text-sm font-bold text-foreground">{section.sectionName}</td>
+                        <td className="py-4 px-6 text-sm text-right text-success font-black tabular-nums">
                           {section.spent.toLocaleString("cs-CZ")} Kč
                         </td>
-                        <td className="py-3 px-4 text-sm text-right text-yellow-400">
+                        <td className="py-4 px-6 text-sm text-right text-[oklch(0.75_0.15_85)] font-black tabular-nums">
                           {section.pending.toLocaleString("cs-CZ")} Kč
                         </td>
-                        <td className="py-3 px-4 text-sm text-right text-white font-medium">
+                        <td className="py-4 px-6 text-sm text-right text-foreground font-black tabular-nums">
                           {(section.spent + section.pending).toLocaleString("cs-CZ")} Kč
                         </td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
-                    <tr className="bg-slate-700/30">
-                      <td className="py-3 px-4 text-sm font-bold text-white">Celkem</td>
-                      <td className="py-3 px-4 text-sm text-right font-bold text-green-400">
+                    <tr className="bg-muted/40 border-t border-border">
+                      <td className="py-5 px-6 text-sm font-black text-foreground uppercase tracking-widest">Celkem</td>
+                      <td className="py-5 px-6 text-sm text-right font-black text-success tabular-nums text-lg">
                         {sem.totalSpent.toLocaleString("cs-CZ")} Kč
                       </td>
-                      <td className="py-3 px-4 text-sm text-right font-bold text-yellow-400">
+                      <td className="py-5 px-6 text-sm text-right font-black text-[oklch(0.75_0.15_85)] tabular-nums text-lg">
                         {sem.totalPending.toLocaleString("cs-CZ")} Kč
                       </td>
-                      <td className="py-3 px-4 text-sm text-right font-bold text-white">
+                      <td className="py-5 px-6 text-sm text-right font-black text-foreground tabular-nums text-lg">
                         {(sem.totalSpent + sem.totalPending).toLocaleString("cs-CZ")} Kč
                       </td>
                     </tr>
@@ -180,9 +181,9 @@ export default async function BudgetPage() {
           </Card>
         ))
       ) : (
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardContent className="py-12 text-center">
-            <p className="text-slate-400">Žádná data k zobrazení</p>
+        <Card className="bg-card border-border shadow-sm">
+          <CardContent className="py-24 text-center">
+            <p className="text-muted-foreground font-bold italic">Žádná data k zobrazení</p>
           </CardContent>
         </Card>
       )}

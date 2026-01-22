@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { AppRole, User } from "@prisma/client"
 import {
   Table,
   TableBody,
@@ -10,141 +9,119 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Search, UserCog, UserPlus } from "lucide-react"
 import { EditUserDialog } from "./edit-user-dialog"
-import { DeleteButton } from "@/components/dashboard/delete-button"
-import { deleteUser } from "@/lib/actions/transactions"
-import { roleLabels, isHeadRole, isAdmin } from "@/lib/utils/roles"
+import { cn } from "@/lib/utils"
+
+interface User {
+  id: string
+  fullName: string | null
+  email: string | null
+  role: string
+  createdAt: string
+}
 
 interface UserManagementProps {
   initialUsers: User[]
 }
 
-function getRoleColor(role: string): string {
-  if (isAdmin(role)) return "bg-purple-500"
-  if (isHeadRole(role)) return "bg-blue-500"
-  return "bg-slate-500"
+const roleLabels: Record<string, string> = {
+  MEMBER: "Člen",
+  ADMIN: "Administrátor",
+  HEAD_VEDENI: "Vedoucí: Vedení",
+  HEAD_FINANCE: "Vedoucí: Finance",
+  HEAD_HR: "Vedoucí: HR",
+  HEAD_PR: "Vedoucí: PR",
+  HEAD_NEVZDELAVACI: "Vedoucí: Nevzdělávací akce",
+  HEAD_VZDELAVACI: "Vedoucí: Vzdělávací akce",
+  HEAD_SPORTOVNI: "Vedoucí: Sportovní akce",
+  HEAD_GAMING: "Vedoucí: Gaming",
+  HEAD_KRUHOVE: "Vedoucí: Kruhové akce",
 }
 
-export function UserManagement({
-  initialUsers,
-}: UserManagementProps) {
-  const [filter, setFilter] = useState("")
-  const [editingUser, setEditingUser] = useState<User | null>(null)
+const roleColors: Record<string, string> = {
+  MEMBER: "bg-muted text-foreground",
+  ADMIN: "bg-primary text-primary-foreground",
+  HEAD_VEDENI: "bg-secondary text-secondary-foreground",
+  HEAD_FINANCE: "bg-secondary text-secondary-foreground",
+  HEAD_HR: "bg-secondary text-secondary-foreground",
+  HEAD_PR: "bg-secondary text-secondary-foreground",
+  HEAD_NEVZDELAVACI: "bg-secondary text-secondary-foreground",
+  HEAD_VZDELAVACI: "bg-secondary text-secondary-foreground",
+  HEAD_SPORTOVNI: "bg-secondary text-secondary-foreground",
+  HEAD_GAMING: "bg-secondary text-secondary-foreground",
+  HEAD_KRUHOVE: "bg-secondary text-secondary-foreground",
+}
 
-  const filteredUsers = initialUsers.filter((user) =>
-    user.fullName?.toLowerCase().includes(filter.toLowerCase()) ||
-    user.email.toLowerCase().includes(filter.toLowerCase())
+export function UserManagement({ initialUsers }: UserManagementProps) {
+  const [search, setSearch] = useState("")
+
+  const filteredUsers = initialUsers.filter(
+    (user) =>
+      user.fullName?.toLowerCase().includes(search.toLowerCase()) ||
+      user.email?.toLowerCase().includes(search.toLowerCase())
   )
 
-  const handleEdit = (user: User) => {
-    setEditingUser(user)
-  }
-
-  // Group users by role type
-  const adminUsers = filteredUsers.filter(u => isAdmin(u.role))
-  const headUsers = filteredUsers.filter(u => isHeadRole(u.role))
-  const memberUsers = filteredUsers.filter(u => u.role === "MEMBER")
-
-  const groups = [
-    { name: "Administrátoři", users: adminUsers, color: "bg-purple-500" },
-    { name: "Vedoucí sekcí", users: headUsers, color: "bg-blue-500" },
-    { name: "Členové", users: memberUsers, color: "bg-slate-500" },
-  ].filter(g => g.users.length > 0)
-
   return (
-    <div className="space-y-4">
+    <div className="space-y-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-foreground mb-2">Uživatelé</h1>
+          <p className="text-muted-foreground">
+            Správa členů a jejich přístupových rolí v systému
+          </p>
+        </div>
+      </div>
+
       <div className="flex items-center gap-4">
-        <Input
-          placeholder="Hledat podle jména nebo emailu..."
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="max-w-sm bg-slate-800 border-slate-700 text-white"
-        />
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Hledat uživatele..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 bg-card border-border rounded-full focus:ring-primary"
+          />
+        </div>
       </div>
 
-      <div className="space-y-8">
-        {groups.map((group) => (
-          <div key={group.name} className="space-y-4">
-            <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-              <span className={`w-2 h-6 ${group.color} rounded-full`}></span>
-              {group.name}
-              <Badge variant="outline" className="ml-2 text-slate-400 border-slate-700">
-                {group.users.length}
-              </Badge>
-            </h2>
-            <Card className="bg-slate-800/50 border-slate-700">
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-slate-700 hover:bg-transparent">
-                      <TableHead className="text-slate-400">Jméno</TableHead>
-                      <TableHead className="text-slate-400">Email</TableHead>
-                      <TableHead className="text-slate-400">Role</TableHead>
-                      <TableHead className="text-slate-400 text-right">Akce</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {group.users.map((user) => (
-                      <TableRow key={user.id} className="border-slate-700 hover:bg-slate-700/50">
-                        <TableCell className="font-medium text-white">
-                          {user.fullName || "Neznámé"}
-                        </TableCell>
-                        <TableCell className="text-slate-300">
-                          {user.email}
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={`${getRoleColor(user.role)} text-white`}>
-                            {roleLabels[user.role] || user.role}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEdit(user)}
-                              className="text-blue-400 hover:text-blue-300 hover:bg-blue-500/20"
-                            >
-                              Upravit
-                            </Button>
-                            <DeleteButton 
-                              onDelete={() => deleteUser(user.id)} 
-                              title="Smazat uživatele?" 
-                              description={`Opravdu chcete smazat uživatele ${user.fullName || user.email}? Akce je nevratná.`}
-                            />
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </div>
-        ))}
-        {filteredUsers.length === 0 && (
-          <Card className="bg-slate-800/50 border-slate-700">
-            <CardContent className="py-12 text-center text-slate-500">
-              Žádní uživatelé nenalezeni
-            </CardContent>
-          </Card>
-        )}
+      <div className="grid gap-6">
+        <Card className="bg-card border-border shadow-sm overflow-hidden rounded-[2.5rem]">
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-border hover:bg-transparent bg-muted/30">
+                  <TableHead className="py-4 px-6 text-xs font-black uppercase tracking-widest text-muted-foreground">Jméno</TableHead>
+                  <TableHead className="py-4 px-6 text-xs font-black uppercase tracking-widest text-muted-foreground">Email</TableHead>
+                  <TableHead className="py-4 px-6 text-xs font-black uppercase tracking-widest text-muted-foreground">Role</TableHead>
+                  <TableHead className="py-4 px-6 text-right text-xs font-black uppercase tracking-widest text-muted-foreground">Akce</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredUsers.map((user) => (
+                  <TableRow key={user.id} className="border-border hover:bg-muted/30 transition-colors">
+                    <TableCell className="py-4 px-6 font-bold text-foreground">
+                      {user.fullName || "---"}
+                    </TableCell>
+                    <TableCell className="py-4 px-6 text-muted-foreground">{user.email}</TableCell>
+                    <TableCell className="py-4 px-6">
+                      <Badge className={cn("text-[10px] px-2 py-0.5 h-auto uppercase tracking-wider font-bold", roleColors[user.role] || "bg-muted")}>
+                        {roleLabels[user.role] || user.role}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="py-4 px-6 text-right">
+                      <EditUserDialog user={user} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </div>
-
-      {editingUser && (
-        <EditUserDialog
-          user={editingUser}
-          open={!!editingUser}
-          onOpenChange={(open) => !open && setEditingUser(null)}
-          onSuccess={() => {
-            // Data will be revalidated by server action
-          }}
-        />
-      )}
     </div>
   )
 }

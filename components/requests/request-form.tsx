@@ -66,31 +66,31 @@ export function RequestForm({ trigger, sections }: RequestFormProps) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700">
+          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
             Nová žádost
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="bg-slate-800 border-slate-700 sm:max-w-[500px]">
+      <DialogContent className="bg-card border-border sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="text-white text-xl">
+          <DialogTitle className="text-foreground text-xl">
             Vytvořit novou žádost
           </DialogTitle>
-          <DialogDescription className="text-slate-400">
+          <DialogDescription className="text-muted-foreground">
             Vyplňte údaje o požadované náhradě. Po schválení budete moci nahrát
             účtenku.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6 mt-4">
           <div className="space-y-2">
-            <Label htmlFor="section" className="text-slate-300">
+            <Label htmlFor="section" className="text-foreground">
               Sekce *
             </Label>
             <Select value={selectedSection} onValueChange={setSelectedSection} required>
-              <SelectTrigger className="bg-slate-900 border-slate-700 text-white">
+              <SelectTrigger className="bg-background border-border text-foreground">
                 <SelectValue placeholder="Vyberte sekci" />
               </SelectTrigger>
-              <SelectContent className="bg-slate-900 border-slate-700">
+              <SelectContent className="bg-card border-border">
                 {sections.map((section) => (
                   <SelectItem key={section.id} value={section.id}>
                     {section.name}
@@ -110,7 +110,7 @@ export function RequestForm({ trigger, sections }: RequestFormProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="purpose" className="text-slate-300">
+            <Label htmlFor="purpose" className="text-foreground">
               Účel výdaje *
             </Label>
             <Input
@@ -118,11 +118,11 @@ export function RequestForm({ trigger, sections }: RequestFormProps) {
               name="purpose"
               placeholder="Např. Nákup kancelářských potřeb"
               required
-              className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500"
+              className="bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-primary"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="estimatedAmount" className="text-slate-300">
+            <Label htmlFor="estimatedAmount" className="text-foreground">
               Odhadovaná částka (Kč) *
             </Label>
             <Input
@@ -133,7 +133,7 @@ export function RequestForm({ trigger, sections }: RequestFormProps) {
               step="0.01"
               placeholder="0.00"
               required
-              className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500"
+              className="bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-primary tabular-nums"
             />
           </div>
           <DialogFooter className="gap-2">
@@ -141,14 +141,14 @@ export function RequestForm({ trigger, sections }: RequestFormProps) {
               type="button"
               variant="outline"
               onClick={() => setOpen(false)}
-              className="border-slate-600 text-slate-300 hover:bg-slate-700"
+              className="border-border text-foreground hover:bg-muted"
             >
               Zrušit
             </Button>
             <Button
               type="submit"
               disabled={isLoading || !selectedSection}
-              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               {isLoading ? (
                 <>

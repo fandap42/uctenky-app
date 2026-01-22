@@ -1,19 +1,24 @@
+
 "use client"
 
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Progress } from "@/components/ui/progress"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { useState } from "react"
-import { useReceiptUpload } from "@/hooks/useReceiptUpload"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { updateTransactionReceipt } from "@/lib/actions/transactions"
+import { toast } from "sonner"
+import { Upload, FileUp, Check, Calendar } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface ReceiptUploadProps {
   transactionId: string
@@ -21,172 +26,176 @@ interface ReceiptUploadProps {
 
 export function ReceiptUpload({ transactionId }: ReceiptUploadProps) {
   const [open, setOpen] = useState(false)
-  
-  const {
-    state,
-    fileInputRef,
-    updateState,
-    handleFileChange,
-    handleUpload,
-  } = useReceiptUpload({
-    transactionId,
-    onSuccess: () => setOpen(false),
-  })
+  const [isLoading, setIsLoading] = useState(false)
+  const [fileUrl, setFileUrl] = useState("")
+  const [finalAmount, setFinalAmount] = useState("")
+  const [store, setStore] = useState("")
+  const [purchaseDate, setPurchaseDate] = useState("")
+  const router = useRouter()
+
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsLoading(true)
+    const formData = new FormData()
+    formData.append("file", file)
+    formData.append("transactionId", transactionId)
+
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      })
+      const data = await res.json()
+      if (data.url) {
+        setFileUrl(data.url)
+        toast.success("Soubor byl úspěšně nahrán")
+      } else {
+        toast.error(data.error || "Nahrávání se nezdařilo")
+      }
+    } catch {
+      toast.error("Nastala chyba při nahrávání")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!fileUrl || !finalAmount || !purchaseDate) return
+
+    setIsLoading(true)
+    const result = await updateTransactionReceipt(
+      transactionId,
+      fileUrl,
+      parseFloat(finalAmount),
+      store,
+      new Date(purchaseDate)
+    )
+
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      toast.success("HOTOVO: Účtenka byla uložena")
+      setOpen(false)
+      router.refresh()
+    }
+    setIsLoading(false)
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="border-blue-500/50 text-blue-400 hover:bg-blue-500/10">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4 mr-1"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-            />
-          </svg>
+        <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-full gap-2">
+          <Upload className="w-4 h-4" />
           Nahrát účtenku
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-slate-800 border-slate-700">
+      <DialogContent className="bg-card border-border sm:max-w-[425px] rounded-[2.5rem]">
         <DialogHeader>
-          <DialogTitle className="text-white">Nahrát účtenku</DialogTitle>
-          <DialogDescription className="text-slate-400">
-            Nahrajte fotografii účtenky a zadejte skutečnou částku
+          <DialogTitle className="text-2xl font-black text-foreground">Doplňte účtenku</DialogTitle>
+          <DialogDescription className="text-muted-foreground font-medium">
+            Nahrajte fotografii nebo PDF účtenky a zadejte konečnou částku a datum.
           </DialogDescription>
         </DialogHeader>
-
-        <div className="space-y-4">
-          {/* File input */}
-          <div className="space-y-2">
-            <Label htmlFor="receipt" className="text-slate-300">
-              Účtenka (obrázek)
-            </Label>
-            <div
-              className="border-2 border-dashed border-slate-600 rounded-lg p-6 text-center cursor-pointer hover:border-blue-500/50 transition-colors"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              {state.preview ? (
-                <div className="space-y-2">
-                  <img
-                    src={state.preview}
-                    alt="Náhled účtenky"
-                    className="max-h-48 mx-auto rounded-lg"
-                  />
-                  <p className="text-sm text-slate-400">{state.file?.name}</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-10 w-10 mx-auto text-slate-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
-                  <p className="text-slate-400">Klikněte pro výběr obrázku</p>
-                  <p className="text-xs text-slate-500">PNG, JPG, HEIC do 5 MB</p>
-                </div>
-              )}
-            </div>
-            <Input
-              ref={fileInputRef}
-              id="receipt"
-              type="file"
-              accept="image/*,.heic,.heif"
-              onChange={handleFileChange}
-              className="hidden"
-            />
-          </div>
-
-          {/* Store name */}
-          <div className="space-y-2">
-            <Label htmlFor="store" className="text-slate-300">
-              Obchod
-            </Label>
-            <Input
-              id="store"
-              type="text"
-              value={state.store}
-              onChange={(e) => updateState({ store: e.target.value })}
-              placeholder="Např. Lidl, Alza..."
-              className="bg-slate-900 border-slate-700 text-white"
-            />
-          </div>
-
-          {/* Purchase date */}
-          <div className="space-y-2">
-            <Label htmlFor="purchaseDate" className="text-slate-300">
-              Datum nákupu (z účtenky) *
-            </Label>
-            <Input
-              id="purchaseDate"
-              type="date"
-              value={state.purchaseDate}
-              onChange={(e) => updateState({ purchaseDate: e.target.value })}
-              required
-              className="bg-slate-900 border-slate-700 text-white"
-            />
-          </div>
-
-          {/* Final amount */}
-          <div className="space-y-2">
-            <Label htmlFor="finalAmount" className="text-slate-300">
-              Skutečná částka (Kč)
-            </Label>
-            <Input
-              id="finalAmount"
-              type="number"
-              step="0.01"
-              value={state.finalAmount}
-              onChange={(e) => updateState({ finalAmount: e.target.value })}
-              placeholder="0.00"
-              className="bg-slate-900 border-slate-700 text-white"
-            />
-          </div>
-
-          {/* Progress bar */}
-          {state.uploading && (
+        <form onSubmit={handleSubmit} className="space-y-6 py-4">
+          <div className="space-y-4">
             <div className="space-y-2">
-              <Progress value={state.progress} className="h-2" />
-              <p className="text-xs text-center text-slate-400">
-                Nahrávání... {state.progress}%
-              </p>
+              <Label className="text-sm font-black uppercase tracking-widest text-muted-foreground">Soubor účtenky *</Label>
+              <div className="relative">
+                <Input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  id="receipt-file"
+                  required={!fileUrl}
+                />
+                <Label
+                  htmlFor="receipt-file"
+                  className={cn(
+                    "flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-2xl cursor-pointer transition-all",
+                    fileUrl 
+                      ? "border-success bg-success/5 text-success" 
+                      : "border-border hover:border-primary hover:bg-primary/5 text-muted-foreground"
+                  )}
+                >
+                  {fileUrl ? (
+                    <>
+                      <Check className="w-6 h-6 mb-1" />
+                      <span className="text-xs font-bold">Nahráno</span>
+                    </>
+                  ) : (
+                    <>
+                      <FileUp className="w-6 h-6 mb-1" />
+                      <span className="text-xs font-bold">Klikněte pro výběr souboru</span>
+                    </>
+                  )}
+                </Label>
+              </div>
             </div>
-          )}
 
-          {/* Actions */}
-          <div className="flex justify-end gap-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="purchaseDate" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Datum nákupu *</Label>
+                <div className="relative">
+                  <Input
+                    id="purchaseDate"
+                    type="date"
+                    value={purchaseDate}
+                    onChange={(e) => setPurchaseDate(e.target.value)}
+                    required
+                    className="bg-background border-border rounded-xl font-bold h-10 pl-9 pr-2 text-xs"
+                  />
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="amount" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Částka (Kč) *</Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={finalAmount}
+                  onChange={(e) => setFinalAmount(e.target.value)}
+                  required
+                  className="bg-background border-border rounded-xl font-bold h-10 tabular-nums text-xs"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="store" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Obchod / Prodejce</Label>
+              <Input
+                id="store"
+                placeholder="Např. Alza.cz"
+                value={store}
+                onChange={(e) => setStore(e.target.value)}
+                className="bg-background border-border rounded-xl font-bold h-10 text-xs"
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
             <Button
-              variant="ghost"
+              type="button"
+              variant="outline"
               onClick={() => setOpen(false)}
-              disabled={state.uploading}
-              className="text-slate-400 hover:text-white"
+              className="rounded-full font-bold border-border h-10 px-6 text-xs"
             >
               Zrušit
             </Button>
             <Button
-              onClick={handleUpload}
-              disabled={!state.file || state.uploading}
-              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+              type="submit"
+              disabled={isLoading || !fileUrl || !finalAmount || !purchaseDate}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-full px-8 h-10 text-xs"
             >
-              {state.uploading ? "Nahrávám..." : "Nahrát"}
+              {isLoading ? "Ukládám..." : "Uložit účtenku"}
             </Button>
-          </div>
-        </div>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )

@@ -13,145 +13,133 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { createDeposit } from "@/lib/actions/cash-register"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
+import { Plus } from "lucide-react"
 
-interface DepositDialogProps {
-  onSuccess?: () => void
-}
-
-export function DepositDialog({ onSuccess }: DepositDialogProps) {
+export function DepositDialog() {
   const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [amount, setAmount] = useState("")
-  const [description, setDescription] = useState("")
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0])
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    setLoading(true)
+    setIsLoading(true)
 
     const formData = new FormData(e.currentTarget)
-    const honeypot = formData.get("organization_honey") as string
+    const type = formData.get("type") as "INCOME" | "EXPENSE"
+    const amountVal = parseFloat(formData.get("amount") as string)
+    const note = formData.get("note") as string
+    const honeypot = formData.get("email_honey") as string
+
+    // Postive for INCOME, negative for EXPENSE
+    const amount = type === "INCOME" ? amountVal : -amountVal
 
     const result = await createDeposit(
-      parseFloat(amount),
-      description || null,
-      new Date(date),
+      amount,
+      note,
+      new Date(),
       honeypot
     )
-
-    setLoading(false)
 
     if (result.error) {
       toast.error(result.error)
     } else {
-      toast.success("Vklad byl přidán")
+      toast.success("Pohyb byl úspěšně zaznamenán")
       setOpen(false)
-      setAmount("")
-      setDescription("")
-      setDate(new Date().toISOString().split("T")[0])
-      onSuccess?.()
+      router.refresh()
     }
+
+    setIsLoading(false)
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-green-600 hover:bg-green-700">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4 mr-2"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-            />
-          </svg>
-          Vložit vklad
+        <Button className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full font-bold px-6 shadow-lg shadow-primary/20">
+          <Plus className="w-4 h-4 mr-2" />
+          Záznam pohybu
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-slate-800 border-slate-700">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle className="text-white">Nový vklad</DialogTitle>
-            <DialogDescription className="text-slate-400">
-              Vložte peníze do pokladny
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            {/* Honeypot field - visually hidden, should not be filled by users */}
-            <div className="hidden" aria-hidden="true">
-              <Label htmlFor="organization_honey">Organization</Label>
-              <Input
-                id="organization_honey"
-                name="organization_honey"
-                tabIndex={-1}
-                autoComplete="off"
-              />
+      <DialogContent className="bg-card border-border sm:max-w-[425px] rounded-[2.5rem]">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-black text-foreground">Nový pohyb v pokladně</DialogTitle>
+          <DialogDescription className="text-muted-foreground font-medium">
+            Zadejte příjem nebo výdej hotovosti z hlavní pokladny.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-6 py-4">
+          {/* Honeypot field */}
+          <div className="hidden" aria-hidden="true">
+            <Label htmlFor="email_honey">Email</Label>
+            <Input
+              id="email_honey"
+              name="email_honey"
+              tabIndex={-1}
+              autoComplete="off"
+            />
+          </div>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="type" className="text-sm font-black uppercase tracking-widest text-muted-foreground">Typ pohybu</Label>
+              <Select name="type" defaultValue="INCOME">
+                <SelectTrigger className="bg-background border-border rounded-xl font-bold h-12">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-border rounded-xl">
+                  <SelectItem value="INCOME" className="font-bold text-success font-black">Příjem (+)</SelectItem>
+                  <SelectItem value="EXPENSE" className="font-bold text-destructive font-black">Výdej (-)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="amount" className="text-slate-300">
-                Částka (Kč) *
-              </Label>
+
+            <div className="space-y-2">
+              <Label htmlFor="amount" className="text-sm font-black uppercase tracking-widest text-muted-foreground">Částka (Kč) *</Label>
               <Input
                 id="amount"
+                name="amount"
                 type="number"
                 step="0.01"
-                min="0"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="1000"
+                placeholder="0.00"
                 required
-                className="bg-slate-900 border-slate-700 text-white"
+                className="bg-background border-border rounded-xl font-bold h-12 tabular-nums"
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="date" className="text-slate-300">
-                Datum
-              </Label>
+
+            <div className="space-y-2">
+              <Label htmlFor="note" className="text-sm font-black uppercase tracking-widest text-muted-foreground">Poznámka / Účel *</Label>
               <Input
-                id="date"
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="bg-slate-900 border-slate-700 text-white"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="description" className="text-slate-300">
-                Popis
-              </Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Volitelný popis vkladu..."
-                className="bg-slate-900 border-slate-700 text-white resize-none"
+                id="note"
+                name="note"
+                placeholder="Např. Výběr z účtu, Nákup drobností..."
+                required
+                className="bg-background border-border rounded-xl font-bold h-12"
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               onClick={() => setOpen(false)}
-              className="text-slate-400"
+              className="rounded-full font-bold border-border"
             >
               Zrušit
             </Button>
             <Button
               type="submit"
-              disabled={loading || !amount}
-              className="bg-green-600 hover:bg-green-700"
+              disabled={isLoading}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-full px-8"
             >
-              {loading ? "Ukládám..." : "Vložit"}
+              {isLoading ? "Ukládám..." : "Uložit pohyb"}
             </Button>
           </DialogFooter>
         </form>

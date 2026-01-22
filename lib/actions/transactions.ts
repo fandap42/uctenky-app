@@ -360,26 +360,3 @@ export async function updateTransactionDetails(
   }
 }
 
-export async function deleteUser(userId: string) {
-  const session = await auth()
-
-  if (session?.user?.role !== "ADMIN") {
-    return { error: "Oprávnění pouze pro administrátora" }
-  }
-
-  try {
-    // Check if user is deleting themselves
-    if (session.user.id === userId) {
-      return { error: MESSAGES.USER.CANNOT_DELETE_SELF }
-    }
-
-    await prisma.user.delete({
-      where: { id: userId },
-    })
-
-    revalidatePath("/dashboard/users")
-    return { success: true }
-  } catch (error) {
-    return { error: MESSAGES.USER.DELETE_FAILED }
-  }
-}

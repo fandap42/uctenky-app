@@ -46,12 +46,12 @@ interface StructuredListProps {
 }
 
 const statusColors: Record<string, string> = {
-  DRAFT: "bg-slate-500",
-  PENDING: "bg-yellow-500",
-  APPROVED: "bg-green-500",
-  PURCHASED: "bg-blue-500",
-  VERIFIED: "bg-purple-500",
-  REJECTED: "bg-red-500",
+  DRAFT: "bg-muted",
+  PENDING: "bg-[oklch(0.75_0.15_85)]",
+  APPROVED: "bg-[oklch(0.60_0.16_150)]",
+  PURCHASED: "bg-primary",
+  VERIFIED: "bg-[oklch(0.55_0.15_290)]",
+  REJECTED: "bg-destructive",
 }
 
 const statusLabels: Record<string, string> = {
@@ -98,10 +98,10 @@ export function SemesterStructuredList({
       {sortedSemKeys.map((semKey) => (
         <div key={semKey} className="space-y-6">
           <div className="flex items-center gap-4">
-            <h2 className="text-2xl font-bold text-white bg-slate-800 px-4 py-1 rounded-lg border border-slate-700">
+            <h2 className="text-2xl font-bold text-foreground bg-primary px-4 py-1 rounded-lg text-primary-foreground">
               {semKey}
             </h2>
-            <div className="h-px flex-1 bg-slate-800" />
+            <div className="h-px flex-1 bg-border" />
           </div>
 
           <div className="grid gap-6">
@@ -111,55 +111,55 @@ export function SemesterStructuredList({
               .map((monthKey) => {
                 const monthTxs = semesters[semKey][monthKey]
                 return (
-                  <Card key={`${semKey}-${monthKey}`} className="bg-slate-800/30 border-slate-700/50 overflow-hidden">
-                    <CardHeader className="py-3 px-4 bg-slate-800/50 flex flex-row items-center justify-between">
-                      <CardTitle className="text-sm font-medium text-slate-300">
+                  <Card key={`${semKey}-${monthKey}`} className="bg-card border-border overflow-hidden">
+                    <CardHeader className="py-3 px-4 bg-muted/30 flex flex-row items-center justify-between">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">
                         {monthNames[monthKey]}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="p-0 overflow-x-auto">
                       <Table>
                         <TableHeader>
-                          <TableRow className="border-slate-700 hover:bg-transparent">
-                            {showRequester && <TableHead className="text-slate-400 text-xs py-2">Žadatel</TableHead>}
-                            {showSection && <TableHead className="text-slate-400 text-xs py-2">Sekce</TableHead>}
-                            <TableHead className="text-slate-400 text-xs py-2">Datum</TableHead>
-                            <TableHead className="text-slate-400 text-xs py-2">Účel</TableHead>
-                            <TableHead className="text-slate-400 text-xs py-2">Obchod</TableHead>
-                            <TableHead className="text-slate-400 text-xs py-2">Částka</TableHead>
-                            <TableHead className="text-slate-400 text-xs py-2">Stav</TableHead>
-                            {isAdmin && <TableHead className="text-slate-400 text-xs py-2">Typ</TableHead>}
-                            {isAdmin && <TableHead className="text-slate-400 text-xs py-2">Proplaceno</TableHead>}
-                            {isAdmin && <TableHead className="text-slate-400 text-xs py-2">Založeno</TableHead>}
-                            {(showActions || isAdmin) && <TableHead className="text-slate-400 text-xs py-2 text-right">Akce</TableHead>}
+                          <TableRow className="border-border hover:bg-transparent">
+                            {showRequester && <TableHead className="py-2">Žadatel</TableHead>}
+                            {showSection && <TableHead className="py-2">Sekce</TableHead>}
+                            <TableHead className="py-2">Datum</TableHead>
+                            <TableHead className="py-2">Účel</TableHead>
+                            <TableHead className="py-2">Obchod</TableHead>
+                            <TableHead className="py-2">Částka</TableHead>
+                            <TableHead className="py-2">Stav</TableHead>
+                            {isAdmin && <TableHead className="py-2">Typ</TableHead>}
+                            {isAdmin && <TableHead className="py-2">Proplaceno</TableHead>}
+                            {isAdmin && <TableHead className="py-2">Založeno</TableHead>}
+                            {(showActions || isAdmin) && <TableHead className="py-2 text-right">Akce</TableHead>}
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {monthTxs.map((tx) => (
-                            <TableRow key={tx.id} className="border-slate-700/50 hover:bg-slate-700/20">
+                            <TableRow key={tx.id} className="border-border hover:bg-muted/50">
                               {showRequester && (
-                                <TableCell className="py-2 text-sm text-white font-semibold">
+                                <TableCell className="py-2 text-sm text-foreground font-semibold">
                                   {tx.requester?.fullName || "Neznámý"}
                                 </TableCell>
                               )}
                               {showSection && (
-                                <TableCell className="py-2 text-sm text-white">
+                                <TableCell className="py-2 text-sm text-foreground">
                                   {tx.section?.name || "-"}
                                 </TableCell>
                               )}
-                              <TableCell className="py-2 text-sm text-white whitespace-nowrap">
+                              <TableCell className="py-2 text-sm text-foreground whitespace-nowrap tabular-nums">
                                 {new Date(tx.dueDate || tx.createdAt).toLocaleDateString("cs-CZ")}
                               </TableCell>
                               <TableCell className="py-2">
-                                <p className="text-sm text-white font-medium truncate max-w-[150px]">{tx.purpose}</p>
+                                <p className="text-sm text-foreground font-medium truncate max-w-[150px]">{tx.purpose}</p>
                               </TableCell>
-                              <TableCell className="py-2 text-sm text-white">
+                              <TableCell className="py-2 text-sm text-foreground">
                                 {tx.store || "-"}
                               </TableCell>
-                              <TableCell className="py-2 text-sm text-white whitespace-nowrap">
+                              <TableCell className="py-2 text-sm text-foreground whitespace-nowrap tabular-nums font-semibold">
                                 {Number(tx.finalAmount || tx.estimatedAmount).toLocaleString("cs-CZ")} Kč
                                 {tx.receiptUrl && (
-                                  <a href={tx.receiptUrl} target="_blank" rel="noopener" className="ml-1 text-blue-400">📎</a>
+                                  <a href={tx.receiptUrl} target="_blank" rel="noopener" className="ml-1 text-primary">📎</a>
                                 )}
                               </TableCell>
                               <TableCell className="py-2">
@@ -194,7 +194,7 @@ export function SemesterStructuredList({
                                             variant="undo"
                                             title="Odstranit účtenku?"
                                             description="Žádost bude vrácena do stavu 'Schváleno'."
-                                            className="text-orange-500 hover:text-orange-600 hover:bg-orange-500/10"
+                                            className="text-[oklch(0.75_0.15_85)] hover:text-[oklch(0.65_0.15_85)] hover:bg-[oklch(0.75_0.15_85)]/10"
                                           />
                                         )}
                                         <EditTransactionDialog transaction={tx} />

@@ -58,10 +58,10 @@ export default async function DashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">
+          <h1 className="text-3xl font-bold text-foreground mb-2">
             Vítejte, {user?.fullName?.split(" ")[0] || "uživateli"}!
           </h1>
-          <p className="text-slate-400">
+          <p className="text-muted-foreground">
             Přehled vašich finančních žádostí a aktivit
           </p>
         </div>
@@ -70,23 +70,23 @@ export default async function DashboardPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-card border-border">
           <CardHeader className="pb-2">
-            <CardDescription className="text-slate-400">
+            <CardDescription className="text-muted-foreground">
               Celkem žádostí
             </CardDescription>
-            <CardTitle className="text-4xl font-bold text-white">
+            <CardTitle className="text-4xl font-bold text-foreground tabular-nums">
               {totalCount}
             </CardTitle>
           </CardHeader>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-card border-border">
           <CardHeader className="pb-2">
-            <CardDescription className="text-slate-400">
+            <CardDescription className="text-muted-foreground">
               Čeká na schválení
             </CardDescription>
-            <CardTitle className="text-4xl font-bold text-yellow-400">
+            <CardTitle className="text-4xl font-bold text-[oklch(0.75_0.15_85)] tabular-nums">
               {pendingCount}
             </CardTitle>
           </CardHeader>
@@ -96,7 +96,7 @@ export default async function DashboardPage() {
       {/* Structured Transactions List */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-white">Moje žádosti</h2>
+          <h2 className="text-xl font-semibold text-foreground">Moje žádosti</h2>
         </div>
         <SemesterStructuredList 
           transactions={transactions} 

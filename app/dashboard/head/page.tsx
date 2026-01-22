@@ -36,10 +36,10 @@ export default async function SectionHeadDashboardPage() {
   // If no section found for role
   if (!sectionName) {
     return (
-      <div className="space-y-8 p-6">
+      <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Žádosti sekce</h1>
-          <p className="text-slate-400">
+          <h1 className="text-3xl font-black text-foreground mb-2">Žádosti sekce</h1>
+          <p className="text-muted-foreground font-medium">
             Vaše role není přiřazena k žádné sekci.
           </p>
         </div>
@@ -55,10 +55,10 @@ export default async function SectionHeadDashboardPage() {
 
   if (!section) {
     return (
-      <div className="space-y-8 p-6">
+      <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Žádosti sekce</h1>
-          <p className="text-slate-400">
+          <h1 className="text-3xl font-black text-foreground mb-2">Žádosti sekce</h1>
+          <p className="text-muted-foreground font-medium">
             Sekce "{sectionName}" nebyla nalezena.
           </p>
         </div>
@@ -96,22 +96,22 @@ export default async function SectionHeadDashboardPage() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white mb-2">
+        <h1 className="text-3xl font-black text-foreground mb-2">
           Žádosti sekce: {section.name}
         </h1>
-        <p className="text-slate-400">
+        <p className="text-muted-foreground font-medium">
           Správa a přehled všech žádostí vaší sekce
         </p>
       </div>
 
       {/* Quick stats */}
       <div className="grid grid-cols-1 md:grid-cols-1 gap-6 max-w-sm">
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-card border-border shadow-sm border-l-4 border-l-[oklch(0.85_0.20_85)]">
           <CardHeader className="pb-2">
-            <CardDescription className="text-slate-400">
+            <CardDescription className="text-muted-foreground font-bold uppercase tracking-wider text-xs">
               Čeká na schválení
             </CardDescription>
-            <CardTitle className="text-4xl font-bold text-yellow-400">
+            <CardTitle className="text-4xl font-black text-foreground tabular-nums">
               {pendingTransactions.length}
             </CardTitle>
           </CardHeader>
@@ -120,7 +120,7 @@ export default async function SectionHeadDashboardPage() {
 
       {/* Structured Transactions List */}
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-white">Přehled žádostí sekce</h2>
+        <h2 className="text-xl font-bold text-foreground">Přehled žádostí sekce</h2>
         <SemesterStructuredList
           transactions={transactions}
           showSection={false}
