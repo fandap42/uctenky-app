@@ -116,9 +116,14 @@ export default async function SectionHeadDashboardPage({ searchParams }: PagePro
   const totalsResult = await getSemesterTotals({ sectionId: section.id })
   const semesterTotals = "totals" in totalsResult ? totalsResult.totals : {}
 
-  // Stats for the section
+  // Stats for the section (current semester)
+  const semesterRange = currentSem ? getSemesterRange(currentSem) : null
+  const semesterFilter = semesterRange ? {
+    createdAt: { gte: semesterRange.start, lte: semesterRange.end }
+  } : {}
+
   const totalSectionRequests = await prisma.transaction.count({
-    where: { sectionId: section.id }
+    where: { sectionId: section.id, ...semesterFilter }
   })
 
   const pendingCount = await prisma.transaction.count({

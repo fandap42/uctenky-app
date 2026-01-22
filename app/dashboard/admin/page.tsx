@@ -67,7 +67,12 @@ export default async function FinanceDashboardPage() {
   const totalsResult = await getSemesterTotals()
   const semesterTotals = "totals" in totalsResult ? totalsResult.totals : {}
 
-  // Stats across all time
+  // Stats for the current semester
+  const semesterRange = currentSem ? getSemesterRange(currentSem) : null
+  const semesterFilter = semesterRange ? {
+    createdAt: { gte: semesterRange.start, lte: semesterRange.end }
+  } : {}
+
   const pendingCount = await prisma.transaction.count({
     where: { status: "PENDING" }
   })

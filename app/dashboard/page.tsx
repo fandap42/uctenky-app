@@ -70,14 +70,20 @@ export default async function DashboardPage() {
     dueDate: t.dueDate ? t.dueDate.toISOString() : null,
   })) as any
 
-  // Get pending count (across all semesters)
+  // Stats for the current semester
+  const semesterRange = currentSem ? getSemesterRange(currentSem) : null
+  const semesterFilter = semesterRange ? {
+    createdAt: { gte: semesterRange.start, lte: semesterRange.end }
+  } : {}
+
+  // Get pending count (all-time)
   const pendingCount = await prisma.transaction.count({
     where: { requesterId: userId, status: "PENDING" }
   })
 
-  // Get total spent (across all semesters)
+  // Get total requests (current semester)
   const totalTransactionsCount = await prisma.transaction.count({
-    where: { requesterId: userId }
+    where: { requesterId: userId, ...semesterFilter }
   })
 
   return (
