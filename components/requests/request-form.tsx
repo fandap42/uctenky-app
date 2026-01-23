@@ -56,6 +56,7 @@ export function RequestForm({ trigger, sections }: RequestFormProps) {
       toast.success("Žádost byla úspěšně vytvořena")
       setOpen(false)
       setSelectedSection("")
+      window.dispatchEvent(new CustomEvent("app-data-refresh"))
       router.refresh()
     }
 

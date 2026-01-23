@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import {
     Select,
     SelectContent,
@@ -20,6 +21,7 @@ export function ExpenseTypeSelect({
 }: ExpenseTypeSelectProps) {
     const [expenseType, setExpenseType] = useState(initialType)
     const [isLoading, setIsLoading] = useState(false)
+    const router = useRouter()
 
     // Sync state with props when data is refreshed silently
     useEffect(() => {
@@ -36,6 +38,7 @@ export function ExpenseTypeSelect({
             setExpenseType(value)
             toast.success(value === "MATERIAL" ? "Označeno jako materiál" : "Označeno jako služba")
             window.dispatchEvent(new CustomEvent("app-data-refresh"))
+            router.refresh()
         }
         setIsLoading(false)
     }

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import {
   Select,
   SelectContent,
@@ -20,6 +21,7 @@ export function PaidStatusSelect({
 }: PaidStatusSelectProps) {
   const [isPaid, setIsPaid] = useState(initialStatus)
   const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
 
   // Sync state with props when data is refreshed silently
   useEffect(() => {
@@ -37,6 +39,7 @@ export function PaidStatusSelect({
       setIsPaid(checked)
       toast.success(checked ? "Označeno jako proplaceno" : "Označeno jako neproplaceno")
       window.dispatchEvent(new CustomEvent("app-data-refresh"))
+      router.refresh()
     }
     setIsLoading(false)
   }

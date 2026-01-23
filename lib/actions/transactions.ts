@@ -84,6 +84,8 @@ export async function updateTransactionStatus(
       data: { status },
     })
 
+    revalidatePath("/dashboard")
+    revalidatePath("/dashboard/pokladna")
     return { success: true }
   } catch (error) {
     console.error("Update transaction status error:", error)
@@ -131,6 +133,8 @@ export async function updateTransactionReceipt(
       },
     })
 
+    revalidatePath("/dashboard")
+    revalidatePath("/dashboard/pokladna")
     return { success: true }
   } catch (error) {
     console.error("Update transaction receipt error:", error)
@@ -163,6 +167,8 @@ export async function updateTransactionPaidStatus(
       data: { isPaid },
     })
 
+    revalidatePath("/dashboard")
+    revalidatePath("/dashboard/pokladna")
     return { success: true }
   } catch (error) {
     console.error("Update transaction paid status error:", error)
@@ -195,6 +201,8 @@ export async function updateTransactionFiledStatus(
       data: { isFiled },
     })
 
+    revalidatePath("/dashboard")
+    revalidatePath("/dashboard/pokladna")
     return { success: true }
   } catch (error) {
     console.error("Update transaction filed status error:", error)
@@ -227,6 +235,8 @@ export async function updateTransactionExpenseType(
       data: { expenseType } as any,
     })
 
+    revalidatePath("/dashboard")
+    revalidatePath("/dashboard/pokladna")
     return { success: true }
   } catch (error) {
     console.error("Update transaction expense type error:", error)
@@ -263,6 +273,8 @@ export async function deleteTransaction(transactionId: string) {
       where: { id: transactionId },
     })
 
+    revalidatePath("/dashboard")
+    revalidatePath("/dashboard/pokladna")
     return { success: true }
   } catch (error) {
     console.error("Delete transaction error:", error)
@@ -287,6 +299,8 @@ export async function removeReceipt(transactionId: string) {
       },
     })
 
+    revalidatePath("/dashboard")
+    revalidatePath("/dashboard/pokladna")
     return { success: true }
   } catch (error) {
     return { error: MESSAGES.TRANSACTION.RECEIPT_REMOVE_FAILED }
@@ -335,6 +349,8 @@ export async function updateTransactionDetails(
       },
     })
 
+    revalidatePath("/dashboard")
+    revalidatePath("/dashboard/pokladna")
     return { success: true }
   } catch (error) {
     console.error("Update transaction details error:", error)

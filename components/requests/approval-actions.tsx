@@ -34,6 +34,7 @@ export function ApprovalActions({ transactionId, currentStatus }: ApprovalAction
           : "Stav žádosti byl aktualizován"
       )
       window.dispatchEvent(new CustomEvent("app-data-refresh"))
+      router.refresh()
     }
     setIsLoading(null)
   }
