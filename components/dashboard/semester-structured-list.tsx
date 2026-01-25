@@ -20,6 +20,7 @@ import { ApprovalActions } from "@/components/requests/approval-actions"
 import { EditTransactionDialog } from "./edit-transaction-dialog"
 import { EditNoteDialog } from "./edit-note-dialog"
 import { ReceiptUpload } from "@/components/receipts/receipt-upload"
+import { ReceiptViewDialog } from "@/components/receipts/receipt-view-dialog"
 import { DeleteButton } from "./delete-button"
 import { deleteTransaction, removeReceipt } from "@/lib/actions/transactions"
 import { CollapsibleSemester } from "./collapsible-semester"
@@ -176,14 +177,10 @@ function MonthlyTransactionCard({
                   <div className="flex items-center justify-center gap-2">
                     {showNotes && <EditNoteDialog transactionId={tx.id} initialNote={tx.note} />}
                     {tx.receiptUrl ? (
-                      <a 
-                        href={tx.receiptUrl} 
-                        target="_blank" 
-                        rel="noopener" 
-                        className="text-primary/60 hover:text-primary transition-colors"
-                      >
-                        <ImageIcon className="w-4 h-4" />
-                      </a>
+                      <ReceiptViewDialog 
+                        transactionId={tx.id} 
+                        purpose={tx.purpose} 
+                      />
                     ) : (
                       <div className="w-4" />
                     )}

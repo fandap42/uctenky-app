@@ -11,9 +11,10 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { AlertCircle, ImageIcon, StickyNote } from "lucide-react"
+import { AlertCircle, StickyNote } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { EditNoteDialog } from "@/components/dashboard/edit-note-dialog"
+import { ReceiptViewDialog } from "@/components/receipts/receipt-view-dialog"
 
 const dateFormatter = new Intl.DateTimeFormat("cs-CZ", {
   day: "2-digit",
@@ -134,14 +135,10 @@ export function OverviewTable({
                       <div className="w-4" />
                     )}
                     {isTr && item.receiptUrl ? (
-                      <a 
-                        href={item.receiptUrl} 
-                        target="_blank" 
-                        rel="noopener" 
-                        className="text-primary/60 hover:text-primary transition-colors"
-                      >
-                        <ImageIcon className="w-4 h-4" />
-                      </a>
+                      <ReceiptViewDialog 
+                        transactionId={item.id} 
+                        purpose={item.purpose} 
+                      />
                     ) : (
                       <span className="text-muted-foreground/30">—</span>
                     )}
