@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { updateTransactionDetails } from "@/lib/actions/transactions"
 import { toast } from "sonner"
 import { TransStatus } from "@prisma/client"
@@ -27,6 +28,7 @@ interface EditTransactionDialogProps {
     finalAmount?: any
     dueDate?: Date | null
     status: string
+    note?: string | null
   }
 }
 
@@ -48,6 +50,7 @@ export function EditTransactionDialog({ transaction }: EditTransactionDialogProp
     const dueDateStr = formData.get("dueDate") as string
     const dueDate = dueDateStr ? new Date(dueDateStr) : null
     const status = formData.get("status") as TransStatus
+    const note = formData.get("note") as string
     const honeypot = formData.get("middle_name_honey") as string
 
     const result = await updateTransactionDetails(transaction.id, {
@@ -57,6 +60,7 @@ export function EditTransactionDialog({ transaction }: EditTransactionDialogProp
       finalAmount,
       dueDate,
       status,
+      note,
       middle_name_honey: honeypot,
     })
 
@@ -97,6 +101,7 @@ export function EditTransactionDialog({ transaction }: EditTransactionDialogProp
                 defaultValue={transaction.purpose}
                 required
                 className="bg-background border-border text-foreground"
+                autoComplete="off"
               />
             </div>
             <div className="space-y-2 col-span-2">
@@ -106,6 +111,7 @@ export function EditTransactionDialog({ transaction }: EditTransactionDialogProp
                 name="store"
                 defaultValue={transaction.store || ""}
                 className="bg-background border-border text-foreground"
+                autoComplete="off"
               />
             </div>
             {/* Honeypot field - visually hidden, should not be filled by users */}
@@ -162,10 +168,21 @@ export function EditTransactionDialog({ transaction }: EditTransactionDialogProp
                 <option value="DRAFT">Koncept</option>
                 <option value="PENDING">Čeká na schválení</option>
                 <option value="APPROVED">Schváleno</option>
-                <option value="PURCHASED">Nakoupeno</option>
-                <option value="VERIFIED">Ověřeno</option>
+                <option value="PURCHASED">Čeká na ověření</option>
+                <option value="VERIFIED">Účtenka</option>
                 <option value="REJECTED">Zamítnuto</option>
               </select>
+            </div>
+            <div className="space-y-2 col-span-2">
+              <Label htmlFor="note" className="text-foreground">Poznámka</Label>
+              <Textarea
+                id="note"
+                name="note"
+                defaultValue={transaction.note || ""}
+                placeholder="Dobrovolná poznámka..."
+                className="bg-background border-border text-foreground min-h-[80px]"
+                autoComplete="off"
+              />
             </div>
           </div>
           <DialogFooter className="pt-4">

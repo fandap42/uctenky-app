@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
     const month = String(now.getMonth() + 1).padStart(2, "0")
     const key = `receipts/${year}/${month}/${transactionId}-${Date.now()}.${fileType.ext}`
 
-    // Upload to MinIO
+    // Upload to MinIO (now returns the key instead of a signed URL)
     const url = await uploadFile(buffer, key, fileType.mime)
 
     return NextResponse.json({ url })

@@ -99,7 +99,7 @@ flowchart TB
         APP[App Router]
         ACTIONS[Server Actions]
         AUTH[Auth Middleware]
-        PROXY[Proxy/Middleware]
+        STREAM[Streaming Proxy /api/receipts/view]
     end
     
     subgraph External["External Services"]
@@ -113,7 +113,9 @@ flowchart TB
     AUTH --> ACTIONS
     ACTIONS --> DB
     ACTIONS --> STORAGE
-    PROXY --> APP
+    UI --> STREAM
+    STREAM --> AUTH
+    STREAM --> STORAGE
 ```
 
 ### Request Flow
@@ -466,9 +468,26 @@ Handles receipt file uploads to MinIO S3-compatible storage.
 **Response:**
 ```json
 {
-  "url": "http://localhost:9000/receipts/..."
+  "url": "receipts/2026/01/key.png"
 }
 ```
+
+### `/api/receipts/view` (GET)
+Authenticated streaming proxy for viewing receipt images.
+
+**Security Logic:**
+1.  **Authentication**: Verifies valid user session.
+2.  **Authorization**: Verifies user is the owner of the transaction or has ADMIN role.
+3.  **On-the-fly Streaming**: Fetches the image from MinIO and streams it directly to the client.
+4.  **No URL Exposure**: The actual MinIO/S3 URL is never exposed to the client, preventing unauthorized sharing.
+5.  **Caching**: Returns `private, max-age=3600` headers to allow browser caching only for the authorized user.
+6.  **Compatibility**: Handles both new "Key" format and legacy full "URL" format.
+
+**Request:**
+- Query parameter `id` (transactionId).
+
+**Response:**
+- Image stream with correct `Content-Type`.
 
 ---
 
@@ -689,6 +708,17 @@ npm run test:coverage
 
 # Watch mode during development
 npm run test:watch
+
+### Development Data Reseeding
+
+A specialized script is provided to generate a large amount of test data for development.
+
+```bash
+# Clear all transactions and generate 500+ records for 2024-2025
+node prisma/reseed.js
+```
+
+This generates 21 transactions for every month across 2024 and 2025, useful for testing pagination, filtering, and cross-year summaries.
 ```
 
 ---
@@ -721,5 +751,5 @@ npm run test:watch
 
 ---
 
-*4FISuctenky Technical Documentation - Version 1.1*
-*Last Updated: January 21, 2026*
+*4FISuctenky Technical Documentation - Version 1.2*
+*Last Updated: January 24, 2026*

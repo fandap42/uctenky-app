@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import {
   Select,
   SelectContent,
@@ -20,6 +21,7 @@ export function FiledStatusSelect({
 }: FiledStatusSelectProps) {
   const [isFiled, setIsFiled] = useState(initialStatus)
   const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
 
   // Sync state with props when data is refreshed silently
   useEffect(() => {
@@ -35,8 +37,9 @@ export function FiledStatusSelect({
       toast.error(result.error)
     } else {
       setIsFiled(checked)
-      toast.success(checked ? "Označeno jako založeno" : "Označeno jako nezaloženo")
+      toast.success(checked ? "Označeno jako založeno" : "Ozznaceno jako nezaloženo")
       window.dispatchEvent(new CustomEvent("app-data-refresh"))
+      router.refresh()
     }
     setIsLoading(false)
   }

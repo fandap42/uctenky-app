@@ -11,8 +11,10 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { AlertCircle } from "lucide-react"
+import { AlertCircle, StickyNote } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { EditNoteDialog } from "@/components/dashboard/edit-note-dialog"
+import { ReceiptViewDialog } from "@/components/receipts/receipt-view-dialog"
 
 const dateFormatter = new Intl.DateTimeFormat("cs-CZ", {
   day: "2-digit",
@@ -68,6 +70,7 @@ export function OverviewTable({
             <TableHead className="py-2 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground">Obchod</TableHead>
             <TableHead className="py-2 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground text-right">Částka</TableHead>
             <TableHead className="py-2 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground text-center">Typ</TableHead>
+            <TableHead className="py-2 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground text-center w-[80px]">Přílohy</TableHead>
             <TableHead className="py-2 px-0 text-center w-12">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="mx-auto text-muted-foreground/30"><polyline points="20 6 9 17 4 12"></polyline></svg>
             </TableHead>
@@ -123,6 +126,23 @@ export function OverviewTable({
                   ) : (
                     <span className="text-muted-foreground/30">—</span>
                   )}
+                </TableCell>
+                <TableCell className="py-2 px-4 text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    {isTr ? (
+                      <EditNoteDialog transactionId={item.id} initialNote={item.note} />
+                    ) : (
+                      <div className="w-4" />
+                    )}
+                    {isTr && item.receiptUrl ? (
+                      <ReceiptViewDialog 
+                        transactionId={item.id} 
+                        purpose={item.purpose} 
+                      />
+                    ) : (
+                      <span className="text-muted-foreground/30">—</span>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell className="py-2 px-0 text-center">
                   <Checkbox 

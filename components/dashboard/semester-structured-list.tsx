@@ -12,12 +12,15 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getSemester, sortSemesterKeys, monthNames } from "@/lib/utils/semesters"
+import { FileText, ImageIcon, StickyNote } from "lucide-react"
 import { PaidStatusSelect } from "./paid-status-select"
 import { FiledStatusSelect } from "./filed-status-select"
 import { ExpenseTypeSelect } from "./expense-type-select"
 import { ApprovalActions } from "@/components/requests/approval-actions"
 import { EditTransactionDialog } from "./edit-transaction-dialog"
+import { EditNoteDialog } from "./edit-note-dialog"
 import { ReceiptUpload } from "@/components/receipts/receipt-upload"
+import { ReceiptViewDialog } from "@/components/receipts/receipt-view-dialog"
 import { DeleteButton } from "./delete-button"
 import { deleteTransaction, removeReceipt } from "@/lib/actions/transactions"
 import { CollapsibleSemester } from "./collapsible-semester"
@@ -35,6 +38,7 @@ interface Transaction {
   estimatedAmount: any
   finalAmount: any
   receiptUrl: string | null
+  note?: string | null
   createdAt: Date | string
   dueDate?: Date | null
   requester?: { id: string; fullName: string } | null
@@ -54,14 +58,15 @@ interface StructuredListProps {
     sectionId?: string
     status?: any
   }
+  showNotes?: boolean
 }
 
 const statusColors: Record<string, string> = {
   DRAFT: "bg-muted",
   PENDING: "bg-[oklch(0.75_0.15_85)]",
   APPROVED: "bg-[oklch(0.60_0.16_150)]",
-  PURCHASED: "bg-primary",
-  VERIFIED: "bg-[oklch(0.55_0.15_290)]",
+  PURCHASED: "bg-[oklch(0.55_0.15_290)]",
+  VERIFIED: "bg-[oklch(0.60_0.16_150)]",
   REJECTED: "bg-destructive",
 }
 
@@ -69,8 +74,8 @@ const statusLabels: Record<string, string> = {
   DRAFT: "Koncept",
   PENDING: "Čeká",
   APPROVED: "Schváleno",
-  PURCHASED: "Účtenka",
-  VERIFIED: "Ověřeno",
+  PURCHASED: "Čeká na ověření",
+  VERIFIED: "Účtenka",
   REJECTED: "Zamítnuto",
 }
 
@@ -80,14 +85,16 @@ function MonthlyTransactionCard({
   showRequester,
   showSection,
   isAdmin,
-  showActions
+  showActions,
+  showNotes
 }: { 
   monthTxs: Transaction[], 
   month: number,
   showRequester: boolean,
   showSection: boolean,
   isAdmin: boolean,
-  showActions: boolean
+  showActions: boolean,
+  showNotes: boolean
 }) {
   const [pageSize, setPageSize] = useState<number | "all">(10)
   const [currentPage, setCurrentPage] = useState(1)
@@ -117,6 +124,7 @@ function MonthlyTransactionCard({
               {isAdmin && <TableHead className="py-2 px-4">Typ</TableHead>}
               {isAdmin && <TableHead className="py-2 px-4">Proplaceno</TableHead>}
               {isAdmin && <TableHead className="py-2 px-4">Založeno</TableHead>}
+              <TableHead className="py-2 px-4 text-center w-[80px]">Přílohy</TableHead>
               {showActions && <TableHead className="py-2 px-4 text-right">Akce</TableHead>}
             </TableRow>
           </TableHeader>
@@ -144,9 +152,6 @@ function MonthlyTransactionCard({
                 </TableCell>
                 <TableCell className="py-2 text-sm text-foreground whitespace-nowrap tabular-nums font-semibold">
                   {Number(tx.finalAmount || tx.estimatedAmount).toLocaleString("cs-CZ")} Kč
-                  {tx.receiptUrl && (
-                    <a href={tx.receiptUrl} target="_blank" rel="noopener" className="ml-1 text-primary">📎</a>
-                  )}
                 </TableCell>
                 <TableCell className="py-2">
                   <Badge className={`${statusColors[tx.status]} text-[10px] px-1.5 h-5 text-white uppercase tracking-wider font-bold`}>
@@ -168,6 +173,19 @@ function MonthlyTransactionCard({
                     <FiledStatusSelect transactionId={tx.id} initialStatus={tx.isFiled} />
                   </TableCell>
                 )}
+                <TableCell className="py-2 text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    {showNotes && <EditNoteDialog transactionId={tx.id} initialNote={tx.note} />}
+                    {tx.receiptUrl ? (
+                      <ReceiptViewDialog 
+                        transactionId={tx.id} 
+                        purpose={tx.purpose} 
+                      />
+                    ) : (
+                      <div className="w-4" />
+                    )}
+                  </div>
+                </TableCell>
                 {showActions && (
                   <TableCell className="py-2 text-right">
                     <div className="flex items-center justify-end gap-1">
@@ -229,6 +247,7 @@ export function SemesterStructuredList({
   showSection = true,
   showRequester = true,
   filters = {},
+  showNotes = true,
 }: StructuredListProps) {
   const sortedKeys = sortSemesterKeys(semesterKeys)
 
@@ -281,6 +300,7 @@ export function SemesterStructuredList({
                 showRequester={showRequester}
                 showSection={showSection}
                 showActions={showActions}
+                showNotes={showNotes}
               />
             )
           })}

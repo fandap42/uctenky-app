@@ -30,10 +30,11 @@ export function ApprovalActions({ transactionId, currentStatus }: ApprovalAction
           : status === "REJECTED"
           ? "Žádost byla zamítnuta"
           : status === "VERIFIED"
-          ? "Žádost byla ověřena"
+          ? "Ověřeno: Účtenka vložena"
           : "Stav žádosti byl aktualizován"
       )
       window.dispatchEvent(new CustomEvent("app-data-refresh"))
+      router.refresh()
     }
     setIsLoading(null)
   }

@@ -56,6 +56,7 @@ export function RequestForm({ trigger, sections }: RequestFormProps) {
       toast.success("Žádost byla úspěšně vytvořena")
       setOpen(false)
       setSelectedSection("")
+      window.dispatchEvent(new CustomEvent("app-data-refresh"))
       router.refresh()
     }
 
@@ -119,6 +120,7 @@ export function RequestForm({ trigger, sections }: RequestFormProps) {
               placeholder="Např. Nákup kancelářských potřeb"
               required
               className="bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-primary"
+              autoComplete="off"
             />
           </div>
           <div className="space-y-2">
@@ -134,6 +136,7 @@ export function RequestForm({ trigger, sections }: RequestFormProps) {
               placeholder="0.00"
               required
               className="bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-primary tabular-nums"
+              autoComplete="off"
             />
           </div>
           <DialogFooter className="gap-2">

@@ -130,6 +130,7 @@ export default async function DashboardPage() {
           showSection={true} 
           showRequester={false}
           showActions={true}
+          showNotes={false}
           filters={{ requesterId: userId }}
         />
       </div>

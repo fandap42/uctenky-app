@@ -74,6 +74,7 @@ model Transaction {
   estimatedAmount Decimal     @map("estimated_amount") @db.Decimal(12, 2)
   finalAmount     Decimal?    @map("final_amount") @db.Decimal(12, 2)
   receiptUrl      String?     @map("receipt_url")
+  note            String?     @db.Text
   isPaid          Boolean     @default(false) @map("is_paid")
   isFiled         Boolean     @default(false) @map("is_filed")
   expenseType     ExpenseType @default(MATERIAL) @map("expense_type")

@@ -84,6 +84,8 @@ export async function updateTransactionStatus(
       data: { status },
     })
 
+    revalidatePath("/dashboard")
+    revalidatePath("/dashboard/pokladna")
     return { success: true }
   } catch (error) {
     console.error("Update transaction status error:", error)
@@ -131,6 +133,8 @@ export async function updateTransactionReceipt(
       },
     })
 
+    revalidatePath("/dashboard")
+    revalidatePath("/dashboard/pokladna")
     return { success: true }
   } catch (error) {
     console.error("Update transaction receipt error:", error)
@@ -163,6 +167,8 @@ export async function updateTransactionPaidStatus(
       data: { isPaid },
     })
 
+    revalidatePath("/dashboard")
+    revalidatePath("/dashboard/pokladna")
     return { success: true }
   } catch (error) {
     console.error("Update transaction paid status error:", error)
@@ -195,6 +201,8 @@ export async function updateTransactionFiledStatus(
       data: { isFiled },
     })
 
+    revalidatePath("/dashboard")
+    revalidatePath("/dashboard/pokladna")
     return { success: true }
   } catch (error) {
     console.error("Update transaction filed status error:", error)
@@ -227,6 +235,8 @@ export async function updateTransactionExpenseType(
       data: { expenseType } as any,
     })
 
+    revalidatePath("/dashboard")
+    revalidatePath("/dashboard/pokladna")
     return { success: true }
   } catch (error) {
     console.error("Update transaction expense type error:", error)
@@ -263,6 +273,8 @@ export async function deleteTransaction(transactionId: string) {
       where: { id: transactionId },
     })
 
+    revalidatePath("/dashboard")
+    revalidatePath("/dashboard/pokladna")
     return { success: true }
   } catch (error) {
     console.error("Delete transaction error:", error)
@@ -287,6 +299,8 @@ export async function removeReceipt(transactionId: string) {
       },
     })
 
+    revalidatePath("/dashboard")
+    revalidatePath("/dashboard/pokladna")
     return { success: true }
   } catch (error) {
     return { error: MESSAGES.TRANSACTION.RECEIPT_REMOVE_FAILED }
@@ -302,6 +316,7 @@ export async function updateTransactionDetails(
     finalAmount?: number
     dueDate?: Date | null
     status?: TransStatus
+    note?: string
     middle_name_honey?: string
   }
 ) {
@@ -327,17 +342,63 @@ export async function updateTransactionDetails(
       return { error: MESSAGES.AUTH.FORBIDDEN }
     }
 
+    const { middle_name_honey, ...updateData } = data
+
     await prisma.transaction.update({
       where: { id: transactionId },
       data: {
-        ...data,
-        store: data.store || null,
-      },
+        ...updateData,
+        store: updateData.store || null,
+        note: updateData.note || null,
+      } as any,
     })
 
+    revalidatePath("/dashboard")
+    revalidatePath("/dashboard/pokladna")
     return { success: true }
   } catch (error) {
     console.error("Update transaction details error:", error)
+    return { error: MESSAGES.TRANSACTION.UPDATE_FAILED }
+  }
+}
+
+export async function updateTransactionNote(
+  transactionId: string,
+  note: string
+) {
+  const session = await auth()
+
+  if (!session?.user?.id) {
+    return { error: MESSAGES.AUTH.UNAUTHORIZED }
+  }
+
+  try {
+    const transaction = await prisma.transaction.findUnique({
+      where: { id: transactionId },
+      select: { requesterId: true },
+    })
+
+    if (!transaction) {
+      return { error: MESSAGES.TRANSACTION.NOT_FOUND }
+    }
+
+    const isAdmin = session.user.role === "ADMIN"
+    const isOwner = transaction.requesterId === session.user.id
+
+    if (!isAdmin && !isOwner) {
+      return { error: MESSAGES.AUTH.FORBIDDEN }
+    }
+
+    await prisma.transaction.update({
+      where: { id: transactionId },
+      data: { note: note || null } as any,
+    })
+
+    revalidatePath("/dashboard")
+    revalidatePath("/dashboard/pokladna")
+    return { success: true }
+  } catch (error) {
+    console.error("Update transaction note error:", error)
     return { error: MESSAGES.TRANSACTION.UPDATE_FAILED }
   }
 }
@@ -387,6 +448,7 @@ export async function getTransactionsBySemester(
       createdAt: t.createdAt.toISOString(),
       updatedAt: t.updatedAt.toISOString(),
       dueDate: t.dueDate ? t.dueDate.toISOString() : null,
+      note: (t as any).note || null,
     }))
 
     return { transactions: serialized }

@@ -47,9 +47,8 @@ export async function uploadFile(
 
   await s3Client.send(command)
 
-  // Return a signed URL with 7-day expiry for secure access
-  const signedUrl = await getDownloadPresignedUrl(key, 7 * 24 * 60 * 60)
-  return signedUrl
+  // Return the key instead of a signed URL for secure storage in DB
+  return key
 }
 
 /**
@@ -96,7 +95,7 @@ export async function getUploadPresignedUrl(
  */
 export async function getDownloadPresignedUrl(
   key: string,
-  expiresIn = 3600
+  expiresIn = 60 // Default to 60 seconds for redirect proxy
 ): Promise<string> {
   const command = new GetObjectCommand({
     Bucket: BUCKET_NAME,

@@ -175,6 +175,7 @@ export default async function SectionHeadDashboardPage({ searchParams }: PagePro
           showSection={false}
           showActions={false}
           isAdmin={false}
+          showNotes={false}
           filters={{ sectionId: section.id }}
         />
       </div>
