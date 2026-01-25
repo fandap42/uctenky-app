@@ -7,7 +7,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { updateTransactionExpenseType } from "@/lib/actions/transactions"
+import { updateReceiptExpenseType } from "@/lib/actions/receipts"
+import { ExpenseType } from "@prisma/client"
 import { toast } from "sonner"
 
 interface ExpenseTypeSelectProps {
@@ -30,7 +31,7 @@ export function ExpenseTypeSelect({
 
     async function handleChange(value: string) {
         setIsLoading(true)
-        const result = await updateTransactionExpenseType(transactionId, value as "MATERIAL" | "SERVICE")
+        const result = await updateReceiptExpenseType(transactionId, value as any)
 
         if (result.error) {
             toast.error(result.error)

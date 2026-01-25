@@ -46,18 +46,19 @@ export default async function BudgetPage() {
     orderBy: { name: "asc" },
   })
 
-  // Fetch all transactions with section info
-  const transactions = await prisma.transaction.findMany({
+  // Fetch all tickets with receipts and section info
+  const tickets = await prisma.ticket.findMany({
     include: {
       section: { select: { id: true, name: true } },
+      receipts: true,
     },
   })
 
-  // Group transactions by semester and section
+  // Group by semester and section
   const semesterMap = new Map<string, Map<string, { spent: number; pending: number; sectionName: string }>>()
 
-  transactions.forEach((tx) => {
-    const date = new Date(tx.dueDate || tx.createdAt)
+  tickets.forEach((ticket) => {
+    const date = new Date(ticket.targetDate || ticket.createdAt)
     const semester = getSemester(date)
     
     if (!semesterMap.has(semester)) {
@@ -65,22 +66,25 @@ export default async function BudgetPage() {
     }
     
     const sectionMap = semesterMap.get(semester)!
-    if (!sectionMap.has(tx.sectionId)) {
-      sectionMap.set(tx.sectionId, { 
+    if (!sectionMap.has(ticket.sectionId)) {
+      sectionMap.set(ticket.sectionId, { 
         spent: 0, 
         pending: 0, 
-        sectionName: tx.section?.name || "Neznámá sekce" 
+        sectionName: ticket.section?.name || "Neznámá sekce" 
       })
     }
     
-    const sectionData = sectionMap.get(tx.sectionId)!
-    const amount = Number(tx.finalAmount || tx.estimatedAmount)
+    const sectionData = sectionMap.get(ticket.sectionId)!
+    const ticketSpent = ticket.receipts.reduce((sum, r) => sum + Number(r.amount), 0)
     
-    if (tx.status === "VERIFIED" || tx.status === "PURCHASED") {
-      sectionData.spent += amount
-    } else if (tx.status === "PENDING" || tx.status === "APPROVED") {
-      sectionData.pending += amount
+    sectionData.spent += ticketSpent
+
+    // If it's still pending approval, count the budget as 'pending'
+    if (ticket.status === "PENDING_APPROVAL") {
+      sectionData.pending += Number(ticket.budgetAmount)
     }
+    // If it's approved but spent less than budget, maybe count the difference as pending?
+    // For now, let's just stick to the simplest interpretation.
   })
 
   // Convert to array and sort by semester (newest first)

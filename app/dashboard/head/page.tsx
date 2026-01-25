@@ -6,7 +6,7 @@ import { SemesterStructuredList } from "@/components/dashboard/semester-structur
 import { isHeadRole, isAdmin, getSectionForRole } from "@/lib/utils/roles"
 import { getSemester, sortSemesterKeys, getSemesterRange } from "@/lib/utils/semesters"
 
-import { getSemesterTotals } from "@/lib/actions/transactions"
+import { getTicketsBySemester, getTicketSemesterTotals } from "@/lib/actions/tickets"
 import { SectionFilter } from "@/components/dashboard/section-filter"
 
 export const dynamic = "force-dynamic"
@@ -75,45 +75,26 @@ export default async function SectionHeadDashboardPage({ searchParams }: PagePro
     )
   }
 
-  // Fetch unique semester keys for this section
-  const transactionDates = await prisma.transaction.findMany({
+  // Fetch unique semester keys for this section from Tickets
+  const ticketDates = await prisma.ticket.findMany({
     where: { sectionId: section.id },
-    select: { createdAt: true, dueDate: true },
+    select: { createdAt: true, targetDate: true },
   })
 
   const semesterKeys = Array.from(new Set(
-    transactionDates.map(d => getSemester(new Date(d.dueDate || d.createdAt)))
+    ticketDates.map(d => getSemester(new Date(d.targetDate || d.createdAt)))
   ))
 
   const sortedKeys = sortSemesterKeys(semesterKeys)
   const currentSem = sortedKeys[0]
 
-  // Fetch initial transactions for the latest semester
-  const initialTransactionsRaw = currentSem ? await prisma.transaction.findMany({
-    where: { 
-      sectionId: section.id,
-      createdAt: { 
-        gte: getSemesterRange(currentSem).start, 
-        lte: getSemesterRange(currentSem).end 
-      }
-    },
-    orderBy: { createdAt: "desc" },
-    include: {
-      requester: { select: { id: true, fullName: true } },
-    },
-  }) : []
-
-  const initialTransactions = initialTransactionsRaw.map(t => ({
-    ...t,
-    estimatedAmount: Number(t.estimatedAmount),
-    finalAmount: t.finalAmount ? Number(t.finalAmount) : null,
-    createdAt: t.createdAt.toISOString(),
-    updatedAt: t.updatedAt.toISOString(),
-    dueDate: t.dueDate ? t.dueDate.toISOString() : null,
-  })) as any
+  // Fetch initial tickets for the latest semester
+  const { transactions: initialTransactions = [] } = currentSem 
+    ? await getTicketsBySemester(currentSem, { sectionId: section.id }) 
+    : { transactions: [] }
 
   // Fetch semester totals for the section
-  const totalsResult = await getSemesterTotals({ sectionId: section.id })
+  const totalsResult = await getTicketSemesterTotals({ sectionId: section.id })
   const semesterTotals = "totals" in totalsResult ? totalsResult.totals : {}
 
   // Stats for the section (current semester)
@@ -122,12 +103,12 @@ export default async function SectionHeadDashboardPage({ searchParams }: PagePro
     createdAt: { gte: semesterRange.start, lte: semesterRange.end }
   } : {}
 
-  const totalSectionRequests = await prisma.transaction.count({
+  const totalSectionRequests = await prisma.ticket.count({
     where: { sectionId: section.id, ...semesterFilter }
   })
 
-  const pendingCount = await prisma.transaction.count({
-    where: { sectionId: section.id, status: "PENDING" }
+  const pendingCount = await prisma.ticket.count({
+    where: { sectionId: section.id, status: "PENDING_APPROVAL" }
   })
 
   return (

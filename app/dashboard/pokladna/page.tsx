@@ -30,20 +30,21 @@ export default async function PokladnaPage() {
     select: {
       id: true,
       fullName: true,
-      transactions: {
-        where: { isPaid: false },
+      tickets: {
         select: {
-          finalAmount: true,
-          estimatedAmount: true,
+          receipts: {
+            where: { isPaid: false, status: "APPROVED" },
+            select: { amount: true }
+          }
         }
       }
     },
   })
 
   const usersWithBalance = users.map(u => {
-    const balance = u.transactions.reduce((sum, t) => {
-      const amount = t.finalAmount ? Number(t.finalAmount) : Number(t.estimatedAmount)
-      return sum + amount
+    const balance = u.tickets.reduce((sum, ticket) => {
+      const ticketSum = ticket.receipts.reduce((s, r) => s + Number(r.amount), 0)
+      return sum + ticketSum
     }, 0)
     
     return {
@@ -53,32 +54,31 @@ export default async function PokladnaPage() {
     }
   })
 
-  // Fetch unique semester keys from both transactions and deposits
-  const transactionDates = await prisma.transaction.findMany({
-    where: { status: { in: ["PURCHASED", "VERIFIED"] } },
-    select: { dueDate: true, createdAt: true }
+  // Fetch unique semester keys from both receipts and deposits
+  const receiptDates = await prisma.receipt.findMany({
+    select: { date: true, createdAt: true }
   })
   const depositDates = await prisma.deposit.findMany({
     select: { date: true }
   })
 
   const semesterKeys = Array.from(new Set([
-    ...transactionDates.map(d => getSemester(new Date(d.dueDate || d.createdAt))),
+    ...receiptDates.map(d => getSemester(new Date(d.date || d.createdAt))),
     ...depositDates.map(d => getSemester(new Date(d.date)))
   ]))
 
   const sortedKeys = sortSemesterKeys(semesterKeys)
   const currentSem = sortedKeys[0]
 
-  // Get initial semester data (for the expanded one)
-  const initialSemesterData = currentSem ? await getPokladnaSemesterData(currentSem) : { openingBalance: 0, deposits: [], transactions: [] }
+  // Get initial semester data
+  const initialSemesterData = currentSem ? await getPokladnaSemesterData(currentSem) : { openingBalance: 0, deposits: [], receipts: [] }
 
-  // Count unpaid transactions (across all time)
-  const unpaidCount = await prisma.transaction.count({
-    where: { isPaid: false, status: { not: "REJECTED" } }
+  // Count unpaid receipts (across all time)
+  const unpaidCount = await prisma.receipt.count({
+    where: { isPaid: false, status: "APPROVED" }
   })
 
-  // Get context (totals, debt errors, etc. - without fetching ALL transactions again)
+  // Get context
   const registerData = await getAllCashRegisterData()
 
   if ("error" in registerData) {

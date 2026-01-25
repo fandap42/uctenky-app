@@ -21,12 +21,17 @@ enum AppRole {
   ADMIN
 }
 
-enum TransStatus {
-  DRAFT
+enum TicketStatus {
+  PENDING_APPROVAL
+  APPROVED
+  VERIFICATION
+  DONE
+  REJECTED
+}
+
+enum ReceiptStatus {
   PENDING
   APPROVED
-  PURCHASED
-  VERIFIED
   REJECTED
 }
 
@@ -44,7 +49,7 @@ model User {
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
   
-  transactions  Transaction[]
+  tickets       Ticket[]
   
   @@map("users")
 }
@@ -56,36 +61,54 @@ model Section {
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
   
-  transactions Transaction[]
+  tickets     Ticket[]
   
   @@map("sections")
 }
 
-model Transaction {
-  id              String      @id @default(cuid())
-  requesterId     String      @map("requester_id")
-  requester       User        @relation(fields: [requesterId], references: [id], onDelete: Cascade)
-  sectionId       String      @map("section_id")
-  section         Section     @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  status          TransStatus @default(DRAFT)
+model Ticket {
+  id              String       @id @default(cuid())
+  requesterId     String       @map("requester_id")
+  requester       User         @relation(fields: [requesterId], references: [id], onDelete: Cascade)
+  sectionId       String       @map("section_id")
+  section         Section      @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  status          TicketStatus @default(PENDING_APPROVAL)
   purpose         String
+  targetDate      DateTime     @map("target_date")
+  budgetAmount    Decimal      @map("budget_amount") @db.Decimal(12, 2)
   store           String?
-  dueDate         DateTime?   @map("due_date")
-  estimatedAmount Decimal     @map("estimated_amount") @db.Decimal(12, 2)
-  finalAmount     Decimal?    @map("final_amount") @db.Decimal(12, 2)
-  receiptUrl      String?     @map("receipt_url")
-  note            String?     @db.Text
-  isPaid          Boolean     @default(false) @map("is_paid")
-  isFiled         Boolean     @default(false) @map("is_filed")
-  expenseType     ExpenseType @default(MATERIAL) @map("expense_type")
-  createdAt       DateTime    @default(now()) @map("created_at")
-  updatedAt       DateTime    @updatedAt @map("updated_at")
+  note            String?
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+  
+  receipts        Receipt[]
   
   @@index([requesterId])
   @@index([sectionId])
   @@index([status])
-  @@map("transactions")
+  @@map("tickets")
 }
+
+model Receipt {
+  id              String        @id @default(cuid())
+  store           String
+  date            DateTime
+  amount          Decimal       @db.Decimal(12, 2)
+  fileUrl         String        @map("file_url")
+  isPaid          Boolean       @default(false) @map("is_paid")
+  expenseType     ExpenseType   @default(MATERIAL) @map("expense_type")
+  status          ReceiptStatus @default(PENDING)
+  ticketId        String        @map("ticket_id")
+  ticket          Ticket        @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  isFiled         Boolean       @default(false) @map("is_filed")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  @@index([ticketId])
+  @@index([status])
+  @@map("receipts")
+}
+
 
 model Deposit {
   id          String   @id @default(cuid())

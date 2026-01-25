@@ -29,29 +29,29 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData()
     const file = formData.get("file") as File
-    const transactionId = formData.get("transactionId") as string
+    const ticketId = formData.get("ticketId") as string
 
-    // Verify transaction ownership
-    if (!transactionId) {
+    // Verify ticket ownership
+    if (!ticketId) {
       return NextResponse.json(
         { error: MESSAGES.TRANSACTION.MISSING_ID },
         { status: 400 }
       )
     }
 
-    const transaction = await prisma.transaction.findUnique({
-      where: { id: transactionId },
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
       select: { requesterId: true }
     })
 
-    if (!transaction) {
+    if (!ticket) {
       return NextResponse.json(
-        { error: MESSAGES.TRANSACTION.TRANSACTION_NOT_FOUND },
+        { error: "Žádost nebyla nalezena" },
         { status: 404 }
       )
     }
 
-    const isOwner = transaction.requesterId === session.user.id
+    const isOwner = ticket.requesterId === session.user.id
     const isAdmin = session.user.role === "ADMIN"
     if (!isOwner && !isAdmin) {
       return NextResponse.json(
@@ -76,8 +76,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate file size (5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    // Validate file size (10MB) - increased as per client needs often
+    if (file.size > 10 * 1024 * 1024) {
       return NextResponse.json(
         { error: MESSAGES.UPLOAD.FILE_TOO_LARGE },
         { status: 400 }
@@ -101,9 +101,9 @@ export async function POST(request: NextRequest) {
     const now = new Date()
     const year = now.getFullYear()
     const month = String(now.getMonth() + 1).padStart(2, "0")
-    const key = `receipts/${year}/${month}/${transactionId}-${Date.now()}.${fileType.ext}`
+    const key = `receipts/${year}/${month}/${ticketId}-${Date.now()}.${fileType.ext}`
 
-    // Upload to MinIO (now returns the key instead of a signed URL)
+    // Upload to MinIO
     const url = await uploadFile(buffer, key, fileType.mime)
 
     return NextResponse.json({ url })

@@ -15,18 +15,17 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { updateTransactionDetails } from "@/lib/actions/transactions"
+import { updateTicketDetails } from "@/lib/actions/tickets"
 import { toast } from "sonner"
-import { TransStatus } from "@prisma/client"
+import { TicketStatus } from "@prisma/client"
 
 interface EditTransactionDialogProps {
   transaction: {
     id: string
     purpose: string
     store?: string | null
-    estimatedAmount: any
-    finalAmount?: any
-    dueDate?: Date | null
+    budgetAmount: any
+    targetDate?: any
     status: string
     note?: string | null
   }
@@ -44,21 +43,18 @@ export function EditTransactionDialog({ transaction }: EditTransactionDialogProp
     const formData = new FormData(e.currentTarget)
     const purpose = formData.get("purpose") as string
     const store = formData.get("store") as string
-    const estimatedAmount = parseFloat(formData.get("estimatedAmount") as string)
-    const finalAmountStr = formData.get("finalAmount") as string
-    const finalAmount = finalAmountStr ? parseFloat(finalAmountStr) : undefined
-    const dueDateStr = formData.get("dueDate") as string
-    const dueDate = dueDateStr ? new Date(dueDateStr) : null
-    const status = formData.get("status") as TransStatus
+    const budgetAmount = parseFloat(formData.get("budgetAmount") as string)
+    const targetDateStr = formData.get("targetDate") as string
+    const targetDate = targetDateStr ? new Date(targetDateStr) : new Date()
+    const status = formData.get("status") as TicketStatus
     const note = formData.get("note") as string
     const honeypot = formData.get("middle_name_honey") as string
 
-    const result = await updateTransactionDetails(transaction.id, {
+    const result = await updateTicketDetails(transaction.id, {
       purpose,
       store,
-      estimatedAmount,
-      finalAmount,
-      dueDate,
+      budgetAmount,
+      targetDate,
       status,
       note,
       middle_name_honey: honeypot,
@@ -125,39 +121,28 @@ export function EditTransactionDialog({ transaction }: EditTransactionDialogProp
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="estimatedAmount" className="text-foreground">Odhad (Kč) *</Label>
+              <Label htmlFor="budgetAmount" className="text-foreground">Rozpočet (Kč) *</Label>
               <Input
-                id="estimatedAmount"
-                name="estimatedAmount"
+                id="budgetAmount"
+                name="budgetAmount"
                 type="number"
                 step="0.01"
-                defaultValue={Number(transaction.estimatedAmount)}
+                defaultValue={Number(transaction.budgetAmount || 0)}
                 required
                 className="bg-background border-border text-foreground tabular-nums"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="finalAmount" className="text-foreground">Konečná částka (Kč)</Label>
+              <Label htmlFor="targetDate" className="text-foreground">Cílové datum</Label>
               <Input
-                id="finalAmount"
-                name="finalAmount"
-                type="number"
-                step="0.01"
-                defaultValue={transaction.finalAmount ? Number(transaction.finalAmount) : ""}
-                className="bg-background border-border text-foreground tabular-nums"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="dueDate" className="text-foreground">Datum nákupu</Label>
-              <Input
-                id="dueDate"
-                name="dueDate"
+                id="targetDate"
+                name="targetDate"
                 type="date"
-                defaultValue={transaction.dueDate ? new Date(transaction.dueDate).toISOString().split('T')[0] : ""}
+                defaultValue={transaction.targetDate ? new Date(transaction.targetDate).toISOString().split('T')[0] : ""}
                 className="bg-background border-border text-foreground"
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 col-span-2">
               <Label htmlFor="status" className="text-foreground">Stav</Label>
               <select
                 id="status"
@@ -165,12 +150,10 @@ export function EditTransactionDialog({ transaction }: EditTransactionDialogProp
                 defaultValue={transaction.status}
                 className="w-full h-10 px-3 py-2 bg-background border border-border rounded-md text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               >
-                <option value="DRAFT">Koncept</option>
-                <option value="PENDING">Čeká na schválení</option>
-                <option value="APPROVED">Schváleno</option>
-                <option value="PURCHASED">Čeká na ověření</option>
-                <option value="VERIFIED">Účtenka</option>
-                <option value="REJECTED">Zamítnuto</option>
+                <option value="PENDING_APPROVAL">Čeká na schválení</option>
+                <option value="APPROVED">Schváleno (Nahrávání účtenek)</option>
+                <option value="VERIFICATION">Čeká na kontrolu</option>
+                <option value="DONE">Hotovo</option>
               </select>
             </div>
             <div className="space-y-2 col-span-2">

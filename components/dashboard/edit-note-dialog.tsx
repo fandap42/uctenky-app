@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { updateTransactionNote } from "@/lib/actions/transactions"
+import { updateTicketNote } from "@/lib/actions/tickets"
 import { toast } from "sonner"
 
 interface EditNoteDialogProps {
@@ -29,7 +29,7 @@ export function EditNoteDialog({ transactionId, initialNote }: EditNoteDialogPro
 
   async function handleSave() {
     setIsLoading(true)
-    const result = await updateTransactionNote(transactionId, note)
+    const result = await updateTicketNote(transactionId, note)
     
     if (result.error) {
       toast.error(result.error)

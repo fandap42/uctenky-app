@@ -16,31 +16,36 @@ import { FileText, ImageIcon, StickyNote } from "lucide-react"
 import { PaidStatusSelect } from "./paid-status-select"
 import { FiledStatusSelect } from "./filed-status-select"
 import { ExpenseTypeSelect } from "./expense-type-select"
-import { ApprovalActions } from "@/components/requests/approval-actions"
-import { EditTransactionDialog } from "./edit-transaction-dialog"
-import { EditNoteDialog } from "./edit-note-dialog"
 import { ReceiptUpload } from "@/components/receipts/receipt-upload"
 import { ReceiptViewDialog } from "@/components/receipts/receipt-view-dialog"
 import { DeleteButton } from "./delete-button"
-import { deleteTransaction, removeReceipt } from "@/lib/actions/transactions"
+import { EditTransactionDialog } from "./edit-transaction-dialog"
+import { EditNoteDialog } from "./edit-note-dialog"
+import { ApprovalActions } from "@/components/requests/approval-actions"
+import { deleteTicket, updateTicketStatus } from "@/lib/actions/tickets"
+import { deleteReceipt, updateReceiptStatus, updateReceiptPaidStatus, updateReceiptExpenseType } from "@/lib/actions/receipts"
 import { CollapsibleSemester } from "./collapsible-semester"
-import { getTransactionsBySemester } from "@/lib/actions/transactions"
 import { TablePagination } from "@/components/ui/table-pagination"
+import { getTicketsBySemester } from "@/lib/actions/tickets"
+
+import { TicketStatus, ExpenseType } from "@prisma/client"
 
 interface Transaction {
   id: string
   purpose: string
   store?: string | null
-  status: string
-  isPaid: boolean
-  isFiled: boolean
-  expenseType: string
-  estimatedAmount: any
-  finalAmount: any
-  receiptUrl: string | null
+  status: TicketStatus
+  isPaid?: boolean
+  isFiled?: boolean
+  expenseType?: ExpenseType
+  budgetAmount?: number
+  targetDate?: any
+  amount?: any
+  fileUrl?: string | null
+  receiptUrl?: string | null
   note?: string | null
   createdAt: Date | string
-  dueDate?: Date | null
+  updatedAt: Date | string
   requester?: { id: string; fullName: string } | null
   section?: { id: string; name: string } | null
 }
@@ -141,42 +146,43 @@ function MonthlyTransactionCard({
                     {tx.section?.name || "-"}
                   </TableCell>
                 )}
-                <TableCell className="py-2 text-sm text-foreground whitespace-nowrap tabular-nums">
-                  {new Date(tx.dueDate || tx.createdAt).toLocaleDateString("cs-CZ")}
-                </TableCell>
-                <TableCell className="py-2">
-                  <p className="text-sm text-foreground font-medium truncate max-w-[150px]">{tx.purpose}</p>
-                </TableCell>
-                <TableCell className="py-2 text-sm text-foreground">
-                  {tx.store || "-"}
-                </TableCell>
-                <TableCell className="py-2 text-sm text-foreground whitespace-nowrap tabular-nums font-semibold">
-                  {Number(tx.finalAmount || tx.estimatedAmount).toLocaleString("cs-CZ")} Kč
-                </TableCell>
-                <TableCell className="py-2">
-                  <Badge className={`${statusColors[tx.status]} text-[10px] px-1.5 h-5 text-white uppercase tracking-wider font-bold`}>
-                    {statusLabels[tx.status]}
-                  </Badge>
-                </TableCell>
+                 <TableCell className="py-2 text-sm text-foreground whitespace-nowrap tabular-nums">
+                   {new Date(tx.targetDate || tx.createdAt).toLocaleDateString("cs-CZ")}
+                 </TableCell>
+                 <TableCell className="py-2">
+                   <p className="text-sm text-foreground font-medium truncate max-w-[150px]">{tx.purpose}</p>
+                 </TableCell>
+                 <TableCell className="py-2 text-sm text-foreground">
+                   {tx.store || "-"}
+                 </TableCell>
+                 <TableCell className="py-2 text-sm text-foreground whitespace-nowrap tabular-nums font-semibold">
+                   {(tx.amount || tx.budgetAmount || 0).toLocaleString("cs-CZ")} Kč
+                 </TableCell>
+                 <TableCell className="py-2">
+                   <Badge className={`${statusColors[tx.status] || "bg-muted"} text-[10px] px-1.5 h-5 text-white uppercase tracking-wider font-bold`}>
+                     {statusLabels[tx.status] || tx.status}
+                   </Badge>
+                 </TableCell>
                 {isAdmin && (
                   <TableCell className="py-2">
-                    <ExpenseTypeSelect transactionId={tx.id} initialType={tx.expenseType || "MATERIAL"} />
+                    {/* Only show for Receipts or specific Tickets */}
+                    {tx.expenseType && <ExpenseTypeSelect transactionId={tx.id} initialType={tx.expenseType} />}
                   </TableCell>
                 )}
                 {isAdmin && (
                   <TableCell className="py-2">
-                    <PaidStatusSelect transactionId={tx.id} initialStatus={tx.isPaid} />
+                    {tx.isPaid !== undefined && <PaidStatusSelect transactionId={tx.id} initialStatus={tx.isPaid} />}
                   </TableCell>
                 )}
                 {isAdmin && (
                   <TableCell className="py-2">
-                    <FiledStatusSelect transactionId={tx.id} initialStatus={tx.isFiled} />
+                    {tx.isFiled !== undefined && <FiledStatusSelect transactionId={tx.id} initialStatus={tx.isFiled} />}
                   </TableCell>
                 )}
                 <TableCell className="py-2 text-center">
                   <div className="flex items-center justify-center gap-2">
                     {showNotes && <EditNoteDialog transactionId={tx.id} initialNote={tx.note} />}
-                    {tx.receiptUrl ? (
+                    {(tx.fileUrl || tx.receiptUrl) ? (
                       <ReceiptViewDialog 
                         transactionId={tx.id} 
                         purpose={tx.purpose} 
@@ -191,29 +197,30 @@ function MonthlyTransactionCard({
                     <div className="flex items-center justify-end gap-1">
                       {isAdmin && (
                         <>
-                          {tx.receiptUrl && (
-                            <DeleteButton
-                              onDelete={() => removeReceipt(tx.id)}
-                              iconOnly
-                              variant="undo"
-                              title="Odstranit účtenku?"
-                              description="Žádost bude vrácena do stavu 'Schváleno'."
-                              className="text-[oklch(0.75_0.15_85)] hover:text-[oklch(0.65_0.15_85)] hover:bg-[oklch(0.75_0.15_85)]/10"
-                            />
-                          )}
-                          <EditTransactionDialog transaction={tx} />
-                          <DeleteButton onDelete={() => deleteTransaction(tx.id)} iconOnly />
+                          <EditTransactionDialog transaction={tx as any} />
+                          <DeleteButton 
+                            onDelete={() => tx.fileUrl ? deleteReceipt(tx.id) : deleteTicket(tx.id)} 
+                            iconOnly 
+                          />
                         </>
                       )}
                       {!isAdmin && (
                         <>
-                          {tx.status === "APPROVED" && <ReceiptUpload transactionId={tx.id} />}
-                          {(tx.status === "PENDING" || tx.status === "DRAFT") && (
-                            <DeleteButton onDelete={() => deleteTransaction(tx.id)} iconOnly />
+                          {tx.status === "APPROVED" && <ReceiptUpload ticketId={tx.id} />}
+                          {tx.status === "PENDING_APPROVAL" && (
+                            <DeleteButton onDelete={() => deleteTicket(tx.id)} iconOnly />
                           )}
                         </>
                       )}
-                      {isAdmin && <ApprovalActions transactionId={tx.id} currentStatus={tx.status} />}
+                      {isAdmin && (
+                        <ApprovalActions 
+                          ticketId={tx.id} 
+                          currentStatus={tx.status} 
+                          purpose={tx.purpose}
+                          budgetAmount={tx.budgetAmount || 0}
+                          targetDate={tx.targetDate}
+                        />
+                      )}
                     </div>
                   </TableCell>
                 )}
@@ -255,8 +262,8 @@ export function SemesterStructuredList({
     const { transactions } = data
     // Sort transactions by date (newest first) before grouping
     const sortedTxs = [...transactions].sort((a, b) => {
-      const dateA = new Date(a.dueDate || a.createdAt).getTime()
-      const dateB = new Date(b.dueDate || b.createdAt).getTime()
+      const dateA = new Date(a.targetDate || a.createdAt).getTime()
+      const dateB = new Date(b.targetDate || b.createdAt).getTime()
       return dateB - dateA
     })
 
@@ -264,7 +271,7 @@ export function SemesterStructuredList({
     const semesterTotal = semesterTotals[semesterKey] || 0
 
     sortedTxs.forEach((tx) => {
-      const date = new Date(tx.dueDate || tx.createdAt)
+      const date = new Date(tx.targetDate || tx.createdAt)
       const year = date.getFullYear()
       const month = date.getMonth() + 1
       const sortKey = year * 100 + month
@@ -318,7 +325,7 @@ export function SemesterStructuredList({
             semesterKey={key}
             defaultExpanded={index === 0}
             initialData={index === 0 ? { transactions: initialTransactions } : undefined}
-            fetchData={() => getTransactionsBySemester(key, filters)}
+            fetchData={() => getTicketsBySemester(key, filters)}
             renderContent={(data) => renderSemesterContent(data, key)}
           />
         )

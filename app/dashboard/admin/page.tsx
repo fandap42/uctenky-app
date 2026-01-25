@@ -5,7 +5,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 import { SemesterStructuredList } from "@/components/dashboard/semester-structured-list"
 import { getSemester, sortSemesterKeys, getSemesterRange } from "@/lib/utils/semesters"
 
-import { getSemesterTotals } from "@/lib/actions/transactions"
+import { getTicketsBySemester, getTicketSemesterTotals } from "@/lib/actions/tickets"
 
 export const dynamic = "force-dynamic"
 
@@ -27,57 +27,35 @@ export default async function FinanceDashboardPage() {
     redirect("/dashboard")
   }
 
-  // Get all unique semester keys
-  const transactionDates = await prisma.transaction.findMany({
-    select: { createdAt: true, dueDate: true },
+  // Get all unique semester keys from Tickets
+  const ticketDates = await prisma.ticket.findMany({
+    select: { createdAt: true, targetDate: true },
   })
 
   const semesterKeys = Array.from(new Set(
-    transactionDates.map(d => getSemester(new Date(d.dueDate || d.createdAt)))
+    ticketDates.map(d => getSemester(new Date(d.targetDate || d.createdAt)))
   ))
 
   const sortedKeys = sortSemesterKeys(semesterKeys)
   const currentSem = sortedKeys[0]
 
-  // Get initial transactions (only for the expanded semester)
-  const initialTransactionsRaw = currentSem ? await prisma.transaction.findMany({
-    where: { 
-      createdAt: { 
-        gte: getSemesterRange(currentSem).start, 
-        lte: getSemesterRange(currentSem).end 
-      }
-    },
-    orderBy: { createdAt: "desc" },
-    include: {
-      requester: { select: { id: true, fullName: true } },
-      section: { select: { id: true, name: true } },
-    },
-  }) : []
+  // Get initial tickets (only for the expanded semester)
+  const { transactions: initialTransactions = [] } = currentSem 
+    ? await getTicketsBySemester(currentSem) 
+    : { transactions: [] }
 
-  const initialTransactions = initialTransactionsRaw.map(t => ({
-    ...t,
-    estimatedAmount: Number(t.estimatedAmount),
-    finalAmount: t.finalAmount ? Number(t.finalAmount) : null,
-    createdAt: t.createdAt.toISOString(),
-    updatedAt: t.updatedAt.toISOString(),
-    dueDate: t.dueDate ? t.dueDate.toISOString() : null,
-  })) as any
-
-  // Fetch global semester totals
-  const totalsResult = await getSemesterTotals()
+  // Fetch global ticket semester totals
+  const totalsResult = await getTicketSemesterTotals()
   const semesterTotals = "totals" in totalsResult ? totalsResult.totals : {}
 
-  // Stats for the current semester
-  const semesterRange = currentSem ? getSemesterRange(currentSem) : null
-  const semesterFilter = semesterRange ? {
-    createdAt: { gte: semesterRange.start, lte: semesterRange.end }
-  } : {}
-
-  const pendingCount = await prisma.transaction.count({
-    where: { status: "PENDING" }
+  const pendingCount = await prisma.ticket.count({
+    where: { status: "PENDING_APPROVAL" }
   })
-  const purchasedCount = await prisma.transaction.count({
-    where: { status: "PURCHASED" }
+  const purchasedCount = await prisma.ticket.count({
+    where: { 
+      status: "APPROVED",
+      receipts: { some: {} } // Has at least one receipt but still in APPROVED phase
+    }
   })
 
   return (
@@ -85,7 +63,7 @@ export default async function FinanceDashboardPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-foreground mb-2">Správa účtenek</h1>
+          <h1 className="text-3xl font-black text-foreground mb-2">Správa žádostí</h1>
         </div>
       </div>
 
@@ -110,11 +88,11 @@ export default async function FinanceDashboardPage() {
         </Card>
       </div>
 
-      {/* Structured Transactions List */}
+      {/* Structured List */}
       <div className="space-y-4">
         <SemesterStructuredList
-          initialTransactions={initialTransactions}
-          semesterKeys={semesterKeys}
+          initialTransactions={initialTransactions as any}
+          semesterKeys={sortedKeys}
           semesterTotals={semesterTotals}
           isAdmin={true}
           showActions={true}
