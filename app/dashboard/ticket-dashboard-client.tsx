@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { TicketKanban } from "@/components/dashboard/TicketKanban"
 import { TicketMobileList } from "@/components/dashboard/TicketMobileList"
 import { TicketDetailDialog } from "@/components/dashboard/TicketDetailDialog"
@@ -35,10 +35,10 @@ export function TicketDashboardClient({
 
   const selectedTicket = initialTickets.find(t => t.id === selectedTicketId) || null
 
-  const handleTicketClick = (ticketId: string) => {
+  const handleTicketClick = useCallback((ticketId: string) => {
     setSelectedTicketId(ticketId)
     setIsDialogOpen(true)
-  }
+  }, [])
 
   return (
     <>

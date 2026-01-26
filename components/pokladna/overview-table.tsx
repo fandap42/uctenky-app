@@ -87,14 +87,14 @@ export function OverviewTable({
                 <TableCell className="py-2 px-4">
                   {isTr ? (
                     <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10 font-bold text-[9px] h-4 uppercase tracking-wider px-1">
-                      {item.section?.name}
+                      {item.section?.name || item.sectionName}
                     </Badge>
                   ) : (
                     <span className="text-muted-foreground/30">—</span>
                   )}
                 </TableCell>
                 <TableCell className="py-2 px-4 text-sm text-foreground">
-                  {isTr ? item.purpose : (item.description || "Vklad do pokladny")}
+                  {isTr ? (item.purpose || item.description) : (item.description || "Vklad do pokladny")}
                 </TableCell>
                 <TableCell className="py-2 px-4 text-xs text-foreground font-medium">
                   {isTr ? (item.store || "—") : <span className="text-muted-foreground/30">—</span>}
@@ -104,7 +104,7 @@ export function OverviewTable({
                     <div className="flex items-center justify-end gap-1.5">
                       {!item.isPaid && <AlertCircle className="w-3.5 h-3.5 text-warning" />}
                       <span className="font-bold text-destructive text-sm">
-                        -{Number(item.finalAmount || item.estimatedAmount).toLocaleString("cs-CZ")} Kč
+                        -{Number(item.amount || item.finalAmount || item.estimatedAmount).toLocaleString("cs-CZ")} Kč
                       </span>
                     </div>
                   ) : (

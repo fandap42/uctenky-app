@@ -1,5 +1,4 @@
-"use client"
-
+import { useMemo, memo } from "react"
 import { TicketStatus } from "@prisma/client"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -27,64 +26,67 @@ const COLUMNS: { label: string; status: TicketStatus; color: string }[] = [
   { label: "Hotovo", status: "DONE", color: "bg-emerald-500/10 border-emerald-500/20" },
 ]
 
-export function TicketKanban({ tickets, onTicketClick }: TicketKanbanProps) {
+export const TicketKanban = memo(function TicketKanban({ tickets, onTicketClick }: TicketKanbanProps) {
+  const columnsWithTickets = useMemo(() => {
+    return COLUMNS.map((col) => {
+      const colTickets = tickets.filter((t) => t.status === col.status)
+      
+      // Sorting: DONE tickets with unpaid receipts first
+      if (col.status === "DONE") {
+         colTickets.sort((a, b) => {
+           const aUnpaid = a.receipts.some(r => !r.isPaid)
+           const bUnpaid = b.receipts.some(r => !r.isPaid)
+           if (aUnpaid && !bUnpaid) return -1
+           if (!aUnpaid && bUnpaid) return 1
+           return 0
+         })
+      }
+      return { ...col, tickets: colTickets }
+    })
+  }, [tickets])
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 min-h-[600px]">
-      {COLUMNS.map((col) => {
-        const colTickets = tickets.filter((t) => t.status === col.status)
-        
-        // Sorting: DONE tickets with unpaid receipts first
-        if (col.status === "DONE") {
-           colTickets.sort((a, b) => {
-             const aUnpaid = a.receipts.some(r => !r.isPaid)
-             const bUnpaid = b.receipts.some(r => !r.isPaid)
-             if (aUnpaid && !bUnpaid) return -1
-             if (!aUnpaid && bUnpaid) return 1
-             return 0
-           })
-        }
-
-        return (
-          <div key={col.status} className="flex flex-col gap-4">
-            <div className="flex items-center justify-between px-2">
-              <h3 className="font-bold text-sm uppercase tracking-wider text-muted-foreground">
-                {col.label}
-              </h3>
-              <Badge variant="secondary" className="rounded-full px-2 py-0 text-[10px]">
-                {colTickets.length}
-              </Badge>
-            </div>
-            
-            <div className={cn(
-              "flex-1 rounded-[2rem] border p-4 space-y-4 bg-muted/30",
-              col.color
-            )}>
-              {colTickets.map((ticket) => (
-                <TicketCard 
-                  key={ticket.id} 
-                  ticket={ticket} 
-                  onClick={() => onTicketClick(ticket.id)} 
-                />
-              ))}
-              {colTickets.length === 0 && (
-                <div className="h-24 flex items-center justify-center text-xs text-muted-foreground border-2 border-dashed border-border/50 rounded-[1.5rem]">
-                  Žádné žádosti
-                </div>
-              )}
-            </div>
+      {columnsWithTickets.map((col) => (
+        <div key={col.status} className="flex flex-col gap-4">
+          <div className="flex items-center justify-between px-2">
+            <h3 className="font-bold text-sm uppercase tracking-wider text-muted-foreground">
+              {col.label}
+            </h3>
+            <Badge variant="secondary" className="rounded-full px-2 py-0 text-[10px]">
+              {col.tickets.length}
+            </Badge>
           </div>
-        )
-      })}
+          
+          <div className={cn(
+            "flex-1 rounded-[2rem] border p-4 space-y-4 bg-muted/30",
+            col.color
+          )}>
+            {col.tickets.map((ticket) => (
+              <TicketCard 
+                key={ticket.id} 
+                ticket={ticket} 
+                onClick={onTicketClick} 
+              />
+            ))}
+            {col.tickets.length === 0 && (
+              <div className="h-24 flex items-center justify-center text-xs text-muted-foreground border-2 border-dashed border-border/50 rounded-[1.5rem]">
+                Žádné žádosti
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
     </div>
   )
-}
+})
 
-function TicketCard({ ticket, onClick }: { ticket: Ticket; onClick: () => void }) {
+const TicketCard = memo(function TicketCard({ ticket, onClick }: { ticket: Ticket; onClick: (id: string) => void }) {
   const isDoneAndUnpaid = ticket.status === "DONE" && ticket.receipts.some(r => !r.isPaid)
 
   return (
     <Card 
-      onClick={onClick}
+      onClick={() => onClick(ticket.id)}
       className={cn(
         "p-4 cursor-pointer hover:shadow-md transition-all rounded-[1.5rem] border-border/50",
         isDoneAndUnpaid && "border-orange-500 border-2 shadow-orange-500/10"
@@ -116,4 +118,4 @@ function TicketCard({ ticket, onClick }: { ticket: Ticket; onClick: () => void }
       </div>
     </Card>
   )
-}
+})

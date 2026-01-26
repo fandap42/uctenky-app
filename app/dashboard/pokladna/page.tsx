@@ -54,7 +54,7 @@ export default async function PokladnaPage() {
     }
   })
 
-  // Fetch unique semester keys from both receipts and deposits
+  // Fetch unique semester keys
   const receiptDates = await prisma.receipt.findMany({
     select: { date: true, createdAt: true }
   })
@@ -70,10 +70,38 @@ export default async function PokladnaPage() {
   const sortedKeys = sortSemesterKeys(semesterKeys)
   const currentSem = sortedKeys[0]
 
-  // Get initial semester data
-  const initialSemesterData = currentSem ? await getPokladnaSemesterData(currentSem) : { openingBalance: 0, deposits: [], receipts: [] }
+  // Get initial semester data and serialize it
+  // We need to return 'transactions' instead of 'receipts' to match client expectation
+  // OR we fix the client to expect 'receipts'. Let's normalize here to be safe first.
+  let initialSemesterDataRaw = currentSem 
+    ? await getPokladnaSemesterData(currentSem) 
+    : { openingBalance: 0, deposits: [], receipts: [] }
 
-  // Count unpaid receipts (across all time)
+  if ("error" in initialSemesterDataRaw) {
+    console.error("Error fetching semester data:", initialSemesterDataRaw.error)
+    initialSemesterDataRaw = { openingBalance: 0, deposits: [], receipts: [] }
+  }
+
+  // Normalize data for client props
+  // Normalize data for client props
+  const initialSemesterData = {
+    openingBalance: Number(initialSemesterDataRaw.openingBalance || 0),
+    deposits: (initialSemesterDataRaw.deposits || []).map((d: any) => ({
+      ...d,
+      amount: Number(d.amount)
+    })),
+    transactions: (initialSemesterDataRaw.receipts || []).map((r: any) => ({
+      ...r,
+      amount: Number(r.amount),
+      // Deep serialize nested ticket if present
+      ticket: r.ticket ? {
+          ...r.ticket,
+          budgetAmount: Number(r.ticket.budgetAmount)
+      } : undefined
+    })) 
+  }
+
+  // Count unpaid receipts
   const unpaidCount = await prisma.receipt.count({
     where: { isPaid: false, status: "APPROVED" }
   })
@@ -85,12 +113,39 @@ export default async function PokladnaPage() {
     throw new Error(registerData.error as string)
   }
 
+  // Serialize registerData manually to ensure no Decimal objects slip through
+  // getAllCashRegisterData returns plain objects but let's be safe with a deep clone/parse
+  // equivalent to just passing it if we trust the action, but user specifically asked to FIX the serialization crash.
+  // The JSON.parse(JSON.stringify()) method is a catch-all for Prisma Decimal -> String/Number conversion if configured,
+  // but Prisma default behavior for Decimal is to keep it as Decimal object or string.
+  // We will map it manually to be 100% sure as requested.
+  const serializedRegisterData = {
+    ...registerData,
+    currentBalance: Number(registerData.currentBalance),
+    totalDebtErrors: Number(registerData.totalDebtErrors),
+    totalCashOnHand: Number(registerData.totalCashOnHand),
+    realCash: Number(registerData.realCash),
+    // We need to map arrays too if they contain Decimals
+    deposits: registerData.deposits?.map((d: any) => ({ ...d, amount: Number(d.amount) })),
+    debtErrors: registerData.debtErrors?.map((d: any) => ({ ...d, amount: Number(d.amount) })),
+    cashOnHand: registerData.cashOnHand?.map((c: any) => ({ ...c, amount: Number(c.amount) })),
+    receipts: registerData.receipts?.map((r: any) => ({ 
+      ...r, 
+      amount: Number(r.amount),
+      // Deep serialize nested ticket to fix Decimal crash
+      ticket: r.ticket ? {
+        ...r.ticket,
+        budgetAmount: Number(r.ticket.budgetAmount)
+      } : undefined
+    })),
+  }
+
   return (
     <PokladnaClient 
-      initialBalance={registerData.currentBalance || 0}
+      initialBalance={serializedRegisterData.currentBalance || 0}
       unpaidCount={unpaidCount}
       currentUsers={usersWithBalance}
-      registerData={registerData}
+      registerData={serializedRegisterData}
       semesterKeys={sortedKeys}
       initialSemesterData={initialSemesterData}
     />

@@ -25,7 +25,17 @@ export default async function DashboardPage() {
   // Fetch tickets based on role
   // If ADMIN, fetch all. If MEMBER, fetch only theirs.
   const filters = isAdmin(userRole) ? {} : { requesterId: userId }
-  const { tickets = [] } = await getTickets(filters)
+  const { tickets: rawTickets = [] } = await getTickets(filters)
+
+  // Explicitly serialize to ensure no Decimal objects pass through
+  const tickets = rawTickets.map(t => ({
+    ...t,
+    budgetAmount: Number(t.budgetAmount),
+    receipts: t.receipts.map(r => ({
+      ...r,
+      amount: Number(r.amount)
+    }))
+  }))
 
   return (
     <div className="space-y-8 pb-20">

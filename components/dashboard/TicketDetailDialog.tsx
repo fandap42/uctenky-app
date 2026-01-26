@@ -24,6 +24,13 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table"
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select"
 import { ReceiptUploadForm } from "./ReceiptUploadForm"
 import { 
   updateTicketStatus, 
@@ -157,177 +164,221 @@ export function TicketDetailDialog({
   }
 
   return (
+
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl">
-        <div className="flex flex-col h-[90vh]">
-          {/* Header */}
-          <div className="bg-card p-8 pb-4">
-            <div className="flex justify-between items-start mb-6">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <Badge variant="outline" className="rounded-full bg-muted/50 border-border/50 font-bold px-3">
+      <DialogContent className="max-w-[95vw] sm:max-w-[95vw] w-full h-[95vh] flex flex-col p-0 gap-0 rounded-[1.5rem] border-none shadow-2xl overflow-hidden bg-background">
+        <div className="flex flex-col h-full w-full">
+          {/* ... Header & Budget Grid remain same ... */}
+          
+          {/* 1. Header Section (Fixed Top) */}
+          <div className="bg-card p-6 border-b border-border/60 shrink-0">
+            <div className="flex justify-between items-start">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="rounded-md bg-muted/50 font-bold px-2 py-0.5 text-[10px] uppercase tracking-wider">
                     {ticket.section.name}
                   </Badge>
                   <StatusBadge status={ticket.status} />
+                  <span className="text-[10px] text-muted-foreground font-mono ml-2">#{ticket.id.slice(-6)}</span>
                 </div>
-                <DialogTitle className="text-3xl font-black">{ticket.purpose}</DialogTitle>
-                <DialogDescription className="mt-1">
-                  Žadatel: <span className="font-bold text-foreground">{ticket.requester.fullName}</span> • 
-                  Vytvořeno: {new Date(ticket.createdAt).toLocaleDateString("cs-CZ")}
-                </DialogDescription>
-              </div>
-              
-              <div className="text-right">
-                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Schválený Budget</p>
-                <div className="flex items-baseline justify-end gap-1">
-                  <span className="text-3xl font-black tabular-nums">{ticket.budgetAmount.toLocaleString()}</span>
-                  <span className="text-sm font-bold text-muted-foreground uppercase">Kč</span>
+                <DialogTitle className="text-2xl font-bold tracking-tight text-foreground">{ticket.purpose}</DialogTitle>
+                
+                {/* Visual Summary Bar */}
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">{ticket.requester.fullName}</span>
+                  <span className="w-1 h-1 rounded-full bg-border" />
+                  <span>{new Date(ticket.createdAt).toLocaleDateString("cs-CZ")}</span>
                 </div>
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs font-bold uppercase tracking-tight">
-                <span className={cn(isOverBudget ? "text-destructive" : "text-muted-foreground")}>
-                  Čerpáno: {totalSpent.toLocaleString()} Kč
-                </span>
-                <span className="text-muted-foreground">
-                  Zbývá: {Math.max(0, ticket.budgetAmount - totalSpent).toLocaleString()} Kč
-                </span>
-              </div>
-              <Progress 
-                value={budgetProgress} 
-                className={cn(
-                  "h-2 rounded-full bg-muted",
-                  isOverBudget ? "[&>div]:bg-destructive" : "[&>div]:bg-emerald-500"
-                )} 
-              />
             </div>
           </div>
 
-          <Separator />
-
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto p-8 space-y-8">
-            {/* User Upload Section */}
-            {(ticket.status === "APPROVED" || isAdmin) && isOwner && (
-              <section className="space-y-4">
-                <h3 className="text-lg font-bold">Nahrát novou účtenku</h3>
-                <ReceiptUploadForm ticketId={ticket.id} />
-              </section>
-            )}
-
-            {/* Receipts List */}
-            <section className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-bold">Účtenky v žádosti</h3>
-                {isAdmin && ticket.status === "DONE" && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="rounded-full h-8 text-xs font-bold border-orange-500/50 text-orange-600 hover:bg-orange-50"
-                    onClick={handlePayAll}
-                    disabled={loading}
-                  >
-                    Proplatit vše
-                  </Button>
-                )}
+          {/* Scrollable Content Area */}
+          <div className="flex-1 overflow-y-auto bg-muted/5 p-6 space-y-8">
+            
+            {/* 2. Budget Overview Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Limit vs Spent */}
+              <div className="bg-card rounded-xl border border-border/60 p-4 shadow-sm space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Limit vs. Čerpáno</span>
+                  <span className={cn("text-xs font-bold", isOverBudget ? "text-destructive" : "text-emerald-600")}>
+                    {Math.round(budgetProgress)}%
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex justify-between items-baseline">
+                     <span className="text-2xl font-bold tabular-nums text-foreground">{ticket.budgetAmount.toLocaleString()} <span className="text-sm text-muted-foreground">Kč</span></span>
+                     <span className="text-sm font-medium text-muted-foreground">limit</span>
+                  </div>
+                  <Progress 
+                    value={budgetProgress} 
+                    className={cn(
+                      "h-2", 
+                      isOverBudget ? "[&>div]:bg-destructive" : "[&>div]:bg-emerald-500"
+                    )} 
+                  />
+                  <div className="flex justify-between pt-1">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase">Vyčerpáno</span>
+                    <span className="text-sm font-bold tabular-nums">{totalSpent.toLocaleString()} Kč</span>
+                  </div>
+                </div>
               </div>
 
+              {/* Remaining Budget */}
+              <div className={cn(
+                "rounded-xl border border-border/60 p-4 shadow-sm flex flex-col justify-center",
+                isOverBudget ? "bg-red-50/50 border-red-200" : "bg-emerald-50/50 border-emerald-200"
+              )}>
+                 <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Zbývá k čerpání</span>
+                 <div className="flex items-baseline gap-1">
+                   <span className={cn(
+                     "text-3xl font-black tabular-nums",
+                     isOverBudget ? "text-destructive" : "text-emerald-700"
+                   )}>
+                     {Math.max(0, ticket.budgetAmount - totalSpent).toLocaleString()}
+                   </span>
+                   <span className={cn(
+                     "text-sm font-bold uppercase",
+                     isOverBudget ? "text-destructive" : "text-emerald-700"
+                   )}>
+                     Kč
+                   </span>
+                 </div>
+                 {isOverBudget && (
+                   <span className="text-[10px] font-bold text-destructive mt-1 flex items-center gap-1">
+                     <AlertCircle className="w-3 h-3" />
+                     Překročení rozpočtu
+                   </span>
+                 )}
+              </div>
+            </div>
+
+            {/* 3. Receipts Section */}
+            <section className="space-y-4">
+              <div className="flex flex-col gap-1">
+                <h3 className="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
+                  <span className="w-1 h-5 bg-primary rounded-full"/>
+                  Nahrané účtenku
+                </h3>
+                <p className="text-sm text-muted-foreground ml-3">Seznam všech dokladů k této žádosti</p>
+              </div>
+
+              {/* User Upload (Conditional) */}
+              {(ticket.status === "APPROVED" || isAdmin) && isOwner && (
+                <div className="bg-card border border-border/60 rounded-xl p-4 mb-6">
+                  <ReceiptUploadForm ticketId={ticket.id} />
+                </div>
+              )}
+              
               {ticket.receipts.length === 0 ? (
-                <div className="text-center py-12 bg-muted/20 rounded-[2rem] border-2 border-dashed border-border/50 text-muted-foreground">
-                  Zatím nebyly nahrány žádné účtenky
+                <div className="text-center py-12 border border-dashed border-border/60 rounded-xl bg-card text-muted-foreground">
+                  <p className="text-sm font-medium">Zatím nebyly nahrány žádné účtenky</p>
                 </div>
               ) : (
-                <div className="rounded-[2rem] border border-border/50 overflow-hidden bg-card shadow-sm">
+                <div className="rounded-xl border border-border/60 overflow-hidden bg-card shadow-sm">
                   <Table>
-                    <TableHeader className="bg-muted/30">
-                      <TableRow className="hover:bg-transparent border-border/50">
-                        <TableHead className="py-4 font-bold text-xs uppercase tracking-wider">Datum / Obchod</TableHead>
-                        <TableHead className="py-4 font-bold text-xs uppercase tracking-wider">Částka</TableHead>
-                        <TableHead className="py-4 font-bold text-xs uppercase tracking-wider">Typ</TableHead>
-                        <TableHead className="py-4 font-bold text-xs uppercase tracking-wider">Stav</TableHead>
-                        <TableHead className="py-4 font-bold text-xs uppercase tracking-wider">Proplaceno</TableHead>
-                        <TableHead className="py-4 text-right pr-6"></TableHead>
+                    <TableHeader className="bg-muted/40">
+                      <TableRow className="hover:bg-transparent border-border/60">
+                        <TableHead className="py-3 px-4 font-bold text-[10px] uppercase tracking-wider text-muted-foreground w-[180px]">Datum / Obchod</TableHead>
+                        <TableHead className="py-3 px-4 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-right w-[120px]">Částka</TableHead>
+                        <TableHead className="py-3 px-4 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center w-[120px]">Typ</TableHead>
+                        <TableHead className="py-3 px-4 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center w-[100px]">Proplaceno</TableHead>
+                        <TableHead className="py-3 px-4 text-right w-[120px]">Akce</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {ticket.receipts.map((receipt) => (
-                        <TableRow key={receipt.id} className="group border-border/50">
-                          <TableCell className="py-4">
-                            <div className="flex flex-col">
-                              <span className="font-bold text-sm">{receipt.store}</span>
-                              <span className="text-[10px] text-muted-foreground">{new Date(receipt.date).toLocaleDateString("cs-CZ")}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <span className="font-black tabular-nums">{receipt.amount.toLocaleString()} Kč</span>
-                          </TableCell>
-                          <TableCell>
-                            {isAdmin ? (
-                               <SelectExpenseType 
-                                 value={receipt.expenseType} 
-                                 onChange={(v) => updateReceiptExpenseType(receipt.id, v)} 
-                               />
-                            ) : (
-                               <Badge variant="outline" className="text-[10px] uppercase">{receipt.expenseType === "MATERIAL" ? "Materiál" : "Služba"}</Badge>
+                      {ticket.receipts.map((receipt) => {
+                         const isRejected = receipt.status === "REJECTED"
+                         return (
+                          <TableRow 
+                            key={receipt.id} 
+                            className={cn(
+                                "group border-border/60 transition-colors",
+                                isRejected ? "opacity-50 grayscale bg-muted/30" : "hover:bg-muted/30"
                             )}
-                          </TableCell>
-                          <TableCell>
-                             <div className="flex items-center gap-2">
-                               <ReceiptStatusIcon status={receipt.status} />
-                               {isAdmin && ticket.status === "VERIFICATION" && (
-                                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Button 
-                                      size="icon" variant="ghost" className="h-7 w-7 rounded-full text-emerald-600 hover:bg-emerald-50"
-                                      onClick={() => handleReceiptStatusUpdate(receipt.id, "APPROVED")}
-                                    >
-                                      <Check className="w-4 h-4" />
-                                    </Button>
-                                    <Button 
-                                      size="icon" variant="ghost" className="h-7 w-7 rounded-full text-destructive hover:bg-red-50"
-                                      onClick={() => handleReceiptStatusUpdate(receipt.id, "REJECTED")}
-                                    >
-                                      <X className="w-4 h-4" />
-                                    </Button>
+                          >
+                            <TableCell className="py-3 px-4">
+                              <div className="flex flex-col">
+                                <span className={cn("font-semibold text-sm text-foreground truncate max-w-[160px]", isRejected && "line-through")}>{receipt.store}</span>
+                                <span className="text-[10px] font-medium text-muted-foreground">{new Date(receipt.date).toLocaleDateString("cs-CZ")}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="py-3 px-4 text-right">
+                              <span className={cn("font-bold tabular-nums text-sm", isRejected && "line-through")}>{receipt.amount.toLocaleString("cs-CZ")} Kč</span>
+                            </TableCell>
+                            <TableCell className="py-3 px-4 text-center">
+                              {/* Use Dropdown Select for Expense Type */}
+                              {isAdmin ? (
+                                 <div className="flex justify-center">
+                                   <Select 
+                                     value={receipt.expenseType} 
+                                     onValueChange={(v) => updateReceiptExpenseType(receipt.id, v as ExpenseType)}
+                                   >
+                                     <SelectTrigger className="h-7 w-[90px] text-[10px] font-bold">
+                                       <SelectValue />
+                                     </SelectTrigger>
+                                     <SelectContent>
+                                       <SelectItem value="MATERIAL" className="text-xs">Materiál</SelectItem>
+                                       <SelectItem value="SERVICE" className="text-xs">Služba</SelectItem>
+                                     </SelectContent>
+                                   </Select>
                                  </div>
-                               )}
-                             </div>
-                          </TableCell>
-                          <TableCell>
-                            {isAdmin ? (
-                              <Checkbox 
-                                checked={receipt.isPaid} 
-                                onCheckedChange={(checked) => handleReceiptPaidToggle(receipt.id, !!checked)}
-                                className="rounded-md h-5 w-5"
-                              />
-                            ) : (
-                              receipt.isPaid ? (
-                                <Badge className="bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 shadow-none border-none py-0 h-5 text-[10px]">ANO</Badge>
                               ) : (
-                                <Badge className="bg-orange-500/10 text-orange-700 hover:bg-orange-500/20 shadow-none border-none py-0 h-5 text-[10px]">NE</Badge>
-                              )
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right pr-6">
-                            <div className="flex items-center justify-end gap-2">
-                              <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-                                <a href={`/api/proxy?url=${encodeURIComponent(receipt.fileUrl)}`} target="_blank" rel="noreferrer">
-                                  <ExternalLink className="w-4 h-4" />
-                                </a>
-                              </Button>
-                              {(isOwner && ticket.status === "APPROVED" || isAdmin) && (
-                                <Button 
-                                  variant="ghost" size="icon" className="h-8 w-8 rounded-full text-destructive hover:bg-red-50"
-                                  onClick={() => deleteReceipt(receipt.id)}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
+                                 <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-wider px-2 h-5 bg-muted text-muted-foreground border border-border/50">
+                                   {receipt.expenseType === "MATERIAL" ? "MAT" : "SLU"}
+                                 </Badge>
                               )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                            </TableCell>
+                            <TableCell className="py-3 px-4 text-center">
+                              {isAdmin ? (
+                                <div className="flex justify-center">
+                                  <Checkbox 
+                                    checked={receipt.isPaid} 
+                                    onCheckedChange={(checked) => handleReceiptPaidToggle(receipt.id, !!checked)}
+                                    className="rounded h-4 w-4 border-muted-foreground/40 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
+                                    disabled={isRejected}
+                                  />
+                                </div>
+                              ) : (
+                                receipt.isPaid ? (
+                                  <div className="flex justify-center">
+                                    <div className="w-2 h-2 rounded-full bg-emerald-500" title="Proplaceno" />
+                                  </div>
+                                ) : (
+                                  <div className="flex justify-center">
+                                    <div className="w-2 h-2 rounded-full bg-orange-300" title="Neuhrazeno" />
+                                  </div>
+                                )
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right py-3 px-4">
+                              <div className="flex items-center justify-end gap-1">
+                                <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-muted" title="Zobrazit">
+                                  <a href={`/api/proxy?url=${encodeURIComponent(receipt.fileUrl)}`} target="_blank" rel="noreferrer">
+                                    <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
+                                  </a>
+                                </Button>
+                                
+                                {isAdmin && ticket.status === "VERIFICATION" && (
+                                   // Admin cannot reject individual receipts anymore. 
+                                   // They must return the whole ticket or just verify it.
+                                   null
+                                )}
+
+                                {(isOwner && ticket.status === "APPROVED" || isAdmin) && (
+                                  <Button 
+                                    variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                    onClick={() => deleteReceipt(receipt.id)}
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
                     </TableBody>
                   </Table>
                 </div>
@@ -335,62 +386,89 @@ export function TicketDetailDialog({
             </section>
           </div>
 
-          <Separator />
+          {/* 4. Action Footer (Fixed Bottom) */}
+          <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 p-6 border-t border-border/60 flex items-center justify-between shrink-0">
+             {/* Left Actions (Dismissive/Destructive) */}
+             <div className="flex-1 flex gap-2">
+                <Button variant="outline" onClick={() => onOpenChange(false)} className="h-10 px-6 font-bold text-muted-foreground">
+                   Zavřít
+                </Button>
+                
+                {isAdmin && (
+                   <Button 
+                     variant="ghost" 
+                     onClick={() => deleteTicket(ticket.id).then(() => { onOpenChange(false); router.refresh(); })}
+                     className="h-10 px-4 font-bold text-destructive hover:text-destructive hover:bg-destructive/10"
+                     disabled={loading}
+                   >
+                     Smazat žádost
+                   </Button>
+                )}
+             </div>
 
-          {/* Actions Footer */}
-          <div className="bg-muted/30 p-8 flex items-center justify-between">
-             <div className="flex gap-2">
+             {/* Right Actions (Constructive) */}
+             <div className="flex gap-3">
                {isAdmin && (
                  <>
                    {ticket.status === "PENDING_APPROVAL" && (
-                     <>
                       <Button 
                         onClick={() => handleStatusUpdate("APPROVED")} 
-                        className="rounded-2xl h-11 px-6 font-bold bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/20"
+                        className="h-10 px-6 font-bold bg-emerald-600 hover:bg-emerald-700 shadow-sm transition-transform active:scale-95"
                         disabled={loading}
                       >
                         Schválit žádost
                       </Button>
-                      <Button 
-                        variant="destructive" 
-                        onClick={() => deleteTicket(ticket.id).then(() => { onOpenChange(false); router.refresh(); })}
-                        className="rounded-2xl h-11 px-6 font-bold shadow-lg shadow-red-500/20"
-                        disabled={loading}
-                      >
-                        Zamítnout
-                      </Button>
-                     </>
                    )}
                    {ticket.status === "VERIFICATION" && (
-                     <Button 
-                        onClick={() => handleStatusUpdate("DONE")} 
-                        className="rounded-2xl h-11 px-6 font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20"
-                        disabled={loading || ticket.receipts.some(r => r.status === "PENDING")}
-                      >
-                        Dokončit verifikaci
-                      </Button>
+                     <>
+                       {/* Return to User (Re-open for editing) */}
+                       <Button 
+                          onClick={() => handleStatusUpdate("APPROVED")} 
+                          className="h-10 px-6 font-bold bg-amber-500 hover:bg-amber-600 text-amber-950 shadow-sm transition-transform active:scale-95"
+                          disabled={loading}
+                        >
+                          Vrátit k opravě
+                        </Button>
+
+                       {/* Finish Verification */}
+                       <Button 
+                          onClick={() => handleStatusUpdate("DONE")} 
+                          className="h-10 px-6 font-bold bg-primary hover:bg-primary/90 shadow-sm transition-transform active:scale-95"
+                          disabled={loading || ticket.receipts.some(r => r.status === "PENDING")} // Logic check: technically receipts can stay pending if we just verify the budget? User said "Admin marks as Done".
+                        >
+                          Dokončit verifikaci
+                        </Button>
+                     </>
                    )}
+                   {ticket.status === "DONE" && (
+                    <Button 
+                      variant="outline" 
+                      className="h-10 px-4 text-xs font-bold border-orange-500/30 text-orange-600 hover:bg-orange-50"
+                      onClick={handlePayAll}
+                      disabled={loading}
+                    >
+                      Proplatit vše
+                    </Button>
+                  )}
                  </>
                )}
                {isOwner && ticket.status === "APPROVED" && (
                   <Button 
                     onClick={handleSubmitForVerification}
-                    className="rounded-2xl h-11 px-8 font-black uppercase tracking-wider bg-purple-600 hover:bg-purple-700 shadow-lg shadow-purple-600/20"
+                    className="h-10 px-6 font-bold uppercase tracking-wide text-xs bg-purple-600 hover:bg-purple-700 shadow-sm transition-transform active:scale-95"
                     disabled={loading || ticket.receipts.length === 0}
                   >
                     Odeslat ke kontrole
                   </Button>
                )}
              </div>
-             <Button variant="ghost" onClick={() => onOpenChange(false)} className="rounded-2xl h-11 px-6 font-bold">
-               Zavřít
-             </Button>
           </div>
         </div>
       </DialogContent>
     </Dialog>
   )
 }
+
 
 function StatusBadge({ status }: { status: TicketStatus }) {
   switch (status) {
@@ -418,23 +496,4 @@ function ReceiptStatusIcon({ status }: { status: ReceiptStatus }) {
   }
 }
 
-function SelectExpenseType({ value, onChange }: { value: ExpenseType, onChange: (v: ExpenseType) => void }) {
-  return (
-    <div className="flex gap-1">
-      <Button 
-        variant={value === "MATERIAL" ? "default" : "outline"} 
-        size="sm" className="h-7 px-2 text-[10px] rounded-md font-bold"
-        onClick={() => onChange("MATERIAL")}
-      >
-        MAT
-      </Button>
-      <Button 
-        variant={value === "SERVICE" ? "default" : "outline"} 
-        size="sm" className="h-7 px-2 text-[10px] rounded-md font-bold"
-        onClick={() => onChange("SERVICE")}
-      >
-        SLU
-      </Button>
-    </div>
-  )
-}
+

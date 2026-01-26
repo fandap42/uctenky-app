@@ -95,8 +95,10 @@ export function PokladnaClient({
   const [showCashHistory, setShowCashHistory] = useState(false)
 
   const renderSemesterContent = (data: any) => {
-    // data contains openingBalance, deposits, transactions
-    const { openingBalance, deposits, transactions } = data
+    // data contains openingBalance, deposits, and either transactions or receipts
+    const { openingBalance, deposits } = data
+    // Handle both naming conventions (server returns receipts, client prop expects transactions)
+    const transactions = data.transactions || data.receipts || []
     
     // Monthly grouping within the semester
     const monthlyGroups: Record<string, {
@@ -111,15 +113,26 @@ export function PokladnaClient({
     }> = {}
 
     const allData = [
-      ...transactions.map((t: any) => ({ ...t, displayDate: new Date(t.dueDate || t.createdAt), type: 'TR', amount: -(t.finalAmount || t.estimatedAmount) })),
-      ...deposits.map((d: any) => ({ ...d, displayDate: new Date(d.date), type: 'DEP', amount: d.amount }))
+      ...transactions.map((t: any) => ({ 
+        ...t, 
+        displayDate: new Date(t.date || t.dueDate || t.createdAt), 
+        type: 'TR', 
+        // Handle both Receipt (amount) and older Ticket (finalAmount/estimatedAmount) structures
+        amount: -Number(t.amount || t.finalAmount || t.estimatedAmount || 0) 
+      })),
+      ...deposits.map((d: any) => ({ 
+        ...d, 
+        displayDate: new Date(d.date), 
+        type: 'DEP', 
+        amount: Number(d.amount) 
+      }))
     ].sort((a, b) => a.displayDate.getTime() - b.displayDate.getTime())
 
-    let runningBalance = openingBalance
+    let runningBalance = Number(openingBalance)
     
     allData.forEach(item => {
       const startBalance = runningBalance
-      runningBalance += Number(item.amount)
+      runningBalance += item.amount
       
       const date = item.displayDate
       const month = date.getMonth()

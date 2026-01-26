@@ -27,7 +27,6 @@ interface SidebarProps {
 
 const mainNavigation = [
   { name: "Přehled", href: "/dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
-  { name: "Správa účtenek", href: "/dashboard/admin", icon: <Receipt className="w-5 h-5" />, role: "ADMIN" },
   { name: "Žádosti sekce", href: "/dashboard/head", icon: <Receipt className="w-5 h-5" />, role: "HEAD" },
   { name: "Pokladna", href: "/dashboard/pokladna", icon: <Wallet className="w-5 h-5" />, role: "ADMIN" },
   { name: "Rozpočty", href: "/dashboard/budget", icon: <PieChart className="w-5 h-5" />, role: "ADMIN" },

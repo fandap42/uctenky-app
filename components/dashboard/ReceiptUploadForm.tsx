@@ -162,18 +162,7 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
               className="rounded-xl"
             />
           </div>
-          <div className="space-y-2">
-            <Label className="text-xs font-bold uppercase ml-1">Typ výdaje</Label>
-            <Select value={expenseType} onValueChange={(v: ExpenseType) => setExpenseType(v)}>
-              <SelectTrigger className="rounded-xl">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="MATERIAL">Materiál</SelectItem>
-                <SelectItem value="SERVICE">Služba</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+
         </div>
       </div>
 
