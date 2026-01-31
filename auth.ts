@@ -1,12 +1,35 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
+import Slack from "next-auth/providers/slack"
+import { PrismaAdapter } from "@auth/prisma-adapter"
 import { compare } from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 import { authConfig } from "./auth.config"
 
+if (prisma && !('account' in prisma)) {
+  console.error("[auth] CRITICAL: prisma.account is missing from Prisma client!")
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
+  adapter: prisma && 'account' in prisma ? PrismaAdapter(prisma) : undefined,
   providers: [
+    Slack({
+      clientId: process.env.AUTH_SLACK_ID,
+      clientSecret: process.env.AUTH_SLACK_SECRET,
+      allowDangerousEmailAccountLinking: true,
+      profile(profile) {
+        return {
+          id: profile.sub,
+          name: profile.name,
+          fullName: profile.name,
+          email: profile.email,
+          image: profile.picture,
+          role: "MEMBER",
+          sectionId: null,
+        }
+      },
+    }),
     Credentials({
       name: "credentials",
       credentials: {
@@ -30,7 +53,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         })
 
         console.log("[auth] User found:", user ? "yes" : "no")
-        if (!user) {
+        if (!user || !user.passwordHash) {
           return null
         }
 
@@ -52,4 +75,34 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     }),
   ],
+  callbacks: {
+    ...authConfig.callbacks,
+    async signIn({ account, profile }) {
+      try {
+        if (account?.provider === "slack") {
+          const allowedTeamId = (process.env.SLACK_ALLOWED_TEAM_ID || "").trim()
+          // Slack profile structure can vary between OpenID Connect and older OAuth
+          const userTeamId = ((profile as any)?.team_id || 
+                            (profile as any)?.team?.id || 
+                            (profile as any)?.["https://slack.com/team_id"] || "").trim()
+          
+          console.log(`[auth] Slack login attempt. Team ID: "${userTeamId}", Allowed: "${allowedTeamId}"`)
+
+          if (!allowedTeamId) {
+            console.error("[auth] SLACK_ALLOWED_TEAM_ID is not configured in .env!")
+            return false
+          }
+
+          if (userTeamId !== allowedTeamId) {
+            console.warn(`[auth] Slack login denied: Team ID mismatch ("${userTeamId}" !== "${allowedTeamId}")`)
+            return false
+          }
+        }
+        return true
+      } catch (error) {
+        console.error("[auth] CRITICAL ERROR in signIn callback:", error)
+        return false
+      }
+    },
+  },
 })

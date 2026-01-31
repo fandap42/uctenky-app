@@ -10,9 +10,26 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 export const prisma = globalForPrisma.prisma ?? (() => {
-  const pool = new Pool({ connectionString })
-  const adapter = new PrismaPg(pool)
-  return new PrismaClient({ adapter })
+  console.log("[prisma] Initializing new PrismaClient with Adapter...")
+  try {
+    const pool = new Pool({ connectionString })
+    const adapter = new PrismaPg(pool)
+    const client = new PrismaClient({ 
+      adapter,
+      log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+    })
+    
+    // Check if models are attached
+    if (process.env.NODE_ENV === "development") {
+      const models = Object.keys(client).filter(k => !k.startsWith("$") && !k.startsWith("_"))
+      console.log("[prisma] Client initialized with models:", models)
+    }
+    
+    return client
+  } catch (error) {
+    console.error("[prisma] Failed to initialize PrismaClient:", error)
+    throw error
+  }
 })()
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma
