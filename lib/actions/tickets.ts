@@ -47,7 +47,7 @@ export async function createTicket(formData: FormData) {
       },
     })
 
-    revalidatePath("/dashboard")
+    revalidatePath("/dashboard", "layout")
     return { success: true }
   } catch (error) {
     console.error("Create ticket error:", error)
@@ -71,11 +71,35 @@ export async function updateTicketStatus(
       data: { status },
     })
 
-    revalidatePath("/dashboard")
+    revalidatePath("/dashboard", "layout")
     return { success: true }
   } catch (error) {
     console.error("Update ticket status error:", error)
     return { error: MESSAGES.TRANSACTION.UPDATE_FAILED }
+  }
+}
+
+export async function toggleTicketFiled(
+  ticketId: string,
+  isFiled: boolean
+) {
+  const session = await auth()
+
+  if (session?.user?.role !== "ADMIN") {
+    return { error: MESSAGES.AUTH.ADMIN_ONLY }
+  }
+
+  try {
+    await prisma.ticket.update({
+      where: { id: ticketId },
+      data: { isFiled },
+    })
+
+    revalidatePath("/dashboard", "layout")
+    return { success: true }
+  } catch (error) {
+    console.error("Toggle ticket filed status error:", error)
+    return { error: "Nepodařilo se změnit stav zařazení" }
   }
 }
 
@@ -109,7 +133,7 @@ export async function submitForVerification(ticketId: string) {
       data: { status: "VERIFICATION" },
     })
 
-    revalidatePath("/dashboard")
+    revalidatePath("/dashboard", "layout")
     return { success: true }
   } catch (error) {
     console.error("Submit for verification error:", error)
@@ -146,7 +170,7 @@ export async function deleteTicket(ticketId: string) {
       where: { id: ticketId },
     })
 
-    revalidatePath("/dashboard")
+    revalidatePath("/dashboard", "layout")
     return { success: true }
   } catch (error) {
     console.error("Delete ticket error:", error)
@@ -204,11 +228,10 @@ export async function updateTicketDetails(
   ticketId: string,
   data: {
     purpose: string
-    store?: string | null
     budgetAmount: number
     targetDate: Date
     status: TicketStatus
-    note?: string | null
+    note?: string
     middle_name_honey?: string
   }
 ) {
@@ -228,7 +251,6 @@ export async function updateTicketDetails(
       where: { id: ticketId },
       data: {
         purpose: data.purpose,
-        store: data.store,
         budgetAmount: data.budgetAmount,
         targetDate: data.targetDate,
         status: data.status,
@@ -236,7 +258,7 @@ export async function updateTicketDetails(
       },
     })
 
-    revalidatePath("/dashboard")
+    revalidatePath("/dashboard", "layout")
     return { success: true }
   } catch (error) {
     console.error("Update ticket details error:", error)
@@ -244,29 +266,6 @@ export async function updateTicketDetails(
   }
 }
 
-export async function updateTicketNote(
-  ticketId: string,
-  note: string
-) {
-  const session = await auth()
-
-  if (!session?.user?.id) {
-    return { error: MESSAGES.AUTH.UNAUTHORIZED }
-  }
-
-  try {
-    await prisma.ticket.update({
-      where: { id: ticketId },
-      data: { note },
-    })
-
-    revalidatePath("/dashboard")
-    return { success: true }
-  } catch (error) {
-    console.error("Update ticket note error:", error)
-    return { error: "Nepodařilo se uložit poznámku" }
-  }
-}
 
 export async function getTicketsBySemester(
   semesterKey: string,

@@ -14,22 +14,22 @@ import {
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { updateTicketNote } from "@/lib/actions/tickets"
+import { updateReceiptNote } from "@/lib/actions/receipts"
 import { toast } from "sonner"
 
 interface EditNoteDialogProps {
-  transactionId: string
+  receiptId: string
   initialNote: string | null | undefined
 }
 
-export function EditNoteDialog({ transactionId, initialNote }: EditNoteDialogProps) {
+export function EditNoteDialog({ receiptId, initialNote }: EditNoteDialogProps) {
   const [open, setOpen] = useState(false)
   const [note, setNote] = useState(initialNote || "")
   const [isLoading, setIsLoading] = useState(false)
 
   async function handleSave() {
     setIsLoading(true)
-    const result = await updateTicketNote(transactionId, note)
+    const result = await updateReceiptNote(receiptId, note)
     
     if (result.error) {
       toast.error(result.error)
@@ -54,7 +54,7 @@ export function EditNoteDialog({ transactionId, initialNote }: EditNoteDialogPro
         <DialogHeader>
           <DialogTitle>Upravit poznámku</DialogTitle>
           <DialogDescription>
-            Zde můžete rychle upravit poznámku k této žádosti.
+            Zde můžete rychle upravit poznámku k této účtence.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">

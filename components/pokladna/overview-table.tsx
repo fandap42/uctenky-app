@@ -15,6 +15,11 @@ import { AlertCircle, StickyNote } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { EditNoteDialog } from "@/components/dashboard/edit-note-dialog"
 import { ReceiptViewDialog } from "@/components/receipts/receipt-view-dialog"
+import { toggleReceiptPaid } from "@/lib/actions/receipts"
+import { toggleTicketFiled } from "@/lib/actions/tickets"
+import { toast } from "sonner"
+import { useRouter } from "next/navigation"
+import { FolderCheck, FolderX, CheckIcon } from "lucide-react"
 
 const dateFormatter = new Intl.DateTimeFormat("cs-CZ", {
   day: "2-digit",
@@ -27,13 +32,15 @@ interface OverviewTableProps {
   deposits: any[]
   pageSize?: number | "all"
   currentPage?: number
+  onTicketClick?: (ticket: any) => void
 }
 
 export function OverviewTable({ 
   transactions, 
   deposits,
   pageSize = "all",
-  currentPage = 1
+  currentPage = 1,
+  onTicketClick
 }: OverviewTableProps) {
   // Combine and sort by date
   const combinedData = [
@@ -56,6 +63,34 @@ export function OverviewTable({
     setCheckedIds(prev => ({ ...prev, [id]: !prev[id] }))
   }
 
+  const router = useRouter()
+  const [loadingIds, setLoadingIds] = useState<Record<string, boolean>>({})
+
+  async function handleTogglePaid(receiptId: string, currentStatus: boolean) {
+    setLoadingIds(prev => ({ ...prev, [receiptId]: true }))
+    const result = await toggleReceiptPaid(receiptId, !currentStatus)
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      toast.success(!currentStatus ? "Označeno jako proplaceno" : "Označeno jako neproplaceno")
+      router.refresh()
+    }
+    setLoadingIds(prev => ({ ...prev, [receiptId]: false }))
+  }
+
+  async function handleToggleFiled(ticketId: string, currentStatus: boolean, itemId: string) {
+    if (!ticketId) return
+    setLoadingIds(prev => ({ ...prev, [itemId]: true }))
+    const result = await toggleTicketFiled(ticketId, !currentStatus)
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      toast.success(!currentStatus ? "Označeno jako založeno" : "Označeno jako nezaloženo")
+      router.refresh()
+    }
+    setLoadingIds(prev => ({ ...prev, [itemId]: false }))
+  }
+
   const effectivePageSize = pageSize === "all" ? combinedData.length : pageSize
   const paginatedData = combinedData.slice((currentPage - 1) * effectivePageSize, currentPage * effectivePageSize)
 
@@ -70,9 +105,10 @@ export function OverviewTable({
             <TableHead className="py-2 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground">Obchod</TableHead>
             <TableHead className="py-2 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground text-right">Částka</TableHead>
             <TableHead className="py-2 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground text-center">Typ</TableHead>
-            <TableHead className="py-2 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground text-center w-[80px]">Přílohy</TableHead>
-            <TableHead className="py-2 px-0 text-center w-12">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="mx-auto text-muted-foreground/30"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <TableHead className="py-2 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground text-center">Proplaceno</TableHead>
+            <TableHead className="py-2 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground text-center">Založeno</TableHead>
+            <TableHead className="py-2 px-0 text-center w-12 text-muted-foreground/30">
+              <CheckIcon className="size-4 mx-auto" />
             </TableHead>
           </TableRow>
         </TableHeader>
@@ -80,7 +116,14 @@ export function OverviewTable({
           {paginatedData.map((item) => {
             const isTr = item.displayType === "TRANSACTION"
             return (
-              <TableRow key={item.id} className="border-border hover:bg-muted/10 transition-colors group">
+              <TableRow 
+                key={item.id} 
+                className={cn(
+                  "border-border transition-colors group",
+                  isTr && onTicketClick ? "hover:bg-primary/5 cursor-pointer" : "hover:bg-muted/10"
+                )}
+                onClick={() => isTr && onTicketClick && onTicketClick(item.ticket)}
+              >
                 <TableCell className="py-2 px-4 text-muted-foreground text-xs whitespace-nowrap tabular-nums">
                   {dateFormatter.format(item.displayDate)}
                 </TableCell>
@@ -104,7 +147,7 @@ export function OverviewTable({
                     <div className="flex items-center justify-end gap-1.5">
                       {!item.isPaid && <AlertCircle className="w-3.5 h-3.5 text-warning" />}
                       <span className="font-bold text-destructive text-sm">
-                        -{Number(item.amount || item.finalAmount || item.estimatedAmount).toLocaleString("cs-CZ")} Kč
+                        {Math.abs(Number(item.amount || item.finalAmount || item.estimatedAmount)).toLocaleString("cs-CZ")} Kč
                       </span>
                     </div>
                   ) : (
@@ -127,14 +170,14 @@ export function OverviewTable({
                     <span className="text-muted-foreground/30">—</span>
                   )}
                 </TableCell>
-                <TableCell className="py-2 px-4 text-center">
+                <TableCell className="py-2 px-4 text-center" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-center gap-2">
                     {isTr ? (
-                      <EditNoteDialog transactionId={item.id} initialNote={item.note} />
+                      <EditNoteDialog receiptId={item.id} initialNote={item.note} />
                     ) : (
                       <div className="w-4" />
                     )}
-                    {isTr && item.receiptUrl ? (
+                    {isTr && (item.receiptUrl || item.fileUrl) ? (
                       <ReceiptViewDialog 
                         transactionId={item.id} 
                         purpose={item.purpose} 
@@ -144,12 +187,47 @@ export function OverviewTable({
                     )}
                   </div>
                 </TableCell>
-                <TableCell className="py-2 px-0 text-center">
+                <TableCell className="py-2 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                  {isTr ? (
+                    <div className="flex justify-center">
+                      <Checkbox 
+                        checked={item.isPaid}
+                        onCheckedChange={() => handleTogglePaid(item.id, !!item.isPaid)}
+                        disabled={loadingIds[item.id]}
+                        className={cn(
+                          "w-5 h-5 transition-all data-[state=checked]:bg-[oklch(0.60_0.16_150)] data-[state=checked]:border-[oklch(0.60_0.16_150)]",
+                          !item.isPaid && "opacity-40"
+                        )}
+                      />
+                    </div>
+                  ) : <span className="text-muted-foreground/30">—</span>}
+                </TableCell>
+                <TableCell className="py-2 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                  {isTr ? (
+                    <div className="flex justify-center">
+                      <button
+                        onClick={() => handleToggleFiled(item.ticket?.id, !!item.ticket?.isFiled, item.id)}
+                        disabled={loadingIds[item.id]}
+                        className={cn(
+                          "transition-all p-1 rounded-md hover:bg-muted/20",
+                          item.ticket?.isFiled ? "text-[oklch(0.60_0.16_150)]" : "text-muted-foreground/40"
+                        )}
+                      >
+                        {item.ticket?.isFiled ? (
+                          <FolderCheck className="w-5 h-5" />
+                        ) : (
+                          <FolderX className="w-5 h-5" />
+                        )}
+                      </button>
+                    </div>
+                  ) : <span className="text-muted-foreground/30">—</span>}
+                </TableCell>
+                <TableCell className="py-2 px-0 text-center" onClick={(e) => e.stopPropagation()}>
                   <Checkbox 
                     id={`track-${item.id}`} 
                     checked={!!checkedIds[item.id]} 
                     onCheckedChange={() => toggleCheck(item.id)}
-                    className="border-muted-foreground/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary rounded-md w-5 h-5 shadow-sm mx-auto opacity-60 group-hover:opacity-100 transition-all scale-110"
+                    className="border-muted-foreground/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary rounded-md w-5 h-5 shadow-sm mx-auto opacity-30 group-hover:opacity-100 transition-all scale-110"
                   />
                 </TableCell>
               </TableRow>

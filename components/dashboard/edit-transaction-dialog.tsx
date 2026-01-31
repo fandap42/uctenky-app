@@ -23,7 +23,6 @@ interface EditTransactionDialogProps {
   transaction: {
     id: string
     purpose: string
-    store?: string | null
     budgetAmount: any
     targetDate?: any
     status: string
@@ -42,7 +41,6 @@ export function EditTransactionDialog({ transaction }: EditTransactionDialogProp
 
     const formData = new FormData(e.currentTarget)
     const purpose = formData.get("purpose") as string
-    const store = formData.get("store") as string
     const budgetAmount = parseFloat(formData.get("budgetAmount") as string)
     const targetDateStr = formData.get("targetDate") as string
     const targetDate = targetDateStr ? new Date(targetDateStr) : new Date()
@@ -52,7 +50,6 @@ export function EditTransactionDialog({ transaction }: EditTransactionDialogProp
 
     const result = await updateTicketDetails(transaction.id, {
       purpose,
-      store,
       budgetAmount,
       targetDate,
       status,
@@ -96,16 +93,6 @@ export function EditTransactionDialog({ transaction }: EditTransactionDialogProp
                 name="purpose"
                 defaultValue={transaction.purpose}
                 required
-                className="bg-background border-border text-foreground"
-                autoComplete="off"
-              />
-            </div>
-            <div className="space-y-2 col-span-2">
-              <Label htmlFor="store" className="text-foreground">Obchod</Label>
-              <Input
-                id="store"
-                name="store"
-                defaultValue={transaction.store || ""}
                 className="bg-background border-border text-foreground"
                 autoComplete="off"
               />

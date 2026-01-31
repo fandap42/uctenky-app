@@ -23,7 +23,7 @@ import { EditTransactionDialog } from "./edit-transaction-dialog"
 import { EditNoteDialog } from "./edit-note-dialog"
 import { ApprovalActions } from "@/components/requests/approval-actions"
 import { deleteTicket, updateTicketStatus } from "@/lib/actions/tickets"
-import { deleteReceipt, updateReceiptStatus, updateReceiptPaidStatus, updateReceiptExpenseType } from "@/lib/actions/receipts"
+import { deleteReceipt, updateReceiptStatus, toggleReceiptPaid, updateReceiptExpenseType } from "@/lib/actions/receipts"
 import { CollapsibleSemester } from "./collapsible-semester"
 import { TablePagination } from "@/components/ui/table-pagination"
 import { getTicketsBySemester } from "@/lib/actions/tickets"
@@ -181,7 +181,7 @@ function MonthlyTransactionCard({
                 )}
                 <TableCell className="py-2 text-center">
                   <div className="flex items-center justify-center gap-2">
-                    {showNotes && <EditNoteDialog transactionId={tx.id} initialNote={tx.note} />}
+                    {showNotes && <EditNoteDialog receiptId={tx.id} initialNote={tx.note} />}
                     {(tx.fileUrl || tx.receiptUrl) ? (
                       <ReceiptViewDialog 
                         transactionId={tx.id} 

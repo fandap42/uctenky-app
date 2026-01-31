@@ -83,20 +83,29 @@ export default async function PokladnaPage() {
   }
 
   // Normalize data for client props
-  // Normalize data for client props
   const initialSemesterData = {
     openingBalance: Number(initialSemesterDataRaw.openingBalance || 0),
     deposits: (initialSemesterDataRaw.deposits || []).map((d: any) => ({
       ...d,
-      amount: Number(d.amount)
+      amount: Number(d.amount),
+      date: typeof d.date === 'object' && d.date.toISOString ? d.date.toISOString() : d.date
     })),
     transactions: (initialSemesterDataRaw.receipts || []).map((r: any) => ({
       ...r,
       amount: Number(r.amount),
+      date: typeof r.date === 'object' && r.date.toISOString ? r.date.toISOString() : r.date,
       // Deep serialize nested ticket if present
       ticket: r.ticket ? {
           ...r.ticket,
-          budgetAmount: Number(r.ticket.budgetAmount)
+          budgetAmount: Number(r.ticket.budgetAmount),
+          createdAt: typeof r.ticket.createdAt === 'object' ? r.ticket.createdAt.toISOString() : r.ticket.createdAt,
+          updatedAt: typeof r.ticket.updatedAt === 'object' ? r.ticket.updatedAt.toISOString() : r.ticket.updatedAt,
+          targetDate: typeof r.ticket.targetDate === 'object' ? r.ticket.targetDate.toISOString() : r.ticket.targetDate,
+          receipts: (r.ticket.receipts || []).map((tr: any) => ({
+            ...tr,
+            amount: Number(tr.amount),
+            date: typeof tr.date === 'object' ? tr.date.toISOString() : tr.date,
+          }))
       } : undefined
     })) 
   }
@@ -114,28 +123,35 @@ export default async function PokladnaPage() {
   }
 
   // Serialize registerData manually to ensure no Decimal objects slip through
-  // getAllCashRegisterData returns plain objects but let's be safe with a deep clone/parse
-  // equivalent to just passing it if we trust the action, but user specifically asked to FIX the serialization crash.
-  // The JSON.parse(JSON.stringify()) method is a catch-all for Prisma Decimal -> String/Number conversion if configured,
-  // but Prisma default behavior for Decimal is to keep it as Decimal object or string.
-  // We will map it manually to be 100% sure as requested.
   const serializedRegisterData = {
     ...registerData,
     currentBalance: Number(registerData.currentBalance),
     totalDebtErrors: Number(registerData.totalDebtErrors),
     totalCashOnHand: Number(registerData.totalCashOnHand),
     realCash: Number(registerData.realCash),
-    // We need to map arrays too if they contain Decimals
-    deposits: registerData.deposits?.map((d: any) => ({ ...d, amount: Number(d.amount) })),
+    deposits: registerData.deposits?.map((d: any) => ({ 
+      ...d, 
+      amount: Number(d.amount),
+      date: d.date 
+    })),
     debtErrors: registerData.debtErrors?.map((d: any) => ({ ...d, amount: Number(d.amount) })),
     cashOnHand: registerData.cashOnHand?.map((c: any) => ({ ...c, amount: Number(c.amount) })),
     receipts: registerData.receipts?.map((r: any) => ({ 
       ...r, 
       amount: Number(r.amount),
+      date: r.date,
       // Deep serialize nested ticket to fix Decimal crash
       ticket: r.ticket ? {
         ...r.ticket,
-        budgetAmount: Number(r.ticket.budgetAmount)
+        budgetAmount: Number(r.ticket.budgetAmount),
+        createdAt: typeof r.ticket.createdAt === 'object' ? r.ticket.createdAt.toISOString() : r.ticket.createdAt,
+        updatedAt: typeof r.ticket.updatedAt === 'object' ? r.ticket.updatedAt.toISOString() : r.ticket.updatedAt,
+        targetDate: typeof r.ticket.targetDate === 'object' ? r.ticket.targetDate.toISOString() : r.ticket.targetDate,
+        receipts: (r.ticket.receipts || []).map((tr: any) => ({
+          ...tr,
+          amount: Number(tr.amount),
+          date: typeof tr.date === 'object' ? tr.date.toISOString() : tr.date,
+        }))
       } : undefined
     })),
   }

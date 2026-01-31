@@ -30,13 +30,15 @@ export async function uploadReceipt(formData: FormData) {
     const ticketId = formData.get("ticketId") as string
     const amount = parseFloat(formData.get("amount") as string)
     const store = formData.get("store") as string
-    const dateStr = formData.get("date") as string
+    const date = new Date(formData.get("date") as string)
+    const expenseType = (formData.get("expenseType") as ExpenseType) || "MATERIAL"
+    const note = formData.get("note") as string | null
 
-    if (!ticketId || isNaN(amount) || !dateStr || !file) {
+    if (!ticketId || isNaN(amount) || !formData.get("date") || !file) {
       return { error: "Všechna povinná pole musí být vyplněna (soubor, částka, datum)" }
     }
 
-    const date = new Date(dateStr)
+
 
     const ticket = await prisma.ticket.findUnique({
       where: { id: ticketId },
@@ -109,12 +111,13 @@ export async function uploadReceipt(formData: FormData) {
         date,
         amount,
         fileUrl: url,
-        expenseType: "MATERIAL", // Default
+        expenseType,
+        note,
         status: "PENDING",
       }
     })
 
-    revalidatePath("/dashboard")
+    revalidatePath("/dashboard", "layout")
     return { success: true }
   } catch (error) {
     console.error("Upload receipt error:", error)
@@ -138,7 +141,7 @@ export async function updateReceiptStatus(
       data: { status },
     })
 
-    revalidatePath("/dashboard")
+    revalidatePath("/dashboard", "layout")
     return { success: true }
   } catch (error) {
     console.error("Update receipt status error:", error)
@@ -146,7 +149,7 @@ export async function updateReceiptStatus(
   }
 }
 
-export async function updateReceiptPaidStatus(
+export async function toggleReceiptPaid(
   receiptId: string,
   isPaid: boolean
 ) {
@@ -162,10 +165,10 @@ export async function updateReceiptPaidStatus(
       data: { isPaid },
     })
 
-    revalidatePath("/dashboard")
+    revalidatePath("/dashboard", "layout")
     return { success: true }
   } catch (error) {
-    console.error("Update receipt paid status error:", error)
+    console.error("Toggle receipt paid status error:", error)
     return { error: "Nepodařilo se změnit stav proplacení" }
   }
 }
@@ -186,7 +189,7 @@ export async function updateReceiptExpenseType(
       data: { expenseType },
     })
 
-    revalidatePath("/dashboard")
+    revalidatePath("/dashboard", "layout")
     return { success: true }
   } catch (error) {
     console.error("Update receipt expense type error:", error)
@@ -194,29 +197,6 @@ export async function updateReceiptExpenseType(
   }
 }
 
-export async function updateReceiptFiledStatus(
-  receiptId: string,
-  isFiled: boolean
-) {
-  const session = await auth()
-
-  if (session?.user?.role !== "ADMIN") {
-    return { error: MESSAGES.AUTH.ADMIN_ONLY }
-  }
-
-  try {
-    await prisma.receipt.update({
-      where: { id: receiptId },
-      data: { isFiled },
-    })
-
-    revalidatePath("/dashboard")
-    return { success: true }
-  } catch (error) {
-    console.error("Update receipt filed status error:", error)
-    return { error: "Nepodařilo se změnit stav zařazení" }
-  }
-}
 
 
 export async function payAllReceiptsInTicket(ticketId: string) {
@@ -232,7 +212,7 @@ export async function payAllReceiptsInTicket(ticketId: string) {
       data: { isPaid: true },
     })
 
-    revalidatePath("/dashboard")
+    revalidatePath("/dashboard", "layout")
     return { success: true }
   } catch (error) {
     console.error("Pay all receipts error:", error)
@@ -269,10 +249,70 @@ export async function deleteReceipt(receiptId: string) {
       where: { id: receiptId }
     })
 
-    revalidatePath("/dashboard")
+    revalidatePath("/dashboard", "layout")
     return { success: true }
   } catch (error) {
     console.error("Delete receipt error:", error)
     return { error: "Nepodařilo se smazat účtenku" }
+  }
+}
+
+export async function updateReceiptDetails(
+  receiptId: string,
+  data: {
+    store: string
+    amount: number
+    date: Date
+    expenseType: ExpenseType
+    note?: string | null
+  }
+) {
+  const session = await auth()
+
+  if (session?.user?.role !== "ADMIN") {
+    return { error: MESSAGES.AUTH.ADMIN_ONLY }
+  }
+
+  try {
+    await prisma.receipt.update({
+      where: { id: receiptId },
+      data: {
+        store: data.store,
+        amount: data.amount,
+        date: data.date,
+        expenseType: data.expenseType,
+        note: data.note,
+      },
+    })
+
+    revalidatePath("/dashboard", "layout")
+    return { success: true }
+  } catch (error) {
+    console.error("Update receipt details error:", error)
+    return { error: MESSAGES.TRANSACTION.UPDATE_FAILED }
+  }
+}
+
+export async function updateReceiptNote(
+  receiptId: string,
+  note: string
+) {
+  const session = await auth()
+
+  if (!session?.user?.id) {
+    return { error: MESSAGES.AUTH.UNAUTHORIZED }
+  }
+
+  try {
+    await prisma.receipt.update({
+      where: { id: receiptId },
+      data: { note },
+    })
+
+    revalidatePath("/dashboard", "layout")
+    return { success: true }
+  } catch (error) {
+    console.error("Update receipt note error:", error)
+    return { error: "Nepodařilo se uložit poznámku" }
   }
 }

@@ -11,6 +11,7 @@ import { uploadReceipt } from "@/lib/actions/receipts"
 import { validateReceiptFile, isHeicFile, convertHeicToJpeg } from "@/lib/utils/file-validator"
 import { Upload, X, Loader2, Camera } from "lucide-react"
 import { ExpenseType } from "@prisma/client"
+import { Textarea } from "@/components/ui/textarea"
 
 interface ReceiptUploadFormProps {
   ticketId: string
@@ -29,6 +30,7 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
   const [amount, setAmount] = useState("")
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [expenseType, setExpenseType] = useState<ExpenseType>("MATERIAL")
+  const [note, setNote] = useState("")
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
@@ -74,6 +76,7 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
       formData.append("amount", amount)
       formData.append("date", date)
       formData.append("expenseType", expenseType)
+      formData.append("note", note)
 
       const result = await uploadReceipt(formData)
 
@@ -85,7 +88,9 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
         setPreview(null)
         setStore("")
         setAmount("")
+        setNote("")
         onSuccess?.()
+        window.dispatchEvent(new CustomEvent("app-data-refresh"))
         router.refresh()
       }
     } catch (error: any) {
@@ -96,7 +101,7 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 bg-muted/50 p-6 rounded-[2rem] border border-border/50">
+    <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-4">
         <div className="flex flex-col items-center justify-center border-2 border-dashed border-border/50 rounded-[1.5rem] p-4 transition-colors hover:border-primary/50 relative min-h-[120px]">
           {preview ? (
@@ -162,7 +167,15 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
               className="rounded-xl"
             />
           </div>
-
+          <div className="space-y-2 md:col-span-2">
+            <Label className="text-xs font-bold uppercase ml-1">Poznámka (volitelné)</Label>
+            <Textarea 
+              value={note} 
+              onChange={(e) => setNote(e.target.value)} 
+              placeholder="Doplňující informace k nákupu..."
+              className="rounded-xl min-h-[80px]"
+            />
+          </div>
         </div>
       </div>
 

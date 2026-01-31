@@ -200,7 +200,8 @@ export async function getAllCashRegisterData() {
         ticket: {
           include: {
             section: { select: { name: true } },
-            requester: { select: { fullName: true } }
+            requester: { select: { fullName: true } },
+            receipts: true
           }
         }
       },
@@ -253,17 +254,35 @@ export async function getAllCashRegisterData() {
         amount: Number(c.amount),
         createdAt: c.createdAt.toISOString(),
       })),
-      receipts: receipts.map((r) => ({
-        ...r,
-        amount: Number(r.amount),
-        date: r.date.toISOString(),
-        createdAt: r.createdAt.toISOString(),
-        updatedAt: r.updatedAt.toISOString(),
-        // Flatten for backward compatibility if needed, or keep nested
-        sectionName: r.ticket.section.name,
-        requesterName: r.ticket.requester.fullName,
-        purpose: r.ticket.purpose
-      })),
+      receipts: receipts.map((r) => {
+        const { ticket, ...receipt } = r
+        return {
+          ...receipt,
+          amount: Number(receipt.amount),
+          date: receipt.date.toISOString(),
+          createdAt: receipt.createdAt.toISOString(),
+          updatedAt: receipt.updatedAt.toISOString(),
+          // Flatten some fields for backward compatibility
+          sectionName: ticket.section.name,
+          requesterName: ticket.requester.fullName,
+          purpose: ticket.purpose,
+          // Explicitly serialize the nested ticket to avoid Decimal crash
+          ticket: {
+            ...ticket,
+            budgetAmount: Number(ticket.budgetAmount),
+            createdAt: ticket.createdAt.toISOString(),
+            updatedAt: ticket.updatedAt.toISOString(),
+            targetDate: ticket.targetDate.toISOString(),
+            receipts: (ticket.receipts || []).map((tr: any) => ({
+              ...tr,
+              amount: Number(tr.amount),
+              date: tr.date.toISOString(),
+              createdAt: tr.createdAt.toISOString(),
+              updatedAt: tr.updatedAt.toISOString(),
+            }))
+          }
+        }
+      }),
       totalDebtErrors,
       totalCashOnHand,
       totalDeposits,
@@ -360,7 +379,8 @@ export async function getPokladnaSemesterData(semesterKey: string) {
         ticket: {
           include: {
             section: { select: { name: true } },
-            requester: { select: { fullName: true } }
+            requester: { select: { fullName: true } },
+            receipts: true
           }
         }
       },
@@ -375,16 +395,34 @@ export async function getPokladnaSemesterData(semesterKey: string) {
         date: d.date.toISOString(),
         createdAt: d.createdAt.toISOString(),
       })),
-      receipts: receipts.map((r) => ({
-        ...r,
-        amount: Number(r.amount),
-        date: r.date.toISOString(),
-        createdAt: r.createdAt.toISOString(),
-        updatedAt: r.updatedAt.toISOString(),
-        sectionName: r.ticket.section.name,
-        requesterName: r.ticket.requester.fullName,
-        purpose: r.ticket.purpose
-      })),
+      receipts: receipts.map((r) => {
+        const { ticket, ...receipt } = r
+        return {
+          ...receipt,
+          amount: Number(receipt.amount),
+          date: receipt.date.toISOString(),
+          createdAt: receipt.createdAt.toISOString(),
+          updatedAt: receipt.updatedAt.toISOString(),
+          sectionName: ticket.section.name,
+          requesterName: ticket.requester.fullName,
+          purpose: ticket.purpose,
+          // Explicitly serialize the nested ticket to avoid Decimal crash
+          ticket: {
+            ...ticket,
+            budgetAmount: Number(ticket.budgetAmount),
+            createdAt: ticket.createdAt.toISOString(),
+            updatedAt: ticket.updatedAt.toISOString(),
+            targetDate: ticket.targetDate.toISOString(),
+            receipts: (ticket.receipts || []).map((tr: any) => ({
+              ...tr,
+              amount: Number(tr.amount),
+              date: tr.date.toISOString(),
+              createdAt: tr.createdAt.toISOString(),
+              updatedAt: tr.updatedAt.toISOString(),
+            }))
+          }
+        }
+      }),
     }
   } catch (error) {
     console.error("Get pokladna semester data error:", error)

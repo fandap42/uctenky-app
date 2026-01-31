@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client"
 import { Pool } from 'pg'
 import { PrismaPg } from '@prisma/adapter-pg'
 
+// Forces Prisma Client refresh after schema migration
 const connectionString = `${process.env.DATABASE_URL}`
 
 const globalForPrisma = globalThis as unknown as {
