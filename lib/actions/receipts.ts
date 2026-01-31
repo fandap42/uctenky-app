@@ -173,6 +173,30 @@ export async function toggleReceiptPaid(
   }
 }
 
+export async function toggleReceiptFiled(
+  receiptId: string,
+  isFiled: boolean
+) {
+  const session = await auth()
+
+  if (session?.user?.role !== "ADMIN") {
+    return { error: MESSAGES.AUTH.ADMIN_ONLY }
+  }
+
+  try {
+    await prisma.receipt.update({
+      where: { id: receiptId },
+      data: { isFiled },
+    })
+
+    revalidatePath("/dashboard", "layout")
+    return { success: true }
+  } catch (error) {
+    console.error("Toggle receipt filed status error:", error)
+    return { error: "Nepodařilo se změnit stav zařazení" }
+  }
+}
+
 export async function updateReceiptExpenseType(
   receiptId: string,
   expenseType: ExpenseType

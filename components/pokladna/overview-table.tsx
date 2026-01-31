@@ -15,11 +15,10 @@ import { AlertCircle, StickyNote } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { EditNoteDialog } from "@/components/dashboard/edit-note-dialog"
 import { ReceiptViewDialog } from "@/components/receipts/receipt-view-dialog"
-import { toggleReceiptPaid } from "@/lib/actions/receipts"
-import { toggleTicketFiled } from "@/lib/actions/tickets"
+import { FolderCheck, FolderX, CheckIcon } from "lucide-react"
+import { toggleReceiptPaid, toggleReceiptFiled } from "@/lib/actions/receipts"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
-import { FolderCheck, FolderX, CheckIcon } from "lucide-react"
 
 const dateFormatter = new Intl.DateTimeFormat("cs-CZ", {
   day: "2-digit",
@@ -65,30 +64,39 @@ export function OverviewTable({
 
   const router = useRouter()
   const [loadingIds, setLoadingIds] = useState<Record<string, boolean>>({})
+  const [optimisticStatuses, setOptimisticStatuses] = useState<Record<string, { isPaid?: boolean, isFiled?: boolean }>>({})
 
   async function handleTogglePaid(receiptId: string, currentStatus: boolean) {
+    const newStatus = !currentStatus
+    setOptimisticStatuses(prev => ({ ...prev, [receiptId]: { ...prev[receiptId], isPaid: newStatus } }))
     setLoadingIds(prev => ({ ...prev, [receiptId]: true }))
-    const result = await toggleReceiptPaid(receiptId, !currentStatus)
+    
+    const result = await toggleReceiptPaid(receiptId, newStatus)
     if (result.error) {
       toast.error(result.error)
+      setOptimisticStatuses(prev => ({ ...prev, [receiptId]: { ...prev[receiptId], isPaid: currentStatus } }))
     } else {
-      toast.success(!currentStatus ? "Označeno jako proplaceno" : "Označeno jako neproplaceno")
+      toast.success(newStatus ? "Označeno jako proplaceno" : "Označeno jako neproplaceno")
       router.refresh()
     }
     setLoadingIds(prev => ({ ...prev, [receiptId]: false }))
   }
 
-  async function handleToggleFiled(ticketId: string, currentStatus: boolean, itemId: string) {
-    if (!ticketId) return
-    setLoadingIds(prev => ({ ...prev, [itemId]: true }))
-    const result = await toggleTicketFiled(ticketId, !currentStatus)
+  async function handleToggleFiled(receiptId: string, currentStatus: boolean) {
+    if (!receiptId) return
+    const newStatus = !currentStatus
+    setOptimisticStatuses(prev => ({ ...prev, [receiptId]: { ...prev[receiptId], isFiled: newStatus } }))
+    setLoadingIds(prev => ({ ...prev, [receiptId]: true }))
+    
+    const result = await toggleReceiptFiled(receiptId, newStatus)
     if (result.error) {
       toast.error(result.error)
+      setOptimisticStatuses(prev => ({ ...prev, [receiptId]: { ...prev[receiptId], isFiled: currentStatus } }))
     } else {
-      toast.success(!currentStatus ? "Označeno jako založeno" : "Označeno jako nezaloženo")
+      toast.success(newStatus ? "Označeno jako založeno" : "Označeno jako nezaloženo")
       router.refresh()
     }
-    setLoadingIds(prev => ({ ...prev, [itemId]: false }))
+    setLoadingIds(prev => ({ ...prev, [receiptId]: false }))
   }
 
   const effectivePageSize = pageSize === "all" ? combinedData.length : pageSize
@@ -97,17 +105,18 @@ export function OverviewTable({
   return (
     <div className="w-full">
       <Table>
-        <TableHeader>
+        <TableHeader className="bg-muted/80 border-b border-border">
           <TableRow className="border-border hover:bg-transparent">
-            <TableHead className="py-2 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground w-[100px]">Datum</TableHead>
-            <TableHead className="py-2 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground">Sekce</TableHead>
-            <TableHead className="py-2 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground min-w-[200px]">Účel</TableHead>
-            <TableHead className="py-2 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground">Obchod</TableHead>
-            <TableHead className="py-2 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground text-right">Částka</TableHead>
-            <TableHead className="py-2 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground text-center">Typ</TableHead>
-            <TableHead className="py-2 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground text-center">Proplaceno</TableHead>
-            <TableHead className="py-2 px-4 text-xs font-black uppercase tracking-widest text-muted-foreground text-center">Založeno</TableHead>
-            <TableHead className="py-2 px-0 text-center w-12 text-muted-foreground/30">
+            <TableHead className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground w-[100px]">Datum</TableHead>
+            <TableHead className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Sekce</TableHead>
+            <TableHead className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground min-w-[200px]">Účel</TableHead>
+            <TableHead className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Obchod</TableHead>
+            <TableHead className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-right">Částka</TableHead>
+            <TableHead className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-center w-[120px]">Typ</TableHead>
+            <TableHead className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-center w-[100px]">Přílohy</TableHead>
+            <TableHead className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-center w-[100px]">Proplaceno</TableHead>
+            <TableHead className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-center w-[100px]">Založeno</TableHead>
+            <TableHead className="py-3 px-0 text-center w-12 text-muted-foreground/30">
               <CheckIcon className="size-4 mx-auto" />
             </TableHead>
           </TableRow>
@@ -115,63 +124,68 @@ export function OverviewTable({
         <TableBody>
           {paginatedData.map((item) => {
             const isTr = item.displayType === "TRANSACTION"
+            const currentIsPaid = optimisticStatuses[item.id]?.isPaid ?? item.isPaid
+            const currentIsFiled = optimisticStatuses[item.id]?.isFiled ?? item.isFiled
+
             return (
               <TableRow 
                 key={item.id} 
                 className={cn(
-                  "border-border transition-colors group",
+                  "border-border transition-all duration-200 group",
                   isTr && onTicketClick ? "hover:bg-primary/5 cursor-pointer" : "hover:bg-muted/10"
                 )}
                 onClick={() => isTr && onTicketClick && onTicketClick(item.ticket)}
               >
-                <TableCell className="py-2 px-4 text-muted-foreground text-xs whitespace-nowrap tabular-nums">
+                <TableCell className="py-3 px-4 text-muted-foreground text-xs whitespace-nowrap tabular-nums font-medium">
                   {dateFormatter.format(item.displayDate)}
                 </TableCell>
-                <TableCell className="py-2 px-4">
+                <TableCell className="py-3 px-4">
                   {isTr ? (
-                    <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10 font-bold text-[9px] h-4 uppercase tracking-wider px-1">
+                    <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10 font-bold text-[10px] h-5 uppercase tracking-wider px-2 shadow-sm">
                       {item.section?.name || item.sectionName}
                     </Badge>
                   ) : (
                     <span className="text-muted-foreground/30">—</span>
                   )}
                 </TableCell>
-                <TableCell className="py-2 px-4 text-sm text-foreground">
+                <TableCell className="py-3 px-4 text-sm text-foreground font-semibold">
                   {isTr ? (item.purpose || item.description) : (item.description || "Vklad do pokladny")}
                 </TableCell>
-                <TableCell className="py-2 px-4 text-xs text-foreground font-medium">
+                <TableCell className="py-3 px-4 text-xs text-foreground font-medium">
                   {isTr ? (item.store || "—") : <span className="text-muted-foreground/30">—</span>}
                 </TableCell>
-                <TableCell className="py-2 px-4 text-right tabular-nums">
+                <TableCell className="py-3 px-4 text-right tabular-nums">
                   {isTr ? (
                     <div className="flex items-center justify-end gap-1.5">
-                      {!item.isPaid && <AlertCircle className="w-3.5 h-3.5 text-warning" />}
-                      <span className="font-bold text-destructive text-sm">
+                      {!currentIsPaid && <AlertCircle className="w-3.5 h-3.5 text-warning" />}
+                      <span className="font-bold text-destructive text-sm tracking-tight">
                         {Math.abs(Number(item.amount || item.finalAmount || item.estimatedAmount)).toLocaleString("cs-CZ")} Kč
                       </span>
                     </div>
                   ) : (
-                    <span className="font-bold text-success text-sm">
+                    <span className="font-bold text-success text-sm tracking-tight">
                       +{Number(item.amount).toLocaleString("cs-CZ")} Kč
                     </span>
                   )}
                 </TableCell>
-                <TableCell className="py-2 px-4 text-center">
+                <TableCell className="py-3 px-4 text-center">
                   {isTr ? (
-                    <Badge className={cn(
-                      "font-bold text-[9px] uppercase tracking-wider h-4 px-1",
-                      item.expenseType === "MATERIAL" 
-                        ? "bg-[oklch(0.60_0.20_280)] text-white hover:bg-[oklch(0.60_0.20_280)] border-none" 
-                        : "bg-blue-100 text-blue-700 hover:bg-blue-100 border-none"
-                    )}>
-                      {item.expenseType === "MATERIAL" ? "Materiál" : "Služba"}
-                    </Badge>
+                    <div className="flex justify-center">
+                      <Badge className={cn(
+                        "font-bold text-[10px] uppercase tracking-wider h-5 px-2 min-w-[100px] justify-center",
+                        item.expenseType === "MATERIAL" 
+                          ? "bg-[oklch(0.60_0.20_280)] text-white hover:bg-[oklch(0.60_0.20_280)] border-none" 
+                          : "bg-blue-100 text-blue-700 hover:bg-blue-100 border-none"
+                      )}>
+                        {item.expenseType === "MATERIAL" ? "Materiál" : "Služba"}
+                      </Badge>
+                    </div>
                   ) : (
                     <span className="text-muted-foreground/30">—</span>
                   )}
                 </TableCell>
-                <TableCell className="py-2 px-4 text-center" onClick={(e) => e.stopPropagation()}>
-                  <div className="flex items-center justify-center gap-2">
+                <TableCell className="py-3 px-4 text-center">
+                  <div className="flex items-center justify-center gap-2" onClick={(e) => e.stopPropagation()}>
                     {isTr ? (
                       <EditNoteDialog receiptId={item.id} initialNote={item.note} />
                     ) : (
@@ -187,48 +201,39 @@ export function OverviewTable({
                     )}
                   </div>
                 </TableCell>
-                <TableCell className="py-2 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                <TableCell className="py-3 px-4 text-center">
                   {isTr ? (
-                    <div className="flex justify-center">
+                    <div className="flex justify-center" onClick={(e) => e.stopPropagation()}>
                       <Checkbox 
-                        checked={item.isPaid}
-                        onCheckedChange={() => handleTogglePaid(item.id, !!item.isPaid)}
+                        checked={currentIsPaid}
+                        onCheckedChange={() => handleTogglePaid(item.id, !!currentIsPaid)}
                         disabled={loadingIds[item.id]}
-                        className={cn(
-                          "w-5 h-5 transition-all data-[state=checked]:bg-[oklch(0.60_0.16_150)] data-[state=checked]:border-[oklch(0.60_0.16_150)]",
-                          !item.isPaid && "opacity-40"
-                        )}
+                        className="rounded h-4 w-4 border-muted-foreground/40 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
                       />
                     </div>
                   ) : <span className="text-muted-foreground/30">—</span>}
                 </TableCell>
-                <TableCell className="py-2 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                <TableCell className="py-3 px-4 text-center">
                   {isTr ? (
-                    <div className="flex justify-center">
-                      <button
-                        onClick={() => handleToggleFiled(item.ticket?.id, !!item.ticket?.isFiled, item.id)}
+                    <div className="flex justify-center" onClick={(e) => e.stopPropagation()}>
+                      <Checkbox 
+                        checked={currentIsFiled}
+                        onCheckedChange={() => handleToggleFiled(item.id, !!currentIsFiled)}
                         disabled={loadingIds[item.id]}
-                        className={cn(
-                          "transition-all p-1 rounded-md hover:bg-muted/20",
-                          item.ticket?.isFiled ? "text-[oklch(0.60_0.16_150)]" : "text-muted-foreground/40"
-                        )}
-                      >
-                        {item.ticket?.isFiled ? (
-                          <FolderCheck className="w-5 h-5" />
-                        ) : (
-                          <FolderX className="w-5 h-5" />
-                        )}
-                      </button>
+                        className="rounded h-4 w-4 border-muted-foreground/40 data-[state=checked]:bg-[oklch(0.60_0.16_150)] data-[state=checked]:border-[oklch(0.60_0.16_150)]"
+                      />
                     </div>
                   ) : <span className="text-muted-foreground/30">—</span>}
                 </TableCell>
-                <TableCell className="py-2 px-0 text-center" onClick={(e) => e.stopPropagation()}>
-                  <Checkbox 
-                    id={`track-${item.id}`} 
-                    checked={!!checkedIds[item.id]} 
-                    onCheckedChange={() => toggleCheck(item.id)}
-                    className="border-muted-foreground/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary rounded-md w-5 h-5 shadow-sm mx-auto opacity-30 group-hover:opacity-100 transition-all scale-110"
-                  />
+                <TableCell className="py-3 px-0 text-center">
+                  <div className="flex justify-center" onClick={(e) => e.stopPropagation()}>
+                    <Checkbox 
+                      id={`track-${item.id}`} 
+                      checked={!!checkedIds[item.id]} 
+                      onCheckedChange={() => toggleCheck(item.id)}
+                      className="border-muted-foreground/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary rounded-md w-4 h-4 shadow-sm mx-auto opacity-30 group-hover:opacity-100 transition-all"
+                    />
+                  </div>
                 </TableCell>
               </TableRow>
             )

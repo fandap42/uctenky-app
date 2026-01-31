@@ -49,7 +49,8 @@ import {
   toggleReceiptPaid, 
   updateReceiptExpenseType,
   payAllReceiptsInTicket,
-  deleteReceipt
+  deleteReceipt,
+  toggleReceiptFiled
 } from "@/lib/actions/receipts"
 import { 
   updateTicketStatus, 
@@ -83,6 +84,7 @@ interface Receipt {
   isPaid: boolean
   expenseType: ExpenseType
   status: ReceiptStatus
+  isFiled: boolean
   note?: string | null
 }
 
@@ -230,10 +232,10 @@ export function TicketDetailDialog({
     }
   }
 
-  const handleStatusChange = async (receiptId: string, status: ReceiptStatus) => {
-    const result = await updateReceiptStatus(receiptId, status)
+  const handleReceiptFiledToggle = async (receiptId: string, isFiled: boolean) => {
+    const result = await toggleReceiptFiled(receiptId, isFiled)
     if (result.success) {
-      toast.success("Stav účtenky aktualizován")
+      toast.success(isFiled ? "Označeno jako založeno" : "Označeno jako nezaloženo")
       window.dispatchEvent(new CustomEvent("app-data-refresh"))
       router.refresh()
     } else {
@@ -244,7 +246,7 @@ export function TicketDetailDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-[100vw] sm:max-w-7xl w-full h-[100dvh] sm:h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden bg-background sm:rounded-[2rem] border-none shadow-2xl">
+        <DialogContent className="max-w-[100vw] sm:max-w-[1400px] w-full h-[100dvh] sm:h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden bg-background sm:rounded-[2rem] border-none shadow-2xl">
           
           {/* --- FIXED HEADER --- */}
           <div className="bg-card p-3 sm:p-6 border-b border-border/60 shrink-0 space-y-3 sm:space-y-4">
@@ -285,7 +287,7 @@ export function TicketDetailDialog({
             </div>
 
             {/* Budget Progress Bar */}
-            <div className="space-y-1.5 sm:space-y-2 pt-1 sm:pt-2">
+            <div className="space-y-1.5 sm:space-y-2 pt-1 sm:pt-2 max-w-sm">
                <div className="flex justify-between items-end">
                  <div className="flex flex-col">
                    <span className="text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Čerpání rozpočtu</span>
@@ -303,7 +305,7 @@ export function TicketDetailDialog({
                <Progress 
                   value={budgetProgress} 
                   className={cn(
-                    "h-2 sm:h-2.5 rounded-full bg-muted/30", 
+                    "h-2 sm:h-2.5 rounded-full bg-muted/60 border border-muted", 
                     isOverBudget ? "[&>div]:bg-destructive" : "[&>div]:bg-emerald-500"
                   )} 
                 />
@@ -328,14 +330,15 @@ export function TicketDetailDialog({
               ) : (
                 <div className="rounded-xl border border-border/60 overflow-hidden bg-card shadow-sm">
                   <Table>
-                    <TableHeader className="bg-muted/40">
+                    <TableHeader className="bg-muted/80 border-b border-border">
                       <TableRow className="hover:bg-transparent border-border/60">
                         <TableHead className="py-3 px-4 font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Datum / Obchod</TableHead>
                         <TableHead className="py-3 px-4 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-right w-[120px]">Částka</TableHead>
-                        <TableHead className="py-3 px-4 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center w-[120px]">Typ</TableHead>
+                        <TableHead className="py-3 px-4 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center min-w-[120px]">Typ</TableHead>
                         <TableHead className="py-3 px-4 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center w-[100px]">Přílohy</TableHead>
                         <TableHead className="py-3 px-4 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center w-[100px]">Proplaceno</TableHead>
-                        <TableHead className="py-3 px-4 text-right w-[120px]">Akce</TableHead>
+                        <TableHead className="py-3 px-4 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center w-[100px]">Založeno</TableHead>
+                        <TableHead className="py-3 px-4 text-right w-[100px]">Akce</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -365,7 +368,7 @@ export function TicketDetailDialog({
                                      value={receipt.expenseType} 
                                      onValueChange={(v) => handleExpenseTypeChange(receipt.id, v as ExpenseType)}
                                    >
-                                     <SelectTrigger className="h-7 w-[90px] text-[10px] font-bold text-xs">
+                                     <SelectTrigger className="h-7 w-[110px] text-[10px] font-bold text-xs">
                                        <SelectValue />
                                      </SelectTrigger>
                                      <SelectContent>
@@ -375,8 +378,8 @@ export function TicketDetailDialog({
                                    </Select>
                                  </div>
                               ) : (
-                                 <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-wider px-2 h-5 bg-muted text-muted-foreground border border-border/50">
-                                   {receipt.expenseType === "MATERIAL" ? "MAT" : "SLU"}
+                                 <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-wider px-2 h-5 bg-muted text-muted-foreground border border-border/50 min-w-[80px] justify-center">
+                                   {receipt.expenseType === "MATERIAL" ? "Materiál" : "Služba"}
                                  </Badge>
                               )}
                             </TableCell>
@@ -410,14 +413,31 @@ export function TicketDetailDialog({
                                 )
                               )}
                             </TableCell>
+                             <TableCell className="py-3 px-4 text-center">
+                              {isAdmin ? (
+                                <div className="flex justify-center">
+                                  <Checkbox 
+                                    checked={receipt.isFiled} 
+                                    onCheckedChange={(checked) => handleReceiptFiledToggle(receipt.id, !!checked)}
+                                    className="rounded h-4 w-4 border-muted-foreground/40 data-[state=checked]:bg-[oklch(0.60_0.16_150)] data-[state=checked]:border-[oklch(0.60_0.16_150)]"
+                                    disabled={isRejected}
+                                  />
+                                </div>
+                              ) : (
+                                receipt.isFiled ? (
+                                  <div className="flex justify-center">
+                                    <FolderCheck className="w-5 h-5 text-[oklch(0.60_0.16_150)]" />
+                                  </div>
+                                ) : (
+                                  <div className="flex justify-center">
+                                    <FolderX className="w-5 h-5 text-muted-foreground/30" />
+                                  </div>
+                                )
+                              )}
+                            </TableCell>
                             <TableCell className="text-right py-3 px-4">
                               <div className="flex items-center justify-end gap-1">
                                 {isAdmin && <EditReceiptDialog receipt={receipt} />}
-                                <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-muted" title="Zobrazit">
-                                  <a href={`/api/receipts/view?id=${receipt.id}`} target="_blank" rel="noreferrer">
-                                    <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
-                                  </a>
-                                </Button>
                                 {(isOwner && (ticket.status === "APPROVED" || ticket.status === "PENDING_APPROVAL") || isAdmin) && (
                                   <Button 
                                     variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10"
@@ -475,11 +495,18 @@ export function TicketDetailDialog({
                               className="rounded h-7 w-7 border-muted-foreground/30 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-none"
                             />
                           )}
-                          <div className="flex items-center gap-2">
+                           <div className="flex items-center gap-2">
                             {isAdmin && <EditNoteDialog receiptId={receipt.id} initialNote={receipt.note} />}
                             <a href={`/api/receipts/view?id=${receipt.id}`} target="_blank" rel="noreferrer" className="text-emerald-500">
                               <ImageIcon className="w-5 h-5" />
                             </a>
+                            {isAdmin && (
+                              <Checkbox 
+                                checked={receipt.isFiled} 
+                                onCheckedChange={(checked) => handleReceiptFiledToggle(receipt.id, !!checked)}
+                                className="rounded h-7 w-7 border-muted-foreground/30 data-[state=checked]:bg-[oklch(0.60_0.16_150)] data-[state=checked]:border-none"
+                              />
+                            )}
                           </div>
                           {(isOwner && (ticket.status === "APPROVED" || ticket.status === "PENDING_APPROVAL") || isAdmin) && (
                             <Button 
@@ -559,12 +586,12 @@ export function TicketDetailDialog({
                           >
                             Zpět
                           </Button>
-                        <Button 
+                         <Button 
                             onClick={() => handleStatusUpdate("DONE")} 
                             className="h-8 sm:h-9 px-3.5 sm:px-4 text-[10px] sm:text-xs font-bold bg-primary hover:bg-primary/90 text-white"
-                            disabled={loading || receipts.some(r => r.status === "PENDING")}
+                            disabled={loading}
                           >
-                            Ukončit
+                            Ověřit
                           </Button>
                       </>
                     )}
@@ -591,31 +618,6 @@ export function TicketDetailDialog({
                     </Button>
                 )}
 
-                 {isAdmin && (
-                   <div className="flex items-center gap-2 mr-2 border-r border-border/60 pr-4">
-                     <div 
-                       className="flex items-center space-x-2 cursor-pointer group"
-                       onClick={() => handleTicketFiledToggle(!ticket.isFiled)}
-                     >
-                       <Checkbox 
-                         id="ticket-filed" 
-                         checked={ticket.isFiled}
-                         onCheckedChange={(checked) => handleTicketFiledToggle(!!checked)}
-                         disabled={loading}
-                         className="data-[state=checked]:bg-[oklch(0.60_0.16_150)] data-[state=checked]:border-[oklch(0.60_0.16_150)]"
-                       />
-                       <span 
-                         className={cn(
-                           "text-[10px] sm:text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-colors",
-                           ticket.isFiled ? "text-[oklch(0.60_0.16_150)]" : "text-muted-foreground group-hover:text-foreground"
-                         )}
-                       >
-                         {ticket.isFiled ? <FolderCheck className="w-4 h-4" /> : <FolderX className="w-4 h-4" />}
-                         Založeno
-                       </span>
-                     </div>
-                   </div>
-                 )}
 
                 <Button variant="ghost" onClick={() => onOpenChange(false)} className="h-8 sm:h-9 px-2.5 sm:px-3 text-[10px] sm:text-xs font-bold text-muted-foreground">
                   Zavřít

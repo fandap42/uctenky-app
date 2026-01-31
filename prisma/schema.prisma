@@ -66,6 +66,7 @@ model Receipt {
   ticketId    String        @map("ticket_id")
   createdAt   DateTime      @default(now()) @map("created_at")
   updatedAt   DateTime      @updatedAt @map("updated_at")
+  isFiled     Boolean       @default(false) @map("is_filed")
   note        String?
   ticket      Ticket        @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 

@@ -23,7 +23,7 @@ import { EditTransactionDialog } from "./edit-transaction-dialog"
 import { EditNoteDialog } from "./edit-note-dialog"
 import { ApprovalActions } from "@/components/requests/approval-actions"
 import { deleteTicket, updateTicketStatus } from "@/lib/actions/tickets"
-import { deleteReceipt, updateReceiptStatus, toggleReceiptPaid, updateReceiptExpenseType } from "@/lib/actions/receipts"
+import { deleteReceipt, updateReceiptStatus, toggleReceiptPaid, updateReceiptExpenseType, toggleReceiptFiled } from "@/lib/actions/receipts"
 import { CollapsibleSemester } from "./collapsible-semester"
 import { TablePagination } from "@/components/ui/table-pagination"
 import { getTicketsBySemester } from "@/lib/actions/tickets"
@@ -176,7 +176,7 @@ function MonthlyTransactionCard({
                 )}
                 {isAdmin && (
                   <TableCell className="py-2">
-                    {tx.isFiled !== undefined && <FiledStatusSelect transactionId={tx.id} initialStatus={tx.isFiled} />}
+                    {tx.isFiled !== undefined && <FiledStatusSelect transactionId={tx.id} initialStatus={tx.isFiled} onStatusUpdate={(id, status) => toggleReceiptFiled(id, status)} />}
                   </TableCell>
                 )}
                 <TableCell className="py-2 text-center">
