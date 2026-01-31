@@ -14,30 +14,28 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const transactionId = searchParams.get("id")
+    const receiptId = searchParams.get("id")
 
-    if (!transactionId) {
+    if (!receiptId) {
       return new NextResponse(MESSAGES.TRANSACTION.MISSING_ID, { status: 400 })
     }
 
-    // Fetch transaction to verify ownership/admin
-    const transaction = await prisma.transaction.findUnique({
-      where: { id: transactionId },
-      select: { 
-        requesterId: true, 
-        receiptUrl: true 
+    // Fetch receipt and its ticket to verify ownership/admin
+    const receipt = await prisma.receipt.findUnique({
+      where: { id: receiptId },
+      include: {
+        ticket: {
+          select: { requesterId: true }
+        }
       }
     })
 
-    if (!transaction) {
-      return new NextResponse(MESSAGES.TRANSACTION.NOT_FOUND, { status: 404 })
-    }
-
-    const { receiptUrl, requesterId } = transaction
-
-    if (!receiptUrl) {
+    if (!receipt) {
       return new NextResponse("Receipt not found", { status: 404 })
     }
+
+    const { fileUrl, ticket } = receipt
+    const requesterId = ticket.requesterId
 
     const isOwner = requesterId === session.user.id
     const isAdmin = session.user.role === "ADMIN"
@@ -47,8 +45,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Handle legacy full URLs by proxying them via fetch
-    if (receiptUrl.startsWith("http")) {
-      const response = await fetch(receiptUrl)
+    if (fileUrl.startsWith("http")) {
+      const response = await fetch(fileUrl)
       if (!response.ok) return new NextResponse("Source file not found", { status: 404 })
       
       return new NextResponse(response.body, {
@@ -62,7 +60,7 @@ export async function GET(request: NextRequest) {
     // For new "keys", stream directly from S3/Minio
     const command = new GetObjectCommand({
       Bucket: BUCKET_NAME,
-      Key: receiptUrl,
+      Key: fileUrl,
     })
 
     const s3Response = await s3Client.send(command)

@@ -15,64 +15,45 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { updateTransactionReceipt } from "@/lib/actions/transactions"
+import { uploadReceipt } from "@/lib/actions/receipts"
 import { toast } from "sonner"
 import { Upload, FileUp, Check, Calendar } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface ReceiptUploadProps {
-  transactionId: string
+  ticketId: string
 }
 
-export function ReceiptUpload({ transactionId }: ReceiptUploadProps) {
+export function ReceiptUpload({ ticketId }: ReceiptUploadProps) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [fileUrl, setFileUrl] = useState("")
-  const [finalAmount, setFinalAmount] = useState("")
+  const [file, setFile] = useState<File | null>(null)
+  const [preview, setPreview] = useState<string | null>(null)
+  const [amount, setAmount] = useState("")
   const [store, setStore] = useState("")
-  const [purchaseDate, setPurchaseDate] = useState("")
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const router = useRouter()
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    setIsLoading(true)
-    const formData = new FormData()
-    formData.append("file", file)
-    formData.append("transactionId", transactionId)
-
-    try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      })
-      const data = await res.json()
-      if (data.url) {
-        setFileUrl(data.url)
-        toast.success("Soubor byl úspěšně nahrán")
-      } else {
-        toast.error(data.error || "Nahrávání se nezdařilo")
-      }
-    } catch {
-      toast.error("Nastala chyba při nahrávání")
-    } finally {
-      setIsLoading(false)
-    }
+    const selectedFile = e.target.files?.[0]
+    if (!selectedFile) return
+    setFile(selectedFile)
+    setPreview(URL.createObjectURL(selectedFile))
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!fileUrl || !finalAmount || !purchaseDate) return
+    if (!file || !amount || !date) return
 
     setIsLoading(true)
-    const result = await updateTransactionReceipt(
-      transactionId,
-      fileUrl,
-      parseFloat(finalAmount),
-      store,
-      new Date(purchaseDate)
-    )
+    const formData = new FormData()
+    formData.append("file", file)
+    formData.append("ticketId", ticketId)
+    formData.append("amount", amount)
+    formData.append("store", store)
+    formData.append("date", date)
+
+    const result = await uploadReceipt(formData)
 
     if (result.error) {
       toast.error(result.error)
@@ -111,21 +92,21 @@ export function ReceiptUpload({ transactionId }: ReceiptUploadProps) {
                   onChange={handleFileUpload}
                   className="hidden"
                   id="receipt-file"
-                  required={!fileUrl}
+                  required={!file}
                 />
                 <Label
                   htmlFor="receipt-file"
                   className={cn(
                     "flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-2xl cursor-pointer transition-all",
-                    fileUrl 
+                    preview 
                       ? "border-success bg-success/5 text-success" 
                       : "border-border hover:border-primary hover:bg-primary/5 text-muted-foreground"
                   )}
                 >
-                  {fileUrl ? (
+                  {preview ? (
                     <>
                       <Check className="w-6 h-6 mb-1" />
-                      <span className="text-xs font-bold">Nahráno</span>
+                      <span className="text-xs font-bold">Vybráno</span>
                     </>
                   ) : (
                     <>
@@ -139,13 +120,13 @@ export function ReceiptUpload({ transactionId }: ReceiptUploadProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="purchaseDate" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Datum nákupu *</Label>
+                <Label htmlFor="date" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Datum nákupu *</Label>
                 <div className="relative">
                   <Input
-                    id="purchaseDate"
+                    id="date"
                     type="date"
-                    value={purchaseDate}
-                    onChange={(e) => setPurchaseDate(e.target.value)}
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
                     required
                     className="bg-background border-border rounded-xl font-bold h-10 pl-9 pr-2 text-xs"
                   />
@@ -160,8 +141,8 @@ export function ReceiptUpload({ transactionId }: ReceiptUploadProps) {
                   type="number"
                   step="0.01"
                   placeholder="0.00"
-                  value={finalAmount}
-                  onChange={(e) => setFinalAmount(e.target.value)}
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
                   required
                   className="bg-background border-border rounded-xl font-bold h-10 tabular-nums text-xs"
                 />
@@ -190,7 +171,7 @@ export function ReceiptUpload({ transactionId }: ReceiptUploadProps) {
             </Button>
             <Button
               type="submit"
-              disabled={isLoading || !fileUrl || !finalAmount || !purchaseDate}
+              disabled={isLoading || !file || !amount || !date}
               className="bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-full px-8 h-10 text-xs"
             >
               {isLoading ? "Ukládám..." : "Uložit účtenku"}

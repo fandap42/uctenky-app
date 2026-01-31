@@ -7,17 +7,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { updateTransactionFiledStatus } from "@/lib/actions/transactions"
+import { toggleTicketFiled } from "@/lib/actions/tickets"
 import { toast } from "sonner"
 
 interface FiledStatusSelectProps {
   transactionId: string
   initialStatus: boolean
+  onStatusUpdate?: (id: string, isFiled: boolean) => Promise<any>
 }
 
 export function FiledStatusSelect({
   transactionId,
   initialStatus,
+  onStatusUpdate,
 }: FiledStatusSelectProps) {
   const [isFiled, setIsFiled] = useState(initialStatus)
   const [isLoading, setIsLoading] = useState(false)
@@ -31,13 +33,16 @@ export function FiledStatusSelect({
   async function handleToggle(value: string) {
     const checked = value === "filed"
     setIsLoading(true)
-    const result = await updateTransactionFiledStatus(transactionId, checked)
+    
+    const result = onStatusUpdate 
+      ? await onStatusUpdate(transactionId, checked)
+      : await toggleTicketFiled(transactionId, checked)
 
     if (result.error) {
       toast.error(result.error)
     } else {
       setIsFiled(checked)
-      toast.success(checked ? "Označeno jako založeno" : "Ozznaceno jako nezaloženo")
+      toast.success(checked ? "Označeno jako založeno" : "Označeno jako nezaloženo")
       window.dispatchEvent(new CustomEvent("app-data-refresh"))
       router.refresh()
     }

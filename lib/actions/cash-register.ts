@@ -194,19 +194,18 @@ export async function getAllCashRegisterData() {
       orderBy: { createdAt: "desc" },
     })
 
-    // Get ALL receipts (PURCHASED or VERIFIED with receipt)
-    const transactions = await prisma.transaction.findMany({
-      where: {
-        OR: [
-          { status: "PURCHASED" },
-          { status: "VERIFIED" },
-        ],
-      },
+    // Get ALL receipts
+    const receipts = await prisma.receipt.findMany({
       include: {
-        section: { select: { name: true } },
-        requester: { select: { fullName: true } },
+        ticket: {
+          include: {
+            section: { select: { name: true } },
+            requester: { select: { fullName: true } },
+            receipts: true
+          }
+        }
       },
-      orderBy: { dueDate: "desc" },
+      orderBy: { date: "desc" },
     })
 
     // Calculate totals
@@ -222,14 +221,15 @@ export async function getAllCashRegisterData() {
       (sum, d) => sum + Number(d.amount),
       0
     )
-    const paidTransactions = transactions.filter((t) => t.isPaid)
-    const totalPaidExpenses = paidTransactions.reduce(
-      (sum, t) => sum + Number(t.finalAmount || t.estimatedAmount),
+    
+    const paidReceipts = receipts.filter((r) => r.isPaid)
+    const totalPaidExpenses = paidReceipts.reduce(
+      (sum, r) => sum + Number(r.amount),
       0
     )
     
     // Count unpaid
-    const unpaidCount = transactions.filter((t) => !t.isPaid).length
+    const unpaidCount = receipts.filter((r) => !r.isPaid && r.status === "APPROVED").length
 
     // Current balance
     const currentBalance = totalDeposits - totalPaidExpenses
@@ -254,14 +254,35 @@ export async function getAllCashRegisterData() {
         amount: Number(c.amount),
         createdAt: c.createdAt.toISOString(),
       })),
-      transactions: transactions.map((t) => ({
-        ...t,
-        estimatedAmount: Number(t.estimatedAmount),
-        finalAmount: t.finalAmount ? Number(t.finalAmount) : null,
-        createdAt: t.createdAt.toISOString(),
-        updatedAt: t.updatedAt.toISOString(),
-        dueDate: t.dueDate?.toISOString() || null,
-      })),
+      receipts: receipts.map((r) => {
+        const { ticket, ...receipt } = r
+        return {
+          ...receipt,
+          amount: Number(receipt.amount),
+          date: receipt.date.toISOString(),
+          createdAt: receipt.createdAt.toISOString(),
+          updatedAt: receipt.updatedAt.toISOString(),
+          // Flatten some fields for backward compatibility
+          sectionName: ticket.section.name,
+          requesterName: ticket.requester.fullName,
+          purpose: ticket.purpose,
+          // Explicitly serialize the nested ticket to avoid Decimal crash
+          ticket: {
+            ...ticket,
+            budgetAmount: Number(ticket.budgetAmount),
+            createdAt: ticket.createdAt.toISOString(),
+            updatedAt: ticket.updatedAt.toISOString(),
+            targetDate: ticket.targetDate.toISOString(),
+            receipts: (ticket.receipts || []).map((tr: any) => ({
+              ...tr,
+              amount: Number(tr.amount),
+              date: tr.date.toISOString(),
+              createdAt: tr.createdAt.toISOString(),
+              updatedAt: tr.updatedAt.toISOString(),
+            }))
+          }
+        }
+      }),
       totalDebtErrors,
       totalCashOnHand,
       totalDeposits,
@@ -291,15 +312,11 @@ export async function getBalanceAtDate(targetDate: Date) {
       },
     })
 
-    // Get paid transactions up to target date
-    const transactions = await prisma.transaction.findMany({
+    // Get paid receipts up to target date
+    const receipts = await prisma.receipt.findMany({
       where: {
-        OR: [
-          { status: "PURCHASED" },
-          { status: "VERIFIED" },
-        ],
         isPaid: true,
-        dueDate: { lte: targetDate },
+        date: { lte: targetDate },
       },
     })
 
@@ -307,8 +324,8 @@ export async function getBalanceAtDate(targetDate: Date) {
       (sum, d) => sum + Number(d.amount),
       0
     )
-    const totalExpenses = transactions.reduce(
-      (sum, t) => sum + Number(t.finalAmount || t.estimatedAmount),
+    const totalExpenses = receipts.reduce(
+      (sum, r) => sum + Number(r.amount),
       0
     )
 
@@ -330,23 +347,22 @@ export async function getPokladnaSemesterData(semesterKey: string) {
   const { start, end } = getSemesterRange(semesterKey)
 
   try {
-    // 1. Get opening balance (deposits - paid transactions BEFORE this semester)
+    // 1. Get opening balance (deposits - paid receipts BEFORE this semester)
     const prevDeposits = await prisma.deposit.aggregate({
       where: { date: { lt: start } },
       _sum: { amount: true },
     })
-    const prevExpenses = await prisma.transaction.aggregate({
+    const prevExpenses = await prisma.receipt.aggregate({
       where: {
-        OR: [{ status: "PURCHASED" }, { status: "VERIFIED" }],
         isPaid: true,
-        dueDate: { lt: start },
+        date: { lt: start },
       },
-      _sum: { finalAmount: true, estimatedAmount: true },
+      _sum: { amount: true },
     })
 
     const openingBalance =
       Number(prevDeposits._sum.amount || 0) -
-      Number(prevExpenses._sum.finalAmount || prevExpenses._sum.estimatedAmount || 0)
+      Number(prevExpenses._sum.amount || 0)
 
     // 2. Get deposits within this semester
     const deposits = await prisma.deposit.findMany({
@@ -354,17 +370,21 @@ export async function getPokladnaSemesterData(semesterKey: string) {
       orderBy: { date: "asc" },
     })
 
-    // 3. Get transactions within this semester
-    const transactions = await prisma.transaction.findMany({
+    // 3. Get receipts within this semester
+    const receipts = await prisma.receipt.findMany({
       where: {
-        OR: [{ status: "PURCHASED" }, { status: "VERIFIED" }],
-        dueDate: { gte: start, lte: end },
+        date: { gte: start, lte: end },
       },
       include: {
-        section: { select: { name: true } },
-        requester: { select: { fullName: true } },
+        ticket: {
+          include: {
+            section: { select: { name: true } },
+            requester: { select: { fullName: true } },
+            receipts: true
+          }
+        }
       },
-      orderBy: { dueDate: "asc" },
+      orderBy: { date: "asc" },
     })
 
     return {
@@ -375,14 +395,34 @@ export async function getPokladnaSemesterData(semesterKey: string) {
         date: d.date.toISOString(),
         createdAt: d.createdAt.toISOString(),
       })),
-      transactions: transactions.map((t) => ({
-        ...t,
-        estimatedAmount: Number(t.estimatedAmount),
-        finalAmount: t.finalAmount ? Number(t.finalAmount) : null,
-        createdAt: t.createdAt.toISOString(),
-        updatedAt: t.updatedAt.toISOString(),
-        dueDate: t.dueDate?.toISOString() || null,
-      })),
+      receipts: receipts.map((r) => {
+        const { ticket, ...receipt } = r
+        return {
+          ...receipt,
+          amount: Number(receipt.amount),
+          date: receipt.date.toISOString(),
+          createdAt: receipt.createdAt.toISOString(),
+          updatedAt: receipt.updatedAt.toISOString(),
+          sectionName: ticket.section.name,
+          requesterName: ticket.requester.fullName,
+          purpose: ticket.purpose,
+          // Explicitly serialize the nested ticket to avoid Decimal crash
+          ticket: {
+            ...ticket,
+            budgetAmount: Number(ticket.budgetAmount),
+            createdAt: ticket.createdAt.toISOString(),
+            updatedAt: ticket.updatedAt.toISOString(),
+            targetDate: ticket.targetDate.toISOString(),
+            receipts: (ticket.receipts || []).map((tr: any) => ({
+              ...tr,
+              amount: Number(tr.amount),
+              date: tr.date.toISOString(),
+              createdAt: tr.createdAt.toISOString(),
+              updatedAt: tr.updatedAt.toISOString(),
+            }))
+          }
+        }
+      }),
     }
   } catch (error) {
     console.error("Get pokladna semester data error:", error)

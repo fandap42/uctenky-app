@@ -3,12 +3,12 @@
 import { useState, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { updateTransactionReceipt } from "@/lib/actions/transactions"
+import { uploadReceipt } from "@/lib/actions/receipts"
 import { validateReceiptFile, isHeicFile, convertHeicToJpeg } from "@/lib/utils/file-validator"
 import { MESSAGES } from "@/lib/constants/messages"
 
 export interface UseReceiptUploadOptions {
-  transactionId: string
+  ticketId: string
   onSuccess?: () => void
 }
 
@@ -18,12 +18,12 @@ export interface ReceiptUploadState {
   uploading: boolean
   converting: boolean
   progress: number
-  finalAmount: string
+  amount: string
   store: string
-  purchaseDate: string
+  date: string
 }
 
-export function useReceiptUpload({ transactionId, onSuccess }: UseReceiptUploadOptions) {
+export function useReceiptUpload({ ticketId, onSuccess }: UseReceiptUploadOptions) {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -33,9 +33,9 @@ export function useReceiptUpload({ transactionId, onSuccess }: UseReceiptUploadO
     uploading: false,
     converting: false,
     progress: 0,
-    finalAmount: "",
+    amount: "",
     store: "",
-    purchaseDate: new Date().toISOString().split('T')[0],
+    date: new Date().toISOString().split('T')[0],
   })
 
   const updateState = useCallback((updates: Partial<ReceiptUploadState>) => {
@@ -52,9 +52,9 @@ export function useReceiptUpload({ transactionId, onSuccess }: UseReceiptUploadO
       uploading: false,
       converting: false,
       progress: 0,
-      finalAmount: "",
+      amount: "",
       store: "",
-      purchaseDate: new Date().toISOString().split('T')[0],
+      date: new Date().toISOString().split('T')[0],
     })
   }, [state.preview])
 
@@ -106,31 +106,14 @@ export function useReceiptUpload({ transactionId, onSuccess }: UseReceiptUploadO
     try {
       const formData = new FormData()
       formData.append("file", state.file)
-      formData.append("transactionId", transactionId)
+      formData.append("ticketId", ticketId)
+      formData.append("store", state.store)
+      formData.append("amount", state.amount)
+      formData.append("date", state.date)
 
-      updateState({ progress: 30 })
+      updateState({ progress: 50 })
 
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || MESSAGES.UPLOAD.UPLOAD_FAILED)
-      }
-
-      updateState({ progress: 70 })
-
-      const { url } = await response.json()
-
-      const result = await updateTransactionReceipt(
-        transactionId,
-        url,
-        state.finalAmount ? parseFloat(state.finalAmount) : undefined,
-        state.store || undefined,
-        state.purchaseDate ? new Date(state.purchaseDate) : undefined
-      )
+      const result = await uploadReceipt(formData)
 
       updateState({ progress: 100 })
 
@@ -147,7 +130,7 @@ export function useReceiptUpload({ transactionId, onSuccess }: UseReceiptUploadO
     } finally {
       resetState()
     }
-  }, [state.file, state.finalAmount, state.store, state.purchaseDate, transactionId, updateState, resetState, onSuccess, router])
+  }, [state.file, state.amount, state.store, state.date, ticketId, updateState, resetState, onSuccess, router])
 
   return {
     state,

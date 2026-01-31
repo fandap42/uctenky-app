@@ -66,8 +66,8 @@ export function DepositDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
-          Vložit vklad
+        <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-tight h-11 px-6 rounded-2xl shadow-lg shadow-primary/20">
+          Nový vklad
         </Button>
       </DialogTrigger>
       <DialogContent className="bg-card border-border sm:max-w-[425px] rounded-[2.5rem]">

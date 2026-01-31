@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { updateTransactionPaidStatus } from "@/lib/actions/transactions"
+import { toggleReceiptPaid } from "@/lib/actions/receipts"
 import { toast } from "sonner"
 
 interface PaidStatusSelectProps {
@@ -31,7 +31,7 @@ export function PaidStatusSelect({
   async function handleToggle(value: string) {
     const checked = value === "paid"
     setIsLoading(true)
-    const result = await updateTransactionPaidStatus(transactionId, checked)
+    const result = await toggleReceiptPaid(transactionId, checked)
 
     if (result.error) {
       toast.error(result.error)

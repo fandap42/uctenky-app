@@ -13,6 +13,8 @@ import { CashRegisterExport } from "@/components/pokladna/cash-register-export"
 import { TablePagination } from "@/components/ui/table-pagination"
 import { getPokladnaSemesterData } from "@/lib/actions/cash-register"
 import { CollapsibleSemester } from "@/components/dashboard/collapsible-semester"
+import { TicketDetailDialog } from "@/components/dashboard/TicketDetailDialog"
+import { useSession } from "next-auth/react"
 
 interface PokladnaClientProps {
   initialBalance: number
@@ -28,7 +30,7 @@ const MONTH_NAMES = [
   "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec"
 ]
 
-function MonthlyPokladnaCard({ group }: { group: any }) {
+function MonthlyPokladnaCard({ group, onTicketClick }: { group: any, onTicketClick?: (ticket: any) => void }) {
   const [pageSize, setPageSize] = useState<number | "all">(10)
   const [currentPage, setCurrentPage] = useState(1)
 
@@ -63,6 +65,7 @@ function MonthlyPokladnaCard({ group }: { group: any }) {
           deposits={group.deposits} 
           pageSize={pageSize}
           currentPage={currentPage}
+          onTicketClick={onTicketClick}
         />
         {totalItems > 0 && (
           <TablePagination
@@ -93,10 +96,19 @@ export function PokladnaClient({
   const [showCashOnHand, setShowCashOnHand] = useState(false)
   const [showDebtHistory, setShowDebtHistory] = useState(false)
   const [showCashHistory, setShowCashHistory] = useState(false)
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null)
+  const { data: session } = useSession()
+
+  const selectedTicket = useMemo(() => {
+    if (!selectedTicketId) return null
+    return registerData.receipts.find((r: any) => r.ticket?.id === selectedTicketId)?.ticket || null
+  }, [selectedTicketId, registerData.receipts])
 
   const renderSemesterContent = (data: any) => {
-    // data contains openingBalance, deposits, transactions
-    const { openingBalance, deposits, transactions } = data
+    // data contains openingBalance, deposits, and either transactions or receipts
+    const { openingBalance, deposits } = data
+    // Handle both naming conventions (server returns receipts, client prop expects transactions)
+    const transactions = data.transactions || data.receipts || []
     
     // Monthly grouping within the semester
     const monthlyGroups: Record<string, {
@@ -111,15 +123,26 @@ export function PokladnaClient({
     }> = {}
 
     const allData = [
-      ...transactions.map((t: any) => ({ ...t, displayDate: new Date(t.dueDate || t.createdAt), type: 'TR', amount: -(t.finalAmount || t.estimatedAmount) })),
-      ...deposits.map((d: any) => ({ ...d, displayDate: new Date(d.date), type: 'DEP', amount: d.amount }))
+      ...transactions.map((t: any) => ({ 
+        ...t, 
+        displayDate: new Date(t.date || t.dueDate || t.createdAt), 
+        type: 'TR', 
+        // Handle both Receipt (amount) and older Ticket (finalAmount/estimatedAmount) structures
+        amount: -Number(t.amount || t.finalAmount || t.estimatedAmount || 0) 
+      })),
+      ...deposits.map((d: any) => ({ 
+        ...d, 
+        displayDate: new Date(d.date), 
+        type: 'DEP', 
+        amount: Number(d.amount) 
+      }))
     ].sort((a, b) => a.displayDate.getTime() - b.displayDate.getTime())
 
-    let runningBalance = openingBalance
+    let runningBalance = Number(openingBalance)
     
     allData.forEach(item => {
       const startBalance = runningBalance
-      runningBalance += Number(item.amount)
+      runningBalance += item.amount
       
       const date = item.displayDate
       const month = date.getMonth()
@@ -153,7 +176,11 @@ export function PokladnaClient({
     return (
       <div className="space-y-12">
         {sortedMonths.map((group) => (
-          <MonthlyPokladnaCard key={`${group.year}-${group.monthName}`} group={group} />
+          <MonthlyPokladnaCard 
+            key={`${group.year}-${group.monthName}`} 
+            group={group} 
+            onTicketClick={(ticket) => setSelectedTicketId(ticket.id)}
+          />
         ))}
       </div>
     )
@@ -315,6 +342,14 @@ export function PokladnaClient({
         title="Historie hotovosti u pokladníka"
         transactions={registerData.cashOnHand}
         type="cash"
+      />
+
+      <TicketDetailDialog 
+        ticket={selectedTicket}
+        open={!!selectedTicketId}
+        onOpenChange={(open) => !open && setSelectedTicketId(null)}
+        currentUserRole={session?.user?.role || "MEMBER"}
+        currentUserId={session?.user?.id || ""}
       />
     </div>
   )

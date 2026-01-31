@@ -9,18 +9,18 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { ImageIcon, Download, ExternalLink, Loader2 } from "lucide-react"
+import { ImageIcon, Download, ExternalLink, Loader2, AlertCircle } from "lucide-react"
 
 interface ReceiptViewDialogProps {
   transactionId: string
   purpose: string
 }
 
-export function ReceiptViewDialog({ transactionId, purpose }: ReceiptViewDialogProps) {
+export function ReceiptViewDialog({ transactionId: receiptId, purpose }: ReceiptViewDialogProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
-  const imageUrl = `/api/receipts/view?id=${transactionId}`
+  const imageUrl = `/api/receipts/view?id=${receiptId}`
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -46,7 +46,7 @@ export function ReceiptViewDialog({ transactionId, purpose }: ReceiptViewDialogP
               className="h-8 gap-2 text-xs border-border"
               asChild
             >
-              <a href={imageUrl} download={`uctenka-${transactionId}.png`}>
+              <a href={imageUrl} download={`uctenka-${receiptId}.png`}>
                 <Download className="w-3.5 h-3.5" />
                 Stáhnout
               </a>
