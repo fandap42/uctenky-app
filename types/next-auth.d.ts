@@ -11,8 +11,22 @@ declare module "next-auth" {
   }
 
   interface User extends DefaultUser {
-    role: string
-    sectionId: string | null
+    role?: string
+    sectionId?: string | null
+  }
+
+  interface AdapterUser extends User {
+    role?: string
+    sectionId?: string | null
+  }
+
+  interface Profile {
+    ok?: boolean
+    team_id?: string
+    team?: string
+    user_id?: string
+    user?: string
+    groups?: string[]
   }
 }
 
