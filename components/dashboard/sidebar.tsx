@@ -18,6 +18,7 @@ import {
 } from "lucide-react"
 import { signOut, useSession } from "next-auth/react"
 import { isHeadRole, isAdmin } from "@/lib/utils/roles"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 interface SidebarProps {
   isOpen: boolean
@@ -76,18 +77,21 @@ export function Sidebar({ isOpen, onClose, onNavClick }: SidebarProps) {
         <div className="h-20 flex items-center justify-between px-6 border-b border-border">
           <Link href="/dashboard" className="flex items-center gap-2" onClick={handleNavClick}>
             <div className="flex items-center">
-              <span className="text-3xl font-black text-[#000000]">4</span>
+              <span className="text-3xl font-black text-foreground">4</span>
               <span className="text-3xl font-black text-primary">fis</span>
             </div>
           </Link>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden text-muted-foreground hover:text-foreground"
-            onClick={onClose}
-          >
-            <Menu className="w-6 h-6" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden text-muted-foreground hover:text-foreground"
+              onClick={onClose}
+            >
+              <Menu className="w-6 h-6" />
+            </Button>
+          </div>
         </div>
 
         {/* Navigation */}

@@ -20,10 +20,10 @@ interface TicketKanbanProps {
 }
 
 const COLUMNS: { label: string; status: TicketStatus; color: string }[] = [
-  { label: "Čeká na schválení", status: "PENDING_APPROVAL", color: "bg-amber-500/10 border-amber-500/20" },
-  { label: "Schváleno", status: "APPROVED", color: "bg-blue-500/10 border-blue-500/20" },
-  { label: "Ověřování", status: "VERIFICATION", color: "bg-purple-500/10 border-purple-500/20" },
-  { label: "Hotovo", status: "DONE", color: "bg-emerald-500/10 border-emerald-500/20" },
+  { label: "Čeká na schválení", status: "PENDING_APPROVAL", color: "bg-status-pending/10 border-status-pending/20" },
+  { label: "Schváleno", status: "APPROVED", color: "bg-status-approved/10 border-status-approved/20" },
+  { label: "Ověřování", status: "VERIFICATION", color: "bg-status-verification/10 border-status-verification/20" },
+  { label: "Hotovo", status: "DONE", color: "bg-status-success/10 border-status-success/20" },
 ]
 
 export const TicketKanban = memo(function TicketKanban({ tickets, onTicketClick }: TicketKanbanProps) {
@@ -50,7 +50,7 @@ export const TicketKanban = memo(function TicketKanban({ tickets, onTicketClick 
       {columnsWithTickets.map((col) => (
         <div key={col.status} className="flex flex-col gap-4">
           <div className="flex items-center justify-between px-2">
-            <h3 className="font-bold text-sm uppercase tracking-wider text-muted-foreground">
+            <h3 className="table-header-cell">
               {col.label}
             </h3>
             <Badge variant="secondary" className="rounded-full px-2 py-0 text-[10px]">
@@ -89,7 +89,7 @@ const TicketCard = memo(function TicketCard({ ticket, onClick }: { ticket: Ticke
       onClick={() => onClick(ticket.id)}
       className={cn(
         "p-4 cursor-pointer hover:shadow-md transition-all rounded-[1.5rem] border-border/50",
-        isDoneAndUnpaid && "border-orange-500 border-2 shadow-orange-500/10"
+        isDoneAndUnpaid && "border-status-pending border-2 shadow-status-pending/10"
       )}
     >
       <div className="space-y-3">
@@ -108,7 +108,7 @@ const TicketCard = memo(function TicketCard({ ticket, onClick }: { ticket: Ticke
 
         <div className="pt-2 border-t border-border/50 flex justify-between items-center">
            {isDoneAndUnpaid && (
-             <span className="text-[10px] font-bold text-orange-600 uppercase tracking-tighter">Čeká na proplacení</span>
+             <span className="text-[10px] font-bold text-status-pending uppercase tracking-tighter">Čeká na proplacení</span>
            )}
            <div className="ml-auto flex items-baseline gap-0.5">
              <span className="text-xs font-black text-foreground">{ticket.budgetAmount.toLocaleString()}</span>

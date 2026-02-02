@@ -201,85 +201,83 @@
 /* ============================================
    DARK MODE OVERRIDES
    ============================================ */
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Canvas: Dark */
-    --background: oklch(0.15 0.02 260);
-    --foreground: oklch(0.95 0.01 260);
-    
-    /* Surfaces */
-    --card: oklch(0.18 0.02 260);
-    --card-foreground: oklch(0.95 0.01 260);
-    
-    --popover: oklch(0.18 0.02 260);
-    --popover-foreground: oklch(0.95 0.01 260);
-    
-    /* Primary: 4FIS Mint (slightly adjusted for dark) */
-    --primary: oklch(0.75 0.20 163);
-    --primary-foreground: oklch(0.15 0.02 260);
-    
-    /* Secondary: 4FIS Vibrant Blue */
-    --secondary: oklch(0.60 0.22 264);
-    --secondary-foreground: oklch(0.95 0.01 264);
-    
-    /* Muted */
-    --muted: oklch(0.25 0.02 260);
-    --muted-foreground: oklch(0.65 0.03 260);
-    
-    /* Accent */
-    --accent: oklch(0.30 0.05 285);
-    --accent-foreground: oklch(0.80 0.10 285);
-    
-    /* Semantic */
-    --destructive: oklch(0.55 0.22 25);
-    --destructive-foreground: oklch(0.95 0 0);
-    
-    /* Borders */
-    --border: oklch(0.28 0.02 260);
-    --input: oklch(0.28 0.02 260);
-    --ring: oklch(0.75 0.20 163);
-    
-    /* Sidebar */
-    --sidebar: oklch(0.18 0.02 260);
-    --sidebar-foreground: oklch(0.95 0.01 260);
-    --sidebar-primary: oklch(0.75 0.20 163);
-    --sidebar-primary-foreground: oklch(0.15 0.02 260);
-    --sidebar-accent: oklch(0.25 0.15 163 / 0.2);
-    --sidebar-accent-foreground: oklch(0.95 0.01 260);
-    --sidebar-border: oklch(0.28 0.02 260);
-    --sidebar-ring: oklch(0.75 0.20 163);
-    
-    /* === STATUS COLORS (Dark Mode) === */
-    --status-pending: oklch(0.70 0.15 85);
-    --status-pending-foreground: oklch(0.15 0.05 85);
-    --status-pending-muted: oklch(0.70 0.15 85 / 0.15);
-    
-    --status-approved: oklch(0.60 0.18 264);
-    --status-approved-foreground: oklch(0.95 0.01 264);
-    --status-approved-muted: oklch(0.60 0.18 264 / 0.15);
-    
-    --status-verification: oklch(0.60 0.18 290);
-    --status-verification-foreground: oklch(0.95 0.01 290);
-    --status-verification-muted: oklch(0.60 0.18 290 / 0.15);
-    
-    --status-success: oklch(0.60 0.16 150);
-    --status-success-foreground: oklch(0.95 0.01 150);
-    --status-success-muted: oklch(0.60 0.16 150 / 0.15);
-    
-    /* === FUNCTIONAL COLORS (Dark Mode) === */
-    --paid: oklch(0.60 0.16 150);
-    --paid-foreground: oklch(0.95 0.01 150);
-    --unpaid: oklch(0.70 0.15 50);
-    --unpaid-foreground: oklch(0.15 0.05 50);
-    --filed: oklch(0.55 0.14 150);
-    --filed-foreground: oklch(0.95 0.01 150);
-    
-    /* === EXPENSE TYPE COLORS (Dark Mode) === */
-    --expense-material: oklch(0.55 0.18 280);
-    --expense-material-foreground: oklch(0.95 0.01 280);
-    --expense-service: oklch(0.60 0.18 264);
-    --expense-service-foreground: oklch(0.95 0.01 264);
-  }
+.dark {
+  /* Canvas: Dark */
+  --background: oklch(0.15 0.02 260);
+  --foreground: oklch(0.95 0.01 260);
+  
+  /* Surfaces */
+  --card: oklch(0.18 0.02 260);
+  --card-foreground: oklch(0.95 0.01 260);
+  
+  --popover: oklch(0.18 0.02 260);
+  --popover-foreground: oklch(0.95 0.01 260);
+  
+  /* Primary: 4FIS Mint (slightly adjusted for dark) */
+  --primary: oklch(0.75 0.20 163);
+  --primary-foreground: oklch(0.15 0.02 260);
+  
+  /* Secondary: 4FIS Vibrant Blue */
+  --secondary: oklch(0.60 0.22 264);
+  --secondary-foreground: oklch(0.95 0.01 264);
+  
+  /* Muted */
+  --muted: oklch(0.25 0.02 260);
+  --muted-foreground: oklch(0.65 0.03 260);
+  
+  /* Accent */
+  --accent: oklch(0.30 0.05 285);
+  --accent-foreground: oklch(0.80 0.10 285);
+  
+  /* Semantic */
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.95 0 0);
+  
+  /* Borders */
+  --border: oklch(0.28 0.02 260);
+  --input: oklch(0.28 0.02 260);
+  --ring: oklch(0.75 0.20 163);
+  
+  /* Sidebar */
+  --sidebar: oklch(0.18 0.02 260);
+  --sidebar-foreground: oklch(0.95 0.01 260);
+  --sidebar-primary: oklch(0.75 0.20 163);
+  --sidebar-primary-foreground: oklch(0.15 0.02 260);
+  --sidebar-accent: oklch(0.25 0.15 163 / 0.2);
+  --sidebar-accent-foreground: oklch(0.95 0.01 260);
+  --sidebar-border: oklch(0.28 0.02 260);
+  --sidebar-ring: oklch(0.75 0.20 163);
+  
+  /* === STATUS COLORS (Dark Mode) === */
+  --status-pending: oklch(0.70 0.15 85);
+  --status-pending-foreground: oklch(0.15 0.05 85);
+  --status-pending-muted: oklch(0.70 0.15 85 / 0.15);
+  
+  --status-approved: oklch(0.60 0.18 264);
+  --status-approved-foreground: oklch(0.95 0.01 264);
+  --status-approved-muted: oklch(0.60 0.18 264 / 0.15);
+  
+  --status-verification: oklch(0.60 0.18 290);
+  --status-verification-foreground: oklch(0.95 0.01 290);
+  --status-verification-muted: oklch(0.60 0.18 290 / 0.15);
+  
+  --status-success: oklch(0.60 0.16 150);
+  --status-success-foreground: oklch(0.95 0.01 150);
+  --status-success-muted: oklch(0.60 0.16 150 / 0.15);
+  
+  /* === FUNCTIONAL COLORS (Dark Mode) === */
+  --paid: oklch(0.60 0.16 150);
+  --paid-foreground: oklch(0.95 0.01 150);
+  --unpaid: oklch(0.70 0.15 50);
+  --unpaid-foreground: oklch(0.15 0.05 50);
+  --filed: oklch(0.55 0.14 150);
+  --filed-foreground: oklch(0.95 0.01 150);
+  
+  /* === EXPENSE TYPE COLORS (Dark Mode) === */
+  --expense-material: oklch(0.55 0.18 280);
+  --expense-material-foreground: oklch(0.95 0.01 280);
+  --expense-service: oklch(0.60 0.18 264);
+  --expense-service-foreground: oklch(0.95 0.01 264);
 }
 
 @layer base {
@@ -355,7 +353,12 @@
   
   /* Table header row styling */
   .table-header-cell {
-    @apply py-3 px-4 text-label;
+    @apply py-3 px-4;
+    font-size: 0.625rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    @apply text-muted-foreground;
   }
 }
 

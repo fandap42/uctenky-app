@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { StatusBadge, mapTicketStatusToBadge } from "@/components/ui/status-badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getSemester, sortSemesterKeys, monthNames } from "@/lib/utils/semesters"
 import { FileText, ImageIcon, StickyNote } from "lucide-react"
@@ -66,23 +67,7 @@ interface StructuredListProps {
   showNotes?: boolean
 }
 
-const statusColors: Record<string, string> = {
-  DRAFT: "bg-muted",
-  PENDING: "bg-[oklch(0.75_0.15_85)]",
-  APPROVED: "bg-[oklch(0.60_0.16_150)]",
-  PURCHASED: "bg-[oklch(0.55_0.15_290)]",
-  VERIFIED: "bg-[oklch(0.60_0.16_150)]",
-  REJECTED: "bg-destructive",
-}
 
-const statusLabels: Record<string, string> = {
-  DRAFT: "Koncept",
-  PENDING: "Čeká",
-  APPROVED: "Schváleno",
-  PURCHASED: "Čeká na ověření",
-  VERIFIED: "Účtenka",
-  REJECTED: "Zamítnuto",
-}
 
 function MonthlyTransactionCard({ 
   monthTxs, 
@@ -118,19 +103,19 @@ function MonthlyTransactionCard({
       <CardContent className="p-0 overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow className="border-border hover:bg-transparent text-xs font-black uppercase tracking-widest text-muted-foreground">
-              {showRequester && <TableHead className="py-2 px-4">Žadatel</TableHead>}
-              {showSection && <TableHead className="py-2 px-4">Sekce</TableHead>}
-              <TableHead className="py-2 px-4">Datum</TableHead>
-              <TableHead className="py-2 px-4">Účel</TableHead>
-              <TableHead className="py-2 px-4">Obchod</TableHead>
-              <TableHead className="py-2 px-4">Částka</TableHead>
-              <TableHead className="py-2 px-4">Stav</TableHead>
-              {isAdmin && <TableHead className="py-2 px-4">Typ</TableHead>}
-              {isAdmin && <TableHead className="py-2 px-4">Proplaceno</TableHead>}
-              {isAdmin && <TableHead className="py-2 px-4">Založeno</TableHead>}
-              <TableHead className="py-2 px-4 text-center w-[80px]">Přílohy</TableHead>
-              {showActions && <TableHead className="py-2 px-4 text-right">Akce</TableHead>}
+            <TableRow className="border-border hover:bg-transparent">
+              {showRequester && <TableHead className="table-header-cell">Žadatel</TableHead>}
+              {showSection && <TableHead className="table-header-cell">Sekce</TableHead>}
+              <TableHead className="table-header-cell">Datum</TableHead>
+              <TableHead className="table-header-cell">Účel</TableHead>
+              <TableHead className="table-header-cell">Obchod</TableHead>
+              <TableHead className="table-header-cell">Částka</TableHead>
+              <TableHead className="table-header-cell text-center">Stav</TableHead>
+              {isAdmin && <TableHead className="table-header-cell text-center">Typ</TableHead>}
+              {isAdmin && <TableHead className="table-header-cell text-center">Proplaceno</TableHead>}
+              {isAdmin && <TableHead className="table-header-cell text-center">Založeno</TableHead>}
+              <TableHead className="table-header-cell text-center w-[80px]">Přílohy</TableHead>
+              {showActions && <TableHead className="table-header-cell text-right">Akce</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -158,10 +143,8 @@ function MonthlyTransactionCard({
                  <TableCell className="py-2 text-sm text-foreground whitespace-nowrap tabular-nums font-semibold">
                    {(tx.amount || tx.budgetAmount || 0).toLocaleString("cs-CZ")} Kč
                  </TableCell>
-                 <TableCell className="py-2">
-                   <Badge className={`${statusColors[tx.status] || "bg-muted"} text-[10px] px-1.5 h-5 text-white uppercase tracking-wider font-bold`}>
-                     {statusLabels[tx.status] || tx.status}
-                   </Badge>
+                 <TableCell className="py-2 text-center">
+                    <StatusBadge status={mapTicketStatusToBadge(tx.status)} size="sm" />
                  </TableCell>
                 {isAdmin && (
                   <TableCell className="py-2">

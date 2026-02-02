@@ -20,10 +20,10 @@ interface TicketMobileListProps {
 }
 
 const FILTERS: { label: string; status: TicketStatus; color: string; bg: string }[] = [
-  { label: "Čeká", status: "PENDING_APPROVAL", color: "bg-amber-500", bg: "bg-amber-500/10 text-amber-600" },
-  { label: "Schváleno", status: "APPROVED", color: "bg-blue-500", bg: "bg-blue-500/10 text-blue-600" },
-  { label: "Ověření", status: "VERIFICATION", color: "bg-purple-500", bg: "bg-purple-500/10 text-purple-600" },
-  { label: "Hotovo", status: "DONE", color: "bg-emerald-500", bg: "bg-emerald-500/10 text-emerald-600" },
+  { label: "Čeká", status: "PENDING_APPROVAL", color: "bg-status-pending", bg: "bg-status-pending/10 text-status-pending" },
+  { label: "Schváleno", status: "APPROVED", color: "bg-status-approved", bg: "bg-status-approved/10 text-status-success" },
+  { label: "Ověření", status: "VERIFICATION", color: "bg-status-verification", bg: "bg-status-verification/10 text-status-verification" },
+  { label: "Hotovo", status: "DONE", color: "bg-status-success", bg: "bg-status-success/10 text-status-success" },
 ]
 
 export const TicketMobileList = memo(function TicketMobileList({ tickets, onTicketClick }: TicketMobileListProps) {
@@ -107,7 +107,7 @@ const TicketCardItem = memo(function TicketCardItem({ ticket, onClick }: { ticke
       onClick={onClick}
       className={cn(
         "p-6 relative overflow-hidden rounded-[2.5rem] border-border/50 shadow-sm w-full transition-all active:scale-[0.98] active:bg-muted/50",
-        isUnpaidDone && "border-orange-500 border-2"
+        isUnpaidDone && "border-status-pending border-2"
       )}
     >
       <div className="absolute top-1/2 -translate-y-1/2 right-0 p-5">
@@ -133,8 +133,8 @@ const TicketCardItem = memo(function TicketCardItem({ ticket, onClick }: { ticke
 
         {/* Unpaid Warning */}
         {isUnpaidDone && (
-          <div className="pt-3 border-t border-orange-100 flex justify-end">
-             <span className="text-[10px] font-black text-orange-600 uppercase border border-orange-200 bg-orange-50 px-2 py-1 rounded-lg animate-pulse">
+          <div className="pt-3 border-t border-status-pending/20 flex justify-end">
+             <span className="text-[10px] font-black text-status-pending uppercase border border-status-pending/20 bg-status-pending/10 px-2 py-1 rounded-lg animate-pulse">
                Čeká na proplacení
              </span>
           </div>

@@ -15,7 +15,9 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
-import { Checkbox } from "@/components/ui/checkbox"
+import { StatusBadge, mapTicketStatusToBadge } from "@/components/ui/status-badge"
+import { FunctionalCheckbox } from "@/components/ui/functional-checkbox"
+import { PaymentStatusIndicator } from "@/components/ui/payment-status-indicator"
 import { 
   Table, 
   TableBody, 
@@ -260,7 +262,7 @@ export function TicketDetailDialog({
                   <Badge variant="outline" className="rounded-md bg-muted/50 font-bold px-1.5 py-0.5 text-[10px] sm:text-[10px] uppercase tracking-wider">
                     {ticket.section.name}
                   </Badge>
-                  <StatusBadge status={ticket.status} />
+                  <StatusBadge status={mapTicketStatusToBadge(ticket.status)} />
                 </div>
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2">
@@ -302,7 +304,7 @@ export function TicketDetailDialog({
                      <span className="text-muted-foreground text-[10px] sm:text-xs font-medium">/ {ticket.budgetAmount.toLocaleString()} Kč</span>
                    </div>
                  </div>
-                 <span className={cn("text-[10px] sm:text-xs font-black", isOverBudget ? "text-destructive" : "text-emerald-600")}>
+                 <span className={cn("text-[10px] sm:text-xs font-black", isOverBudget ? "text-destructive" : "text-status-success")}>
                     {Math.round(budgetProgress)}%
                  </span>
                </div>
@@ -310,7 +312,7 @@ export function TicketDetailDialog({
                   value={budgetProgress} 
                   className={cn(
                     "h-2 sm:h-2.5 rounded-full bg-muted/60 border border-muted", 
-                    isOverBudget ? "[&>div]:bg-destructive" : "[&>div]:bg-emerald-500"
+                    isOverBudget ? "[&>div]:bg-destructive" : "[&>div]:bg-status-success"
                   )} 
                 />
                 {isOverBudget && (
@@ -392,32 +394,26 @@ export function TicketDetailDialog({
                             <TableCell className="py-3 px-4 text-center">
                               {isAdmin ? (
                                 <div className="flex justify-center">
-                                  <Checkbox 
+                                  <FunctionalCheckbox 
+                                    variant="paid"
                                     checked={receipt.isPaid} 
-                                    onCheckedChange={(checked) => handleReceiptPaidToggle(receipt.id, !!checked)}
-                                    className="rounded h-4 w-4 border-muted-foreground/40 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
+                                    onCheckedChange={(checked: boolean) => handleReceiptPaidToggle(receipt.id, !!checked)}
                                     disabled={isRejected}
                                   />
                                 </div>
                               ) : (
-                                receipt.isPaid ? (
-                                  <div className="flex justify-center">
-                                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" title="Proplaceno" />
-                                  </div>
-                                ) : (
-                                  <div className="flex justify-center">
-                                    <div className="w-2.5 h-2.5 rounded-full bg-orange-300" title="Neuhrazeno" />
-                                  </div>
-                                )
+                                <div className="flex justify-center">
+                                  <PaymentStatusIndicator isPaid={receipt.isPaid} />
+                                </div>
                               )}
                             </TableCell>
                             {isAdmin && (
                               <TableCell className="py-3 px-4 text-center">
                                 <div className="flex justify-center">
-                                  <Checkbox 
+                                  <FunctionalCheckbox 
+                                    variant="filed"
                                     checked={receipt.isFiled} 
-                                    onCheckedChange={(checked) => handleReceiptFiledToggle(receipt.id, !!checked)}
-                                    className="rounded h-4 w-4 border-muted-foreground/40 data-[state=checked]:bg-[oklch(0.60_0.16_150)] data-[state=checked]:border-[oklch(0.60_0.16_150)]"
+                                    onCheckedChange={(checked: boolean) => handleReceiptFiledToggle(receipt.id, !!checked)}
                                     disabled={isRejected}
                                   />
                                 </div>
@@ -489,15 +485,9 @@ export function TicketDetailDialog({
                               </div>
                             </TableCell>
                             <TableCell className="py-3 px-3 text-center">
-                              {receipt.isPaid ? (
-                                <div className="flex justify-center">
-                                  <div className="w-3 h-3 rounded-full bg-emerald-500" title="Proplaceno" />
-                                </div>
-                              ) : (
-                                <div className="flex justify-center">
-                                  <div className="w-3 h-3 rounded-full bg-orange-300" title="Neuhrazeno" />
-                                </div>
-                              )}
+                              <div className="flex justify-center">
+                                <PaymentStatusIndicator isPaid={receipt.isPaid} size="lg" />
+                              </div>
                             </TableCell>
                             <TableCell className="text-right py-3 px-3">
                               <div className="flex items-center justify-end gap-1">
@@ -566,7 +556,7 @@ export function TicketDetailDialog({
                         </Button>
                         <Button 
                           onClick={() => handleStatusUpdate("APPROVED")} 
-                          className="h-8 sm:h-9 px-3.5 sm:px-4 text-[10px] sm:text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white"
+                          className="h-8 sm:h-9 px-3.5 sm:px-4 text-[10px] sm:text-xs font-bold bg-status-success hover:bg-status-success/90 text-status-success-foreground"
                           disabled={loading}
                         >
                           Schválit
@@ -577,7 +567,7 @@ export function TicketDetailDialog({
                       <>
                         <Button 
                             onClick={() => handleStatusUpdate("APPROVED")} 
-                            className="h-8 sm:h-9 px-2.5 sm:px-3 text-[10px] sm:text-xs font-bold bg-amber-500 hover:bg-amber-600 text-amber-950"
+                            className="h-8 sm:h-9 px-2.5 sm:px-3 text-[10px] sm:text-xs font-bold bg-status-pending hover:bg-status-pending/90 text-status-pending-foreground"
                             disabled={loading}
                           >
                             Zpět
@@ -594,7 +584,7 @@ export function TicketDetailDialog({
                     {ticket.status === "DONE" && (
                       <Button 
                         variant="outline" 
-                        className="h-8 sm:h-9 px-3.5 sm:px-4 text-[10px] sm:text-xs font-bold text-emerald-600 border-emerald-500/30 hover:bg-emerald-50"
+                        className="h-8 sm:h-9 px-3.5 sm:px-4 text-[10px] sm:text-xs font-bold text-status-success border-status-success/30 hover:bg-status-success-muted"
                         onClick={handlePayAll}
                         disabled={loading}
                       >
@@ -607,7 +597,7 @@ export function TicketDetailDialog({
                 {isOwner && ticket.status === "APPROVED" && (
                     <Button 
                       onClick={handleSubmitForVerification}
-                      className="h-9 sm:h-12 px-6 sm:px-8 text-[11px] sm:text-base font-black bg-purple-600 hover:bg-purple-700 text-white shadow-xl shadow-purple-600/30 uppercase tracking-widest ring-2 ring-purple-600/50 ring-offset-2 ring-offset-background"
+                      className="h-9 sm:h-12 px-6 sm:px-8 text-[11px] sm:text-base font-black bg-status-verification hover:bg-status-verification/90 text-status-verification-foreground shadow-xl shadow-status-verification/30 uppercase tracking-widest ring-2 ring-status-verification/50 ring-offset-2 ring-offset-background"
                       disabled={loading || receipts.length === 0}
                     >
                       Odeslat ke schválení
@@ -649,32 +639,13 @@ export function TicketDetailDialog({
   )
 }
 
-function StatusBadge({ status }: { status: TicketStatus }) {
-  switch (status) {
-    case "PENDING_APPROVAL":
-      return <Badge className="bg-amber-500/10 text-amber-700 border-amber-500/20 shadow-none px-3 font-bold">Čeká na schválení</Badge>
-    case "APPROVED":
-      return <Badge className="bg-blue-500/10 text-blue-700 border-blue-500/20 shadow-none px-3 font-bold">Schváleno</Badge>
-    case "VERIFICATION":
-      return <Badge className="bg-purple-500/10 text-purple-700 border-purple-500/20 shadow-none px-3 font-bold">Ověřování</Badge>
-    case "DONE":
-      return <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 shadow-none px-3 font-bold">Hotovo</Badge>
-    case "REJECTED":
-      return <Badge className="bg-destructive/10 text-destructive border-destructive/20 shadow-none px-3 font-bold text-xs">Zamítnuto</Badge>
-    default:
-      return <Badge>{status}</Badge>
-  }
-}
-
 function ReceiptStatusBadge({ status }: { status: ReceiptStatus }) {
   switch (status) {
     case "APPROVED":
-      return <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+      return <CheckCircle2 className="w-3.5 h-3.5 text-status-success" />
     case "REJECTED":
       return <XCircle className="w-3.5 h-3.5 text-destructive" />
     default:
       return <div className="w-3.5 h-3.5 rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" />
   }
 }
-
-

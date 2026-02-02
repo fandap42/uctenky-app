@@ -50,12 +50,12 @@ export function PaidStatusSelect({
       onValueChange={handleToggle}
       disabled={isLoading}
     >
-      <SelectTrigger className={`w-[140px] h-8 bg-background border-border text-xs ${isPaid ? "text-[oklch(0.60_0.16_150)]" : "text-[oklch(0.75_0.15_85)]"}`}>
+      <SelectTrigger className={`w-[140px] h-8 bg-background border-border text-xs ${isPaid ? "text-status-success" : "text-status-pending"}`}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent position="popper" className="bg-card border-border max-h-[none]">
-        <SelectItem value="unpaid" className="text-[oklch(0.75_0.15_85)]">Neproplaceno</SelectItem>
-        <SelectItem value="paid" className="text-[oklch(0.60_0.16_150)]">Proplaceno</SelectItem>
+        <SelectItem value="unpaid" className="text-status-pending">Neproplaceno</SelectItem>
+        <SelectItem value="paid" className="text-status-success">Proplaceno</SelectItem>
       </SelectContent>
     </Select>
   )
