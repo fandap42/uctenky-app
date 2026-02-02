@@ -44,6 +44,7 @@ import { ReceiptUploadForm } from "./ReceiptUploadForm"
 import { EditNoteDialog } from "./edit-note-dialog"
 import { EditTransactionDialog } from "./edit-transaction-dialog"
 import { EditReceiptDialog } from "./edit-receipt-dialog"
+import { ReceiptViewDialog } from "@/components/receipts/receipt-view-dialog"
 import { 
   updateReceiptStatus, 
   toggleReceiptPaid, 
@@ -140,6 +141,7 @@ export function TicketDetailDialog({
     if (result.success) {
       toast.success(`Stav žádosti byl změněn na ${status}`)
       window.dispatchEvent(new CustomEvent("app-data-refresh"))
+      onOpenChange(false)
       router.refresh()
     } else {
       toast.error(result.error)
@@ -153,6 +155,7 @@ export function TicketDetailDialog({
     if (result.success) {
       toast.success("Žádost byla odeslána k ověření")
       window.dispatchEvent(new CustomEvent("app-data-refresh"))
+      onOpenChange(false)
       router.refresh()
     } else {
       toast.error(result.error)
@@ -335,11 +338,11 @@ export function TicketDetailDialog({
                       <TableRow className="hover:bg-transparent border-border/60">
                         <TableHead className="py-3 px-4 font-bold text-[10px] uppercase tracking-wider text-muted-foreground">Datum / Obchod</TableHead>
                         <TableHead className="py-3 px-4 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-right w-[120px]">Částka</TableHead>
-                        <TableHead className="py-3 px-4 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center min-w-[120px]">Typ</TableHead>
+                        {isAdmin && <TableHead className="py-3 px-4 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center min-w-[120px]">Typ</TableHead>}
                         <TableHead className="py-3 px-4 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center w-[100px]">Přílohy</TableHead>
                         <TableHead className="py-3 px-4 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center w-[100px]">Proplaceno</TableHead>
-                        <TableHead className="py-3 px-4 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center w-[100px]">Založeno</TableHead>
-                        <TableHead className="py-3 px-4 text-right w-[100px]">Akce</TableHead>
+                        {isAdmin && <TableHead className="py-3 px-4 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-center w-[100px]">Založeno</TableHead>}
+                        <TableHead className="py-3 px-4 font-bold text-[10px] uppercase tracking-wider text-muted-foreground text-right w-[100px]">Akce</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -355,41 +358,35 @@ export function TicketDetailDialog({
                           >
                             <TableCell className="py-3 px-4">
                               <div className="flex flex-col">
-                                <span className={cn("font-semibold text-sm text-foreground truncate max-w-[160px]", isRejected && "line-through")}>{receipt.store}</span>
-                                <span className="text-[10px] font-medium text-muted-foreground">{new Date(receipt.date).toLocaleDateString("cs-CZ")}</span>
+                                <span className={cn("font-semibold text-sm text-foreground truncate max-w-[200px]", isRejected && "line-through")}>{receipt.store}</span>
+                                <span className="text-xs text-muted-foreground">{new Date(receipt.date).toLocaleDateString("cs-CZ")}</span>
                               </div>
                             </TableCell>
                             <TableCell className="py-3 px-4 text-right">
                               <span className={cn("font-bold tabular-nums text-sm", isRejected && "line-through")}>{receipt.amount.toLocaleString("cs-CZ")} Kč</span>
                             </TableCell>
-                            <TableCell className="py-3 px-4 text-center">
-                              {isAdmin ? (
-                                 <div className="flex justify-center">
-                                   <Select 
-                                     value={receipt.expenseType} 
-                                     onValueChange={(v) => handleExpenseTypeChange(receipt.id, v as ExpenseType)}
-                                   >
-                                     <SelectTrigger className="h-7 w-[110px] text-[10px] font-bold text-xs">
-                                       <SelectValue />
-                                     </SelectTrigger>
-                                     <SelectContent>
-                                       <SelectItem value="MATERIAL" className="text-xs">Materiál</SelectItem>
-                                       <SelectItem value="SERVICE" className="text-xs">Služba</SelectItem>
-                                     </SelectContent>
-                                   </Select>
-                                 </div>
-                              ) : (
-                                 <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-wider px-2 h-5 bg-muted text-muted-foreground border border-border/50 min-w-[80px] justify-center">
-                                   {receipt.expenseType === "MATERIAL" ? "Materiál" : "Služba"}
-                                 </Badge>
-                              )}
-                            </TableCell>
+                            {isAdmin && (
+                              <TableCell className="py-3 px-4 text-center">
+                                <div className="flex justify-center">
+                                  <Select 
+                                    value={receipt.expenseType} 
+                                    onValueChange={(v) => handleExpenseTypeChange(receipt.id, v as ExpenseType)}
+                                  >
+                                    <SelectTrigger className="h-7 w-[110px] text-xs font-medium">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="MATERIAL" className="text-xs">Materiál</SelectItem>
+                                      <SelectItem value="SERVICE" className="text-xs">Služba</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </TableCell>
+                            )}
                             <TableCell className="py-3 px-4 text-center">
                               <div className="flex items-center justify-center gap-3">
                                 {isAdmin && <EditNoteDialog receiptId={receipt.id} initialNote={receipt.note} />}
-                                <a href={`/api/receipts/view?id=${receipt.id}`} target="_blank" rel="noreferrer" className="text-emerald-500 hover:text-emerald-600 transition-colors">
-                                  <ImageIcon className="w-5 h-5" />
-                                </a>
+                                <ReceiptViewDialog transactionId={receipt.id} purpose={receipt.store} />
                               </div>
                             </TableCell>
                             <TableCell className="py-3 px-4 text-center">
@@ -414,8 +411,8 @@ export function TicketDetailDialog({
                                 )
                               )}
                             </TableCell>
-                             <TableCell className="py-3 px-4 text-center">
-                              {isAdmin ? (
+                            {isAdmin && (
+                              <TableCell className="py-3 px-4 text-center">
                                 <div className="flex justify-center">
                                   <Checkbox 
                                     checked={receipt.isFiled} 
@@ -424,18 +421,8 @@ export function TicketDetailDialog({
                                     disabled={isRejected}
                                   />
                                 </div>
-                              ) : (
-                                receipt.isFiled ? (
-                                  <div className="flex justify-center">
-                                    <FolderCheck className="w-5 h-5 text-[oklch(0.60_0.16_150)]" />
-                                  </div>
-                                ) : (
-                                  <div className="flex justify-center">
-                                    <FolderX className="w-5 h-5 text-muted-foreground/30" />
-                                  </div>
-                                )
-                              )}
-                            </TableCell>
+                              </TableCell>
+                            )}
                             <TableCell className="text-right py-3 px-4">
                               <div className="flex items-center justify-end gap-1">
                                 {isAdmin && <EditReceiptDialog receipt={receipt} />}
@@ -498,9 +485,7 @@ export function TicketDetailDialog({
                           )}
                            <div className="flex items-center gap-2">
                             {isAdmin && <EditNoteDialog receiptId={receipt.id} initialNote={receipt.note} />}
-                            <a href={`/api/receipts/view?id=${receipt.id}`} target="_blank" rel="noreferrer" className="text-emerald-500">
-                              <ImageIcon className="w-5 h-5" />
-                            </a>
+                            <ReceiptViewDialog transactionId={receipt.id} purpose={receipt.store} />
                             {isAdmin && (
                               <Checkbox 
                                 checked={receipt.isFiled} 

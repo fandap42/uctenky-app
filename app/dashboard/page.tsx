@@ -45,9 +45,6 @@ export default async function DashboardPage() {
           <h1 className="text-4xl font-black text-foreground mb-1 tracking-tight">
             Pracovní plocha
           </h1>
-          <p className="text-sm text-muted-foreground font-medium">
-            Správa vašich žádostí a účtenek v reálném čase.
-          </p>
         </div>
         <RequestForm sections={sections} />
       </div>

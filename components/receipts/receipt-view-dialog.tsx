@@ -33,7 +33,7 @@ export function ReceiptViewDialog({ transactionId: receiptId, purpose }: Receipt
           <ImageIcon className="w-4 h-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-[90vw] w-full max-h-[95vh] h-[95vh] flex flex-col p-4 bg-card border-border">
+      <DialogContent className="max-w-[800px] w-[95vw] aspect-[3/4] max-h-[90vh] flex flex-col p-4 bg-card border-border">
         <DialogHeader className="flex flex-row items-center justify-between pr-8 border-b border-border pb-3">
           <DialogTitle className="text-foreground flex items-center gap-2 truncate pr-4">
             <ImageIcon className="w-5 h-5 text-primary/70" />
