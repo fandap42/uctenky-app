@@ -116,17 +116,17 @@ const TicketCardItem = memo(function TicketCardItem({ ticket, onClick }: { ticke
 
       <div className="space-y-4 pr-6">
         {/* Row 1: Title + Amount */}
-        <div className="flex justify-between items-start">
-           <h4 className="font-bold text-lg leading-snug line-clamp-2 max-w-[65%] tracking-tight">{ticket.purpose}</h4>
-           <span className="text-xl font-black text-foreground tabular-nums">{ticket.budgetAmount.toLocaleString()} Kč</span>
+        <div className="flex justify-between items-start gap-2">
+           <h4 className="font-bold text-lg leading-snug line-clamp-2 min-w-0 flex-1 tracking-tight" title={ticket.purpose}>{ticket.purpose}</h4>
+           <span className="text-xl font-black text-foreground tabular-nums flex-shrink-0">{ticket.budgetAmount.toLocaleString()} Kč</span>
         </div>
         
         {/* Row 2: Metadata */}
         <div className="flex flex-wrap items-center gap-2 pt-1">
-          <Badge variant="secondary" className="text-[10px] font-bold h-7 px-3 bg-muted text-muted-foreground uppercase tracking-wider rounded-lg">
+          <Badge variant="secondary" className="text-[10px] font-bold h-7 px-3 bg-muted text-muted-foreground uppercase tracking-wider rounded-lg max-w-[120px] truncate flex-shrink-0" title={ticket.section.name}>
             {ticket.section.name}
           </Badge>
-          <span className="text-xs text-muted-foreground font-medium">
+          <span className="text-xs text-muted-foreground font-medium truncate min-w-0" title={ticket.requester.fullName}>
             {ticket.requester.fullName}
           </span>
         </div>

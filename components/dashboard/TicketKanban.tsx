@@ -94,14 +94,14 @@ const TicketCard = memo(function TicketCard({ ticket, onClick }: { ticket: Ticke
     >
       <div className="space-y-3">
         <div className="flex justify-between items-start gap-2">
-          <h4 className="font-bold text-sm leading-tight line-clamp-2">{ticket.purpose}</h4>
+          <h4 className="font-bold text-sm leading-tight line-clamp-2 min-w-0" title={ticket.purpose}>{ticket.purpose}</h4>
         </div>
         
         <div className="flex flex-wrap gap-1.5">
-          <Badge variant="outline" className="text-[10px] font-medium py-0 h-5 px-2 bg-background/50">
+          <Badge variant="outline" className="text-[10px] font-medium py-0 h-5 px-2 bg-background/50 max-w-[100px] truncate flex-shrink-0" title={ticket.section.name}>
             {ticket.section.name}
           </Badge>
-          <span className="text-[10px] text-muted-foreground ml-auto self-center">
+          <span className="text-[10px] text-muted-foreground ml-auto self-center truncate min-w-0" title={ticket.requester.fullName}>
             {ticket.requester.fullName}
           </span>
         </div>

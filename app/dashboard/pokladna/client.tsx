@@ -198,8 +198,8 @@ export function PokladnaClient({
         </div>
       </div>
 
-      {/* Top Cards Grid - Same as before */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      {/* Top Cards Grid - Improved responsiveness */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
         <Card className="bg-card border-border shadow-sm rounded-[2.5rem] p-8 flex flex-col justify-between min-h-[160px]">
           <div className="space-y-4">
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Reálná pokladna</h3>
@@ -232,14 +232,14 @@ export function PokladnaClient({
         </Card>
 
         <Card className="bg-card border-border shadow-sm rounded-[2.5rem] p-8 flex flex-col justify-between min-h-[160px]">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Dluh z chyb</h3>
-            <div className="flex items-center gap-1">
+          <div className="flex items-start justify-between gap-x-4 gap-y-2 mb-2 flex-wrap">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground pt-1.5">Dluh z chyb</h3>
+            <div className="flex items-center gap-1.5 flex-wrap">
               <Button 
                 variant="ghost" 
                 size="sm" 
                 onClick={() => setShowDebtHistory(true)}
-                className="text-muted-foreground hover:text-foreground font-bold text-[10px] uppercase flex items-center gap-1 h-5 px-1.5 rounded-full bg-muted/20"
+                className="text-muted-foreground hover:text-foreground font-bold text-[10px] uppercase flex items-center gap-1 h-6 px-2 rounded-full bg-muted/20 transition-all border border-transparent hover:border-current/10"
               >
                 <History className="w-3 h-3" />
                 Historie
@@ -248,7 +248,7 @@ export function PokladnaClient({
                 variant="ghost" 
                 size="sm" 
                 onClick={() => setShowDebtError(true)}
-                className="text-muted-foreground hover:text-foreground font-bold text-[10px] uppercase flex items-center gap-1 h-5 px-1.5 rounded-full bg-muted/20"
+                className="text-muted-foreground hover:text-foreground font-bold text-[10px] uppercase flex items-center gap-1 h-6 px-2 rounded-full bg-muted/20 transition-all border border-transparent hover:border-current/10"
               >
                 <Pencil className="w-3 h-3" />
                 Upravit
@@ -264,14 +264,14 @@ export function PokladnaClient({
         </Card>
 
         <Card className="bg-card border-border shadow-sm rounded-[2.5rem] p-8 flex flex-col justify-between min-h-[160px]">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Hotovost</h3>
-            <div className="flex items-center gap-1">
+          <div className="flex items-start justify-between gap-x-4 gap-y-2 mb-2 flex-wrap">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground pt-1.5">Hotovost</h3>
+            <div className="flex items-center gap-1.5 flex-wrap">
               <Button 
                 variant="ghost" 
                 size="sm" 
                 onClick={() => setShowCashHistory(true)}
-                className="text-muted-foreground hover:text-foreground font-bold text-[10px] uppercase flex items-center gap-1 h-5 px-1.5 rounded-full bg-muted/20"
+                className="text-muted-foreground hover:text-foreground font-bold text-[10px] uppercase flex items-center gap-1 h-6 px-2 rounded-full bg-muted/20 transition-all border border-transparent hover:border-current/10"
               >
                 <History className="w-3 h-3" />
                 Historie
@@ -280,7 +280,7 @@ export function PokladnaClient({
                 variant="ghost" 
                 size="sm" 
                 onClick={() => setShowCashOnHand(true)}
-                className="text-muted-foreground hover:text-foreground font-bold text-[10px] uppercase flex items-center gap-1 h-5 px-1.5 rounded-full bg-muted/20"
+                className="text-muted-foreground hover:text-foreground font-bold text-[10px] uppercase flex items-center gap-1 h-6 px-2 rounded-full bg-muted/20 transition-all border border-transparent hover:border-current/10"
               >
                 <Pencil className="w-3 h-3" />
                 Upravit

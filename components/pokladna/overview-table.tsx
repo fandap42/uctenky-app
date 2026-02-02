@@ -110,11 +110,11 @@ export function OverviewTable({
       <Table>
         <TableHeader className="bg-muted/80 border-b border-border">
           <TableRow className="border-border hover:bg-transparent">
-            <TableHead className="table-header-cell w-[100px]">Datum</TableHead>
-            <TableHead className="table-header-cell">Sekce</TableHead>
+            <TableHead className="table-header-cell w-[100px] min-w-[100px]">Datum</TableHead>
+            <TableHead className="table-header-cell min-w-[120px]">Sekce</TableHead>
             <TableHead className="table-header-cell min-w-[200px]">Účel</TableHead>
-            <TableHead className="table-header-cell">Obchod</TableHead>
-            <TableHead className="table-header-cell text-right">Částka</TableHead>
+            <TableHead className="table-header-cell min-w-[150px]">Obchod</TableHead>
+            <TableHead className="table-header-cell text-right min-w-[100px]">Částka</TableHead>
             <TableHead className="table-header-cell text-center w-[120px]">Typ</TableHead>
             <TableHead className="table-header-cell text-center w-[100px]">Přílohy</TableHead>
             <TableHead className="table-header-cell text-center w-[100px]">Proplaceno</TableHead>
@@ -151,7 +151,7 @@ export function OverviewTable({
                     <span className="text-muted-foreground/30">—</span>
                   )}
                 </TableCell>
-                <TableCell className="py-3 px-4 text-sm text-foreground font-semibold">
+                <TableCell className="py-3 px-4 text-sm text-foreground font-semibold truncate min-w-0" title={isTr ? (item.purpose || item.description) : (item.description || "Vklad do pokladny")}>
                   {isTr ? (item.purpose || item.description) : (item.description || "Vklad do pokladny")}
                 </TableCell>
                 <TableCell className="py-3 px-4 text-xs text-foreground font-medium">

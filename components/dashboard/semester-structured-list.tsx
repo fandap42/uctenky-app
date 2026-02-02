@@ -13,7 +13,6 @@ import { Badge } from "@/components/ui/badge"
 import { StatusBadge, mapTicketStatusToBadge } from "@/components/ui/status-badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getSemester, sortSemesterKeys, monthNames } from "@/lib/utils/semesters"
-import { FileText, ImageIcon, StickyNote } from "lucide-react"
 import { PaidStatusSelect } from "./paid-status-select"
 import { FiledStatusSelect } from "./filed-status-select"
 import { ExpenseTypeSelect } from "./expense-type-select"
@@ -106,10 +105,10 @@ function MonthlyTransactionCard({
             <TableRow className="border-border hover:bg-transparent">
               {showRequester && <TableHead className="table-header-cell">Žadatel</TableHead>}
               {showSection && <TableHead className="table-header-cell">Sekce</TableHead>}
-              <TableHead className="table-header-cell">Datum</TableHead>
-              <TableHead className="table-header-cell">Účel</TableHead>
-              <TableHead className="table-header-cell">Obchod</TableHead>
-              <TableHead className="table-header-cell">Částka</TableHead>
+              <TableHead className="table-header-cell min-w-[100px]">Datum</TableHead>
+              <TableHead className="table-header-cell min-w-[200px]">Účel</TableHead>
+              <TableHead className="table-header-cell min-w-[150px]">Obchod</TableHead>
+              <TableHead className="table-header-cell text-right min-w-[100px]">Částka</TableHead>
               <TableHead className="table-header-cell text-center">Stav</TableHead>
               {isAdmin && <TableHead className="table-header-cell text-center">Typ</TableHead>}
               {isAdmin && <TableHead className="table-header-cell text-center">Proplaceno</TableHead>}

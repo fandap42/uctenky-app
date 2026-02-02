@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils"
  */
 
 const expenseTypeBadgeVariants = cva(
-  "inline-flex items-center justify-center rounded-full px-2 py-0.5 text-badge font-bold border-none whitespace-nowrap min-w-[100px]",
+  "inline-flex items-center justify-center rounded-full px-2 py-0.5 text-badge font-bold border-none whitespace-nowrap min-w-[100px] max-w-[140px] truncate",
   {
     variants: {
       type: {
@@ -58,14 +58,16 @@ export function ExpenseTypeBadge({
   children,
   ...props
 }: ExpenseTypeBadgeProps) {
+  const label = children ?? defaultLabels[type ?? "material"]
   return (
     <span
       data-slot="expense-type-badge"
       data-type={type}
+      title={typeof label === "string" ? label : defaultLabels[type ?? "material"]}
       className={cn(expenseTypeBadgeVariants({ type, size, className }))}
       {...props}
     >
-      {children ?? defaultLabels[type ?? "material"]}
+      {label}
     </span>
   )
 }

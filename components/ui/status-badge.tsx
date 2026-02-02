@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils"
  */
 
 const statusBadgeVariants = cva(
-  "inline-flex items-center justify-center rounded-full px-3 py-0.5 text-badge font-bold shadow-none border whitespace-nowrap transition-colors",
+  "inline-flex items-center justify-center rounded-full px-3 py-0.5 text-badge font-bold shadow-none border whitespace-nowrap transition-colors max-w-[140px] truncate",
   {
     variants: {
       status: {
@@ -67,14 +67,16 @@ export function StatusBadge({
   children,
   ...props
 }: StatusBadgeProps) {
+  const label = children ?? defaultLabels[status ?? "pending"]
   return (
     <span
       data-slot="status-badge"
       data-status={status}
+      title={typeof label === "string" ? label : defaultLabels[status ?? "pending"]}
       className={cn(statusBadgeVariants({ status, size, className }))}
       {...props}
     >
-      {children ?? defaultLabels[status ?? "pending"]}
+      {label}
     </span>
   )
 }

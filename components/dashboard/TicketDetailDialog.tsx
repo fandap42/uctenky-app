@@ -359,8 +359,8 @@ export function TicketDetailDialog({
                             )}
                           >
                             <TableCell className="py-3 px-4">
-                              <div className="flex flex-col">
-                                <span className={cn("font-semibold text-sm text-foreground truncate max-w-[200px]", isRejected && "line-through")}>{receipt.store}</span>
+                              <div className="flex flex-col min-w-0">
+                                <span className={cn("font-semibold text-sm text-foreground truncate max-w-[200px]", isRejected && "line-through")} title={receipt.store}>{receipt.store}</span>
                                 <span className="text-xs text-muted-foreground">{new Date(receipt.date).toLocaleDateString("cs-CZ")}</span>
                               </div>
                             </TableCell>
@@ -471,8 +471,8 @@ export function TicketDetailDialog({
                             )}
                           >
                             <TableCell className="py-3 px-3">
-                              <div className="flex flex-col">
-                                <span className={cn("font-semibold text-sm text-foreground", isRejected && "line-through")}>{receipt.store}</span>
+                              <div className="flex flex-col min-w-0">
+                                <span className={cn("font-semibold text-sm text-foreground truncate", isRejected && "line-through")} title={receipt.store}>{receipt.store}</span>
                                 <span className="text-xs text-muted-foreground">{new Date(receipt.date).toLocaleDateString("cs-CZ")}</span>
                               </div>
                             </TableCell>
