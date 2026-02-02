@@ -19,14 +19,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientSecret: process.env.AUTH_SLACK_SECRET,
       allowDangerousEmailAccountLinking: true,
       profile(profile) {
+        // Only return standard NextAuth fields that PrismaAdapter expects
+        // Custom fields (fullName, role, sectionId) are handled in events.createUser
         return {
           id: profile.sub,
           name: profile.name,
-          fullName: profile.name,
           email: profile.email,
           image: profile.picture,
-          role: "MEMBER",
-          sectionId: null,
         }
       },
     }),
@@ -102,6 +101,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       } catch (error) {
         console.error("[auth] CRITICAL ERROR in signIn callback:", error)
         return false
+      }
+    },
+  },
+  events: {
+    async createUser({ user }) {
+      // When a user is created via OAuth, set fullName from their name
+      if (user.id && user.name) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { fullName: user.name },
+        })
+        console.log(`[auth] Updated fullName for new user: ${user.email}`)
       }
     },
   },
