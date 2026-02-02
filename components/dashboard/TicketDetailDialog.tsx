@@ -250,21 +250,21 @@ export function TicketDetailDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-[100vw] sm:max-w-[1400px] w-full h-[100dvh] sm:h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden bg-background sm:rounded-[2rem] border-none shadow-2xl">
+        <DialogContent className="!max-w-[calc(100vw-24px)] sm:!max-w-[1400px] !w-full h-[calc(100dvh-32px)] sm:h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden bg-background rounded-2xl sm:rounded-[2rem] border border-border/50 sm:border-none shadow-2xl">
           
           {/* --- FIXED HEADER --- */}
           <div className="bg-card p-3 sm:p-6 border-b border-border/60 shrink-0 space-y-3 sm:space-y-4">
             <div className="flex justify-between items-start">
               <div className="space-y-0.5 sm:space-y-1">
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <Badge variant="outline" className="rounded-md bg-muted/50 font-bold px-1.5 py-0.5 text-[9px] sm:text-[10px] uppercase tracking-wider">
+                <div className="flex items-center gap-2 sm:gap-2 flex-wrap">
+                  <Badge variant="outline" className="rounded-md bg-muted/50 font-bold px-1.5 py-0.5 text-[10px] sm:text-[10px] uppercase tracking-wider">
                     {ticket.section.name}
                   </Badge>
                   <StatusBadge status={ticket.status} />
                 </div>
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2">
-                    <DialogTitle className="text-xl md:text-2xl font-black text-foreground tracking-tight leading-none uppercase">
+                    <DialogTitle className="text-lg sm:text-xl md:text-2xl font-black text-foreground tracking-tight leading-none uppercase mt-2">
                       {ticket.purpose}
                     </DialogTitle>
                     {isAdmin && <EditTransactionDialog transaction={ticket as any} />}
@@ -445,68 +445,78 @@ export function TicketDetailDialog({
               )}
             </div>
 
-            {/* Mobile Card View */}
-            <div className="md:hidden space-y-2.5">
+            {/* Mobile Table View */}
+            <div className="md:hidden">
               {receipts.length === 0 ? (
                 <div className="text-center py-10 border border-dashed border-border/60 rounded-xl bg-card text-muted-foreground">
-                  <p className="text-xs font-medium">Zatím nebyly nahrány žádné účtenky</p>
+                  <p className="text-sm font-medium">Zatím nebyly nahrány žádné účtenky</p>
                 </div>
               ) : (
-                receipts.map((receipt) => (
-                  <Card key={receipt.id} className={cn("overflow-hidden border-border/60 shadow-none", receipt.status === "REJECTED" && "opacity-60")}>
-                    <CardContent className="p-3 flex justify-between items-center gap-3">
-                      <div className="flex flex-col gap-0.5 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-bold text-[13px] truncate">{receipt.store}</span>
-                          <ReceiptStatusBadge status={receipt.status} />
-                        </div>
-                        <span className="text-[9px] font-medium text-muted-foreground">{new Date(receipt.date).toLocaleDateString("cs-CZ")}</span>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <Badge variant="secondary" className="text-[8px] font-bold h-3.5 px-1.5 uppercase bg-muted/50">
-                            {receipt.expenseType === "MATERIAL" ? "MATERIÁL" : "SLUŽBA"}
-                          </Badge>
-                          {receipt.isPaid ? (
-                            <Badge className="bg-emerald-500/10 text-emerald-600 border-none h-3.5 px-1.5 text-[8px] font-bold uppercase">Proplaceno</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-muted-foreground border-border/40 h-3.5 px-1.5 text-[8px] font-bold uppercase">Čeká</Badge>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-1.5 shrink-0">
-                        <span className="font-black text-sm tabular-nums">{receipt.amount.toLocaleString("cs-CZ")} Kč</span>
-                        <div className="flex gap-1.5">
-                          {isAdmin && <EditReceiptDialog receipt={receipt} />}
-                          {isAdmin && (
-                            <Checkbox 
-                              checked={receipt.isPaid} 
-                              onCheckedChange={(checked) => handleReceiptPaidToggle(receipt.id, !!checked)}
-                              className="rounded h-7 w-7 border-muted-foreground/30 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-none"
-                            />
-                          )}
-                           <div className="flex items-center gap-2">
-                            {isAdmin && <EditNoteDialog receiptId={receipt.id} initialNote={receipt.note} />}
-                            <ReceiptViewDialog transactionId={receipt.id} purpose={receipt.store} />
-                            {isAdmin && (
-                              <Checkbox 
-                                checked={receipt.isFiled} 
-                                onCheckedChange={(checked) => handleReceiptFiledToggle(receipt.id, !!checked)}
-                                className="rounded h-7 w-7 border-muted-foreground/30 data-[state=checked]:bg-[oklch(0.60_0.16_150)] data-[state=checked]:border-none"
-                              />
+                <div className="rounded-xl border border-border/60 overflow-hidden bg-card shadow-sm overflow-x-auto">
+                  <Table className="min-w-[500px]">
+                    <TableHeader className="bg-muted/80 border-b border-border">
+                      <TableRow className="hover:bg-transparent border-border/60">
+                        <TableHead className="py-3 px-3 font-bold text-xs uppercase tracking-wider text-muted-foreground">Obchod</TableHead>
+                        <TableHead className="py-3 px-3 font-bold text-xs uppercase tracking-wider text-muted-foreground text-right">Částka</TableHead>
+                        <TableHead className="py-3 px-3 font-bold text-xs uppercase tracking-wider text-muted-foreground text-center">Přílohy</TableHead>
+                        <TableHead className="py-3 px-3 font-bold text-xs uppercase tracking-wider text-muted-foreground text-center">Status</TableHead>
+                        <TableHead className="py-3 px-3 font-bold text-xs uppercase tracking-wider text-muted-foreground text-right">Akce</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {receipts.map((receipt) => {
+                        const isRejected = receipt.status === "REJECTED"
+                        return (
+                          <TableRow 
+                            key={receipt.id} 
+                            className={cn(
+                              "group border-border/60 transition-colors",
+                              isRejected ? "opacity-50 grayscale bg-muted/30" : "hover:bg-muted/30"
                             )}
-                          </div>
-                          {(isOwner && (ticket.status === "APPROVED" || ticket.status === "PENDING_APPROVAL") || isAdmin) && (
-                            <Button 
-                              variant="outline" size="icon" className="h-7 w-7 rounded-lg text-destructive hover:bg-destructive/10 border-destructive/20"
-                              onClick={() => handleDeleteReceipt(receipt.id)}
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
+                          >
+                            <TableCell className="py-3 px-3">
+                              <div className="flex flex-col">
+                                <span className={cn("font-semibold text-sm text-foreground", isRejected && "line-through")}>{receipt.store}</span>
+                                <span className="text-xs text-muted-foreground">{new Date(receipt.date).toLocaleDateString("cs-CZ")}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="py-3 px-3 text-right">
+                              <span className={cn("font-bold tabular-nums text-sm", isRejected && "line-through")}>{receipt.amount.toLocaleString("cs-CZ")} Kč</span>
+                            </TableCell>
+                            <TableCell className="py-3 px-3 text-center">
+                              <div className="flex items-center justify-center gap-2">
+                                <ReceiptViewDialog transactionId={receipt.id} purpose={receipt.store} />
+                              </div>
+                            </TableCell>
+                            <TableCell className="py-3 px-3 text-center">
+                              {receipt.isPaid ? (
+                                <div className="flex justify-center">
+                                  <div className="w-3 h-3 rounded-full bg-emerald-500" title="Proplaceno" />
+                                </div>
+                              ) : (
+                                <div className="flex justify-center">
+                                  <div className="w-3 h-3 rounded-full bg-orange-300" title="Neuhrazeno" />
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right py-3 px-3">
+                              <div className="flex items-center justify-end gap-1">
+                                {(isOwner && (ticket.status === "APPROVED" || ticket.status === "PENDING_APPROVAL") || isAdmin) && (
+                                  <Button 
+                                    variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                    onClick={() => handleDeleteReceipt(receipt.id)}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </div>
 
@@ -615,21 +625,16 @@ export function TicketDetailDialog({
 
       {/* --- NESTED UPLOAD DIALOG --- */}
       <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[450px] p-0 overflow-hidden rounded-2xl border-none shadow-2xl">
-          <div className="bg-card p-6 border-b border-border/60">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-bold flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                  <Plus className="w-5 h-5" />
-                </div>
-                Nahrát novou účtenku
-              </DialogTitle>
-              <DialogDescription>
-                Vyberte soubor a vyplňte údaje o nákupu.
-              </DialogDescription>
-            </DialogHeader>
-          </div>
-          <div className="p-6">
+        <DialogContent className="sm:max-w-[420px] max-h-[80dvh] overflow-hidden flex flex-col">
+          <DialogHeader className="shrink-0">
+            <DialogTitle className="text-base font-bold flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                <Plus className="w-4 h-4" />
+              </div>
+              Nahrát účtenku
+            </DialogTitle>
+          </DialogHeader>
+          <div className="overflow-y-auto flex-1 -mx-6 px-6 pb-2">
             <ReceiptUploadForm 
               ticketId={ticket.id} 
               onSuccess={() => {
@@ -637,11 +642,6 @@ export function TicketDetailDialog({
                 router.refresh()
               }}
             />
-          </div>
-          <div className="p-4 bg-muted/30 flex justify-end">
-            <Button variant="ghost" onClick={() => setIsUploadOpen(false)} className="font-bold">
-              Zrušit
-            </Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -110,18 +110,15 @@ const TicketCardItem = memo(function TicketCardItem({ ticket, onClick }: { ticke
         isUnpaidDone && "border-orange-500 border-2"
       )}
     >
-      <div className="absolute top-0 right-0 p-5">
+      <div className="absolute top-1/2 -translate-y-1/2 right-0 p-5">
          <div className={cn("w-3 h-3 rounded-full shadow-sm ring-4 ring-background", statusConfig?.color || "bg-gray-400")} />
       </div>
 
       <div className="space-y-4 pr-6">
         {/* Row 1: Title + Amount */}
         <div className="flex justify-between items-start">
-           <h4 className="font-bold text-lg leading-snug line-clamp-2 max-w-[75%] tracking-tight">{ticket.purpose}</h4>
-           <div className="flex flex-col items-end">
-             <span className="text-xl font-black text-foreground tabular-nums">{ticket.budgetAmount.toLocaleString()}</span>
-             <span className="text-[10px] font-bold text-muted-foreground uppercase">Kč</span>
-           </div>
+           <h4 className="font-bold text-lg leading-snug line-clamp-2 max-w-[65%] tracking-tight">{ticket.purpose}</h4>
+           <span className="text-xl font-black text-foreground tabular-nums">{ticket.budgetAmount.toLocaleString()} Kč</span>
         </div>
         
         {/* Row 2: Metadata */}
