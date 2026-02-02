@@ -99,6 +99,7 @@ interface Ticket {
   section: { name: string }
   receipts: Receipt[]
   createdAt: string
+  targetDate: string
   isFiled?: boolean
 }
 
@@ -278,7 +279,7 @@ export function TicketDetailDialog({
                       </div>
                       <div className="flex items-center gap-1 sm:gap-1.5">
                         <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                        <span>{new Date(ticket.createdAt).toLocaleDateString("cs-CZ")}</span>
+                        <span>{new Date(ticket.targetDate).toLocaleDateString("cs-CZ")}</span>
                       </div>
                     </div>
                   </DialogDescription>
