@@ -2,6 +2,7 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { getSemester } from "@/lib/utils/semesters"
 import { BudgetSemesterExport } from "@/components/dashboard/budget-semester-export"
 import { cn } from "@/lib/utils"
@@ -137,46 +138,46 @@ export default async function BudgetPage() {
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-muted/10 border-b border-border">
-                      <th className="text-left py-4 px-6 text-xs font-black uppercase tracking-widest text-muted-foreground">Sekce</th>
-                      <th className="text-right py-4 px-6 text-xs font-black uppercase tracking-widest text-muted-foreground">Vyčerpáno</th>
-                      <th className="text-right py-4 px-6 text-xs font-black uppercase tracking-widest text-muted-foreground">Čekající</th>
-                      <th className="text-right py-4 px-6 text-xs font-black uppercase tracking-widest text-muted-foreground">Celkem</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <Table>
+                  <TableHeader className="bg-muted/80 border-b border-border">
+                    <TableRow className="border-border hover:bg-transparent">
+                      <TableHead className="table-header-cell">Sekce</TableHead>
+                      <TableHead className="table-header-cell text-right">Vyčerpáno</TableHead>
+                      <TableHead className="table-header-cell text-right">Čekající</TableHead>
+                      <TableHead className="table-header-cell text-right">Celkem</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {sem.sections.map((section) => (
-                      <tr key={section.sectionId} className="border-b border-border hover:bg-muted/30 transition-colors">
-                        <td className="py-4 px-6 text-sm font-bold text-foreground">{section.sectionName}</td>
-                        <td className="py-4 px-6 text-sm text-right text-success font-black tabular-nums">
+                      <TableRow key={section.sectionId} className="border-border hover:bg-muted/10 transition-colors">
+                        <TableCell className="py-3 px-4 text-sm font-semibold text-foreground">{section.sectionName}</TableCell>
+                        <TableCell className="py-3 px-4 text-sm text-right text-status-success font-bold tabular-nums">
                           {section.spent.toLocaleString("cs-CZ")} Kč
-                        </td>
-                        <td className="py-4 px-6 text-sm text-right text-[oklch(0.75_0.15_85)] font-black tabular-nums">
+                        </TableCell>
+                        <TableCell className="py-3 px-4 text-sm text-right text-status-pending font-bold tabular-nums">
                           {section.pending.toLocaleString("cs-CZ")} Kč
-                        </td>
-                        <td className="py-4 px-6 text-sm text-right text-foreground font-black tabular-nums">
+                        </TableCell>
+                        <TableCell className="py-3 px-4 text-sm text-right text-foreground font-bold tabular-nums">
                           {(section.spent + section.pending).toLocaleString("cs-CZ")} Kč
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-muted/40 border-t border-border">
-                      <td className="py-5 px-6 text-sm font-black text-foreground uppercase tracking-widest">Celkem</td>
-                      <td className="py-5 px-6 text-sm text-right font-black text-success tabular-nums text-lg">
+                  </TableBody>
+                  <tfoot className="bg-muted/40 border-t border-border">
+                    <TableRow className="hover:bg-transparent">
+                      <TableCell className="py-4 px-4 text-sm font-bold text-foreground uppercase tracking-wider">Celkem</TableCell>
+                      <TableCell className="py-4 px-4 text-sm text-right font-bold text-status-success tabular-nums text-base">
                         {sem.totalSpent.toLocaleString("cs-CZ")} Kč
-                      </td>
-                      <td className="py-5 px-6 text-sm text-right font-black text-[oklch(0.75_0.15_85)] tabular-nums text-lg">
+                      </TableCell>
+                      <TableCell className="py-4 px-4 text-sm text-right font-bold text-status-pending tabular-nums text-base">
                         {sem.totalPending.toLocaleString("cs-CZ")} Kč
-                      </td>
-                      <td className="py-5 px-6 text-sm text-right font-black text-foreground tabular-nums text-lg">
+                      </TableCell>
+                      <TableCell className="py-4 px-4 text-sm text-right font-bold text-foreground tabular-nums text-base">
                         {(sem.totalSpent + sem.totalPending).toLocaleString("cs-CZ")} Kč
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   </tfoot>
-                </table>
+                </Table>
               </div>
             </CardContent>
           </Card>

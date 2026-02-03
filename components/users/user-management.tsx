@@ -85,27 +85,27 @@ export function UserManagement({ initialUsers }: UserManagementProps) {
         <Card className="bg-card border-border shadow-sm overflow-hidden rounded-[2.5rem]">
           <CardContent className="p-0">
             <Table>
-              <TableHeader>
-                <TableRow className="border-border hover:bg-transparent bg-muted/30">
-                  <TableHead className="py-4 px-6 text-xs font-black uppercase tracking-widest text-muted-foreground">Jméno</TableHead>
-                  <TableHead className="py-4 px-6 text-xs font-black uppercase tracking-widest text-muted-foreground">Email</TableHead>
-                  <TableHead className="py-4 px-6 text-xs font-black uppercase tracking-widest text-muted-foreground">Role</TableHead>
-                  <TableHead className="py-4 px-6 text-right text-xs font-black uppercase tracking-widest text-muted-foreground">Akce</TableHead>
+              <TableHeader className="bg-muted/80 border-b border-border">
+                <TableRow className="border-border hover:bg-transparent">
+                  <TableHead className="table-header-cell">Jméno</TableHead>
+                  <TableHead className="table-header-cell">Email</TableHead>
+                  <TableHead className="table-header-cell">Role</TableHead>
+                  <TableHead className="table-header-cell text-right">Akce</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredUsers.map((user) => (
-                  <TableRow key={user.id} className="border-border hover:bg-muted/30 transition-colors">
-                    <TableCell className="py-4 px-6 font-bold text-foreground">
+                  <TableRow key={user.id} className="border-border hover:bg-muted/10 transition-colors">
+                    <TableCell className="py-3 px-4 font-semibold text-foreground">
                       {user.fullName || "---"}
                     </TableCell>
-                    <TableCell className="py-4 px-6 text-muted-foreground">{user.email}</TableCell>
-                    <TableCell className="py-4 px-6">
+                    <TableCell className="py-3 px-4 text-sm text-muted-foreground">{user.email}</TableCell>
+                    <TableCell className="py-3 px-4">
                       <Badge className={cn("text-[10px] px-2 py-0.5 h-auto uppercase tracking-wider font-bold", roleColors[user.role] || "bg-muted")}>
                         {roleLabels[user.role] || user.role}
                       </Badge>
                     </TableCell>
-                    <TableCell className="py-4 px-6 text-right">
+                    <TableCell className="py-3 px-4 text-right">
                       <EditUserDialog user={user} />
                     </TableCell>
                   </TableRow>
