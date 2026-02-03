@@ -50,12 +50,12 @@ export function ExpenseTypeSelect({
             onValueChange={handleChange}
             disabled={isLoading}
         >
-            <SelectTrigger className={`w-[110px] h-8 bg-background border-border text-xs ${expenseType === "MATERIAL" ? "text-primary" : "text-[oklch(0.55_0.15_290)]"}`}>
+            <SelectTrigger className={`w-[110px] h-8 bg-background border-border text-xs ${expenseType === "MATERIAL" ? "text-expense-material" : "text-expense-service"}`}>
                 <SelectValue />
             </SelectTrigger>
             <SelectContent position="popper" className="bg-card border-border max-h-[none]">
-                <SelectItem value="MATERIAL" className="text-primary">Materiál</SelectItem>
-                <SelectItem value="SERVICE" className="text-[oklch(0.55_0.15_290)]">Služba</SelectItem>
+                <SelectItem value="MATERIAL" className="text-expense-material">Materiál</SelectItem>
+                <SelectItem value="SERVICE" className="text-expense-service">Služba</SelectItem>
             </SelectContent>
         </Select>
     )

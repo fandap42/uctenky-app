@@ -10,6 +10,9 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { StatusBadge, mapTicketStatusToBadge } from "@/components/ui/status-badge"
+import { ExpenseTypeBadge, mapExpenseTypeToVariant } from "@/components/ui/expense-type-badge"
+import { FunctionalCheckbox } from "@/components/ui/functional-checkbox"
 import { Checkbox } from "@/components/ui/checkbox"
 import { AlertCircle, StickyNote } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -107,15 +110,15 @@ export function OverviewTable({
       <Table>
         <TableHeader className="bg-muted/80 border-b border-border">
           <TableRow className="border-border hover:bg-transparent">
-            <TableHead className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground w-[100px]">Datum</TableHead>
-            <TableHead className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Sekce</TableHead>
-            <TableHead className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground min-w-[200px]">Účel</TableHead>
-            <TableHead className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Obchod</TableHead>
-            <TableHead className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-right">Částka</TableHead>
-            <TableHead className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-center w-[120px]">Typ</TableHead>
-            <TableHead className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-center w-[100px]">Přílohy</TableHead>
-            <TableHead className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-center w-[100px]">Proplaceno</TableHead>
-            <TableHead className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-center w-[100px]">Založeno</TableHead>
+            <TableHead className="table-header-cell w-[100px] min-w-[100px]">Datum</TableHead>
+            <TableHead className="table-header-cell min-w-[120px]">Sekce</TableHead>
+            <TableHead className="table-header-cell min-w-[200px]">Účel</TableHead>
+            <TableHead className="table-header-cell min-w-[150px]">Obchod</TableHead>
+            <TableHead className="table-header-cell text-right min-w-[100px]">Částka</TableHead>
+            <TableHead className="table-header-cell text-center w-[120px]">Typ</TableHead>
+            <TableHead className="table-header-cell text-center w-[100px]">Přílohy</TableHead>
+            <TableHead className="table-header-cell text-center w-[100px]">Proplaceno</TableHead>
+            <TableHead className="table-header-cell text-center w-[100px]">Založeno</TableHead>
             <TableHead className="py-3 px-0 text-center w-12 text-muted-foreground/30">
               <CheckIcon className="size-4 mx-auto" />
             </TableHead>
@@ -148,7 +151,7 @@ export function OverviewTable({
                     <span className="text-muted-foreground/30">—</span>
                   )}
                 </TableCell>
-                <TableCell className="py-3 px-4 text-sm text-foreground font-semibold">
+                <TableCell className="py-3 px-4 text-sm text-foreground font-semibold truncate min-w-0" title={isTr ? (item.purpose || item.description) : (item.description || "Vklad do pokladny")}>
                   {isTr ? (item.purpose || item.description) : (item.description || "Vklad do pokladny")}
                 </TableCell>
                 <TableCell className="py-3 px-4 text-xs text-foreground font-medium">
@@ -157,13 +160,13 @@ export function OverviewTable({
                 <TableCell className="py-3 px-4 text-right tabular-nums">
                   {isTr ? (
                     <div className="flex items-center justify-end gap-1.5">
-                      {!currentIsPaid && <AlertCircle className="w-3.5 h-3.5 text-warning" />}
-                      <span className="font-bold text-destructive text-sm tracking-tight">
+                      {!currentIsPaid && <AlertCircle className="w-3.5 h-3.5 text-status-pending" />}
+                      <span className="font-bold text-destructive text-sm tracking-tight text-label">
                         {Math.abs(Number(item.amount || item.finalAmount || item.estimatedAmount)).toLocaleString("cs-CZ")} Kč
                       </span>
                     </div>
                   ) : (
-                    <span className="font-bold text-success text-sm tracking-tight">
+                    <span className="font-bold text-status-success text-sm tracking-tight text-label">
                       +{Number(item.amount).toLocaleString("cs-CZ")} Kč
                     </span>
                   )}
@@ -171,14 +174,7 @@ export function OverviewTable({
                 <TableCell className="py-3 px-4 text-center">
                   {isTr ? (
                     <div className="flex justify-center">
-                      <Badge className={cn(
-                        "font-bold text-[10px] uppercase tracking-wider h-5 px-2 min-w-[100px] justify-center",
-                        item.expenseType === "MATERIAL" 
-                          ? "bg-[oklch(0.60_0.20_280)] text-white hover:bg-[oklch(0.60_0.20_280)] border-none" 
-                          : "bg-blue-100 text-blue-700 hover:bg-blue-100 border-none"
-                      )}>
-                        {item.expenseType === "MATERIAL" ? "Materiál" : "Služba"}
-                      </Badge>
+                      <ExpenseTypeBadge type={mapExpenseTypeToVariant(item.expenseType)} />
                     </div>
                   ) : (
                     <span className="text-muted-foreground/30">—</span>
@@ -204,11 +200,11 @@ export function OverviewTable({
                 <TableCell className="py-3 px-4 text-center">
                   {isTr ? (
                     <div className="flex justify-center" onClick={(e) => e.stopPropagation()}>
-                      <Checkbox 
+                      <FunctionalCheckbox 
+                        variant="paid"
                         checked={currentIsPaid}
                         onCheckedChange={() => handleTogglePaid(item.id, !!currentIsPaid)}
                         disabled={loadingIds[item.id]}
-                        className="rounded h-4 w-4 border-muted-foreground/40 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
                       />
                     </div>
                   ) : <span className="text-muted-foreground/30">—</span>}
@@ -216,11 +212,11 @@ export function OverviewTable({
                 <TableCell className="py-3 px-4 text-center">
                   {isTr ? (
                     <div className="flex justify-center" onClick={(e) => e.stopPropagation()}>
-                      <Checkbox 
+                      <FunctionalCheckbox 
+                        variant="filed"
                         checked={currentIsFiled}
                         onCheckedChange={() => handleToggleFiled(item.id, !!currentIsFiled)}
                         disabled={loadingIds[item.id]}
-                        className="rounded h-4 w-4 border-muted-foreground/40 data-[state=checked]:bg-[oklch(0.60_0.16_150)] data-[state=checked]:border-[oklch(0.60_0.16_150)]"
                       />
                     </div>
                   ) : <span className="text-muted-foreground/30">—</span>}

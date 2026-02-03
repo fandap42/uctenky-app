@@ -55,12 +55,12 @@ export function FiledStatusSelect({
       onValueChange={handleToggle}
       disabled={isLoading}
     >
-      <SelectTrigger className={`w-[130px] h-8 bg-background border-border text-xs ${isFiled ? "text-[oklch(0.60_0.16_150)]" : "text-[oklch(0.75_0.15_85)]"}`}>
+      <SelectTrigger className={`w-[130px] h-8 bg-background border-border text-xs ${isFiled ? "text-status-success" : "text-status-pending"}`}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent position="popper" className="bg-card border-border max-h-[none]">
-        <SelectItem value="unfiled" className="text-[oklch(0.75_0.15_85)]">Nezaloženo</SelectItem>
-        <SelectItem value="filed" className="text-[oklch(0.60_0.16_150)]">Založeno</SelectItem>
+        <SelectItem value="unfiled" className="text-status-pending">Nezaloženo</SelectItem>
+        <SelectItem value="filed" className="text-status-success">Založeno</SelectItem>
       </SelectContent>
     </Select>
   )

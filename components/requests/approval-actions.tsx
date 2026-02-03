@@ -51,10 +51,10 @@ export function ApprovalActions({ ticketId, currentStatus, purpose, budgetAmount
   if (currentStatus === "PENDING_APPROVAL") {
     return (
       <div className="flex items-center gap-2">
-        <button
+        <Button
           onClick={() => handleStatusChange("APPROVED")}
           disabled={isLoading !== null}
-          className="h-8 px-3 text-xs font-bold bg-green-600 hover:bg-green-700 text-white rounded-md flex items-center gap-1.5 transition-colors disabled:opacity-50"
+          className="h-8 px-3 text-xs font-bold bg-status-success hover:bg-status-success/90 text-white flex items-center gap-1.5 transition-colors"
         >
           {isLoading === "APPROVED" ? (
             <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
@@ -69,17 +69,17 @@ export function ApprovalActions({ ticketId, currentStatus, purpose, budgetAmount
               Schválit
             </>
           )}
-        </button>
+        </Button>
       </div>
     )
   }
 
   if (currentStatus === "VERIFICATION") {
     return (
-      <button
+      <Button
         onClick={() => handleStatusChange("DONE")}
         disabled={isLoading !== null}
-        className="h-8 px-3 text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white rounded-md flex items-center gap-1.5 transition-colors disabled:opacity-50"
+        className="h-8 px-3 text-xs font-bold bg-status-verification hover:bg-status-verification/90 text-white flex items-center gap-1.5 transition-colors"
       >
         {isLoading === "DONE" ? (
           <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
@@ -94,7 +94,7 @@ export function ApprovalActions({ ticketId, currentStatus, purpose, budgetAmount
             Ověřit
           </>
         )}
-      </button>
+      </Button>
     )
   }
 

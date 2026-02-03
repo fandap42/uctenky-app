@@ -20,10 +20,10 @@ interface TicketMobileListProps {
 }
 
 const FILTERS: { label: string; status: TicketStatus; color: string; bg: string }[] = [
-  { label: "Čeká", status: "PENDING_APPROVAL", color: "bg-amber-500", bg: "bg-amber-500/10 text-amber-600" },
-  { label: "Schváleno", status: "APPROVED", color: "bg-blue-500", bg: "bg-blue-500/10 text-blue-600" },
-  { label: "Ověření", status: "VERIFICATION", color: "bg-purple-500", bg: "bg-purple-500/10 text-purple-600" },
-  { label: "Hotovo", status: "DONE", color: "bg-emerald-500", bg: "bg-emerald-500/10 text-emerald-600" },
+  { label: "Čeká", status: "PENDING_APPROVAL", color: "bg-status-pending", bg: "bg-status-pending/10 text-status-pending" },
+  { label: "Schváleno", status: "APPROVED", color: "bg-status-approved", bg: "bg-status-approved/10 text-status-success" },
+  { label: "Ověření", status: "VERIFICATION", color: "bg-status-verification", bg: "bg-status-verification/10 text-status-verification" },
+  { label: "Hotovo", status: "DONE", color: "bg-status-success", bg: "bg-status-success/10 text-status-success" },
 ]
 
 export const TicketMobileList = memo(function TicketMobileList({ tickets, onTicketClick }: TicketMobileListProps) {
@@ -51,7 +51,7 @@ export const TicketMobileList = memo(function TicketMobileList({ tickets, onTick
   return (
     <div className="w-full space-y-8">
       {/* Filter Dots */}
-      <div className="flex overflow-x-auto pb-4 pt-2 px-1 gap-3 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 md:overflow-visible md:flex-wrap md:justify-center">
+      <div className="flex flex-wrap gap-2 pb-4 pt-2 w-fit max-w-[280px]">
         {FILTERS.map((filter) => {
           const isActive = activeFilter === filter.status
           return (
@@ -107,7 +107,7 @@ const TicketCardItem = memo(function TicketCardItem({ ticket, onClick }: { ticke
       onClick={onClick}
       className={cn(
         "p-6 relative overflow-hidden rounded-[2.5rem] border-border/50 shadow-sm w-full transition-all active:scale-[0.98] active:bg-muted/50",
-        isUnpaidDone && "border-orange-500 border-2"
+        isUnpaidDone && "border-status-pending border-2"
       )}
     >
       <div className="absolute top-1/2 -translate-y-1/2 right-0 p-5">
@@ -116,25 +116,25 @@ const TicketCardItem = memo(function TicketCardItem({ ticket, onClick }: { ticke
 
       <div className="space-y-4 pr-6">
         {/* Row 1: Title + Amount */}
-        <div className="flex justify-between items-start">
-           <h4 className="font-bold text-lg leading-snug line-clamp-2 max-w-[65%] tracking-tight">{ticket.purpose}</h4>
-           <span className="text-xl font-black text-foreground tabular-nums">{ticket.budgetAmount.toLocaleString()} Kč</span>
+        <div className="flex justify-between items-start gap-2">
+           <h4 className="font-bold text-lg leading-snug line-clamp-2 min-w-0 flex-1 tracking-tight" title={ticket.purpose}>{ticket.purpose}</h4>
+           <span className="text-xl font-black text-foreground tabular-nums flex-shrink-0">{ticket.budgetAmount.toLocaleString()} Kč</span>
         </div>
         
         {/* Row 2: Metadata */}
         <div className="flex flex-wrap items-center gap-2 pt-1">
-          <Badge variant="secondary" className="text-[10px] font-bold h-7 px-3 bg-muted text-muted-foreground uppercase tracking-wider rounded-lg">
+          <Badge variant="secondary" className="text-[10px] font-bold h-7 px-3 bg-muted text-muted-foreground uppercase tracking-wider rounded-lg max-w-[120px] truncate flex-shrink-0" title={ticket.section.name}>
             {ticket.section.name}
           </Badge>
-          <span className="text-xs text-muted-foreground font-medium">
+          <span className="text-xs text-muted-foreground font-medium truncate min-w-0" title={ticket.requester.fullName}>
             {ticket.requester.fullName}
           </span>
         </div>
 
         {/* Unpaid Warning */}
         {isUnpaidDone && (
-          <div className="pt-3 border-t border-orange-100 flex justify-end">
-             <span className="text-[10px] font-black text-orange-600 uppercase border border-orange-200 bg-orange-50 px-2 py-1 rounded-lg animate-pulse">
+          <div className="pt-3 border-t border-status-pending/20 flex justify-end">
+             <span className="text-[10px] font-black text-status-pending uppercase border border-status-pending/20 bg-status-pending/10 px-2 py-1 rounded-lg animate-pulse">
                Čeká na proplacení
              </span>
           </div>
