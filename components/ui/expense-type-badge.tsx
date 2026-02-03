@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils"
  */
 
 const expenseTypeBadgeVariants = cva(
-  "inline-flex items-center justify-center rounded-full px-2 py-0.5 text-badge font-bold border-none whitespace-nowrap min-w-[100px] max-w-[140px] truncate",
+  "inline-flex items-center justify-center rounded-full px-2 py-0.5 font-bold border-none whitespace-nowrap text-[10px] uppercase tracking-wider shadow-sm",
   {
     variants: {
       type: {
@@ -25,8 +25,8 @@ const expenseTypeBadgeVariants = cva(
       },
       size: {
         default: "h-5",
-        sm: "h-4 text-[9px] px-1.5 min-w-[80px]",
-        lg: "h-6 text-xs px-3 min-w-[120px]",
+        sm: "h-4 text-[9px] px-1.5",
+        lg: "h-6 text-xs px-3",
       }
     },
     defaultVariants: {

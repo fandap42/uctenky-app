@@ -161,12 +161,12 @@ export function OverviewTable({
                   {isTr ? (
                     <div className="flex items-center justify-end gap-1.5">
                       {!currentIsPaid && <AlertCircle className="w-3.5 h-3.5 text-status-pending" />}
-                      <span className="font-bold text-destructive text-sm tracking-tight text-label">
+                      <span className="font-semibold text-red-600 text-sm tracking-tight">
                         {Math.abs(Number(item.amount || item.finalAmount || item.estimatedAmount)).toLocaleString("cs-CZ")} Kč
                       </span>
                     </div>
                   ) : (
-                    <span className="font-bold text-status-success text-sm tracking-tight text-label">
+                    <span className="font-semibold text-green-600 text-sm tracking-tight">
                       +{Number(item.amount).toLocaleString("cs-CZ")} Kč
                     </span>
                   )}
