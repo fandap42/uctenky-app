@@ -26,15 +26,6 @@
 3. Zadejte svůj **email** a **heslo**
 4. Klikněte na **Přihlásit se**
 
-### Přehled (Dashboard)
-
-Po přihlášení uvidíte:
-- **Vaše žádosti** - přehled všech vašich žádostí o nákup
-- **Statistiky** - celkový počet žádostí a čekající na schválení
-- **Filtry** - možnost filtrovat podle stavu (čekající, schválené, atd.)
-
----
-
 ## Podávání žádosti o nákup
 
 ### Kdy podat žádost?
@@ -75,7 +66,6 @@ Po přihlášení uvidíte:
    - **Obchod** - kde jste nakoupili
    - **Datum nákupu** - skutečné datum z účtenky
    - **Skutečná částka** - přesná částka z účtenky
-   - **Typ výdaje** - Materiál nebo Služba
 
 ### Požadavky na fotografii účtenky
 
@@ -90,7 +80,6 @@ Na účtence **MUSÍ být čitelné:**
 
 ### Tipy pro kvalitní fotografii:
 
-- Fotografujte na **světlém pozadí**
 - Zajistěte **dobré osvětlení** (bez stínů)
 - Účtenka musí být **rovná a celá** ve snímku
 - Zkontrolujte **ostrost** před odesláním
@@ -102,7 +91,7 @@ Na účtence **MUSÍ být čitelné:**
 
 ### Přehled žádostí sekce
 
-Jako vedoucí sekce máte přístup k přehledu všech žádostí vaší sekce v podobě **Kanban boardu**:
+Jako vedoucí sekce máte přístup k přehledu všech žádostí vaší sekce:
 
 1. V menu klikněte na **Žádosti sekce**
 2. Uvidíte žádosti rozdělené do sloupců podle stavu
@@ -155,7 +144,7 @@ V sekci **Pokladna** můžete:
 Abychom měli čas na schválení a přípravu hotovosti.
 
 ### Co když je skutečná částka jiná než odhadovaná?
-To je v pořádku - při nahrání účtenky zadáte skutečnou částku.
+To je v pořádku - při nahrání účtenky zadáte skutečnou částku. Částka by neměla výrazně překročit odhadovanou částku.
 
 ### Mohu platit kartou?
 **NE.** Všechny nákupy musí být provedeny **výhradně v hotovosti**.
