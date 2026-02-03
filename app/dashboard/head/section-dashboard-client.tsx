@@ -21,17 +21,17 @@ interface Ticket {
   isFiled?: boolean
 }
 
-interface TicketDashboardClientProps {
+interface SectionDashboardClientProps {
   initialTickets: Ticket[]
   currentUserId: string
   currentUserRole: string
 }
 
-export function TicketDashboardClient({ 
+export function SectionDashboardClient({ 
   initialTickets, 
   currentUserId, 
   currentUserRole 
-}: TicketDashboardClientProps) {
+}: SectionDashboardClientProps) {
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 

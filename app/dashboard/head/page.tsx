@@ -1,13 +1,11 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { SemesterStructuredList } from "@/components/dashboard/semester-structured-list"
+import { Card } from "@/components/ui/card"
 import { isHeadRole, isAdmin, getSectionForRole } from "@/lib/utils/roles"
-import { getSemester, sortSemesterKeys, getSemesterRange } from "@/lib/utils/semesters"
-
-import { getTicketsBySemester, getTicketSemesterTotals } from "@/lib/actions/tickets"
+import { getTickets } from "@/lib/actions/tickets"
 import { SectionFilter } from "@/components/dashboard/section-filter"
+import { SectionDashboardClient } from "./section-dashboard-client"
 
 export const dynamic = "force-dynamic"
 
@@ -75,44 +73,25 @@ export default async function SectionHeadDashboardPage({ searchParams }: PagePro
     )
   }
 
-  // Fetch unique semester keys for this section from Tickets
-  const ticketDates = await prisma.ticket.findMany({
-    where: { sectionId: section.id },
-    select: { createdAt: true, targetDate: true },
-  })
+  // Fetch tickets for the section
+  const { tickets: rawTickets = [] } = await getTickets({ sectionId: section.id })
 
-  const semesterKeys = Array.from(new Set(
-    ticketDates.map(d => getSemester(new Date(d.targetDate || d.createdAt)))
-  ))
+  // Explicitly serialize to ensure no Decimal objects pass through
+  const tickets = rawTickets.map(t => ({
+    ...t,
+    budgetAmount: Number(t.budgetAmount),
+    receipts: t.receipts.map(r => ({
+      ...r,
+      amount: Number(r.amount)
+    }))
+  }))
 
-  const sortedKeys = sortSemesterKeys(semesterKeys)
-  const currentSem = sortedKeys[0]
-
-  // Fetch initial tickets for the latest semester
-  const { transactions: initialTransactions = [] } = currentSem 
-    ? await getTicketsBySemester(currentSem, { sectionId: section.id }) 
-    : { transactions: [] }
-
-  // Fetch semester totals for the section
-  const totalsResult = await getTicketSemesterTotals({ sectionId: section.id })
-  const semesterTotals = "totals" in totalsResult ? totalsResult.totals : {}
-
-  // Stats for the section (current semester)
-  const semesterRange = currentSem ? getSemesterRange(currentSem) : null
-  const semesterFilter = semesterRange ? {
-    createdAt: { gte: semesterRange.start, lte: semesterRange.end }
-  } : {}
-
-  const totalSectionRequests = await prisma.ticket.count({
-    where: { sectionId: section.id, ...semesterFilter }
-  })
-
-  const pendingCount = await prisma.ticket.count({
-    where: { sectionId: section.id, status: "PENDING_APPROVAL" }
-  })
+  // Stats for the section (kept for potential future use)
+  // const pendingCount = tickets.filter(t => t.status === "PENDING_APPROVAL").length
+  // const totalCount = tickets.length
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-20">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -125,41 +104,13 @@ export default async function SectionHeadDashboardPage({ searchParams }: PagePro
         )}
       </div>
 
-      {/* Quick stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="bg-card border-border shadow-sm rounded-[2.5rem] p-8 flex flex-col justify-between min-h-[160px]">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Celkem žádostí sekce</h3>
-          <div className="flex items-baseline gap-2 mt-auto">
-            <span className="text-4xl font-black text-foreground tabular-nums">
-              {totalSectionRequests}
-            </span>
-          </div>
-        </Card>
-
-        <Card className="bg-card border-border shadow-sm rounded-[2.5rem] p-8 flex flex-col justify-between min-h-[160px]">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Čeká na schválení</h3>
-          <div className="flex items-baseline gap-2 mt-auto">
-            <span className="text-4xl font-black text-[oklch(0.75_0.15_85)] tabular-nums">
-              {pendingCount}
-            </span>
-          </div>
-        </Card>
-      </div>
-
-      {/* Structured Transactions List */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-foreground">Přehled žádostí sekce</h2>
-        <SemesterStructuredList
-          initialTransactions={initialTransactions}
-          semesterKeys={semesterKeys}
-          semesterTotals={semesterTotals}
-          showSection={false}
-          showActions={false}
-          isAdmin={false}
-          showNotes={false}
-          filters={{ sectionId: section.id }}
-        />
-      </div>
+      {/* Kanban Board */}
+      <SectionDashboardClient 
+        initialTickets={tickets as any}
+        currentUserId={session.user.id}
+        currentUserRole={user.role}
+      />
     </div>
   )
 }
+
