@@ -6,14 +6,18 @@ import { monthNames } from "@/lib/utils/semesters"
 
 interface Transaction {
   id: string
-  purpose: string
+  purpose?: string
   store?: string | null
-  estimatedAmount: number
-  finalAmount: number | null
-  isPaid: boolean
-  expenseType: string
-  dueDate: string | null
-  section?: { name: string } | null
+  amount: number // Already processed (negative for expenses)
+  isPaid?: boolean
+  expenseType?: string
+  date?: string | null
+  dueDate?: string | null
+  sectionName?: string // Flattened from ticket.section.name
+  section?: { name: string } | null // Fallback for old format
+  // Legacy fields for backward compatibility
+  estimatedAmount?: number
+  finalAmount?: number | null
 }
 
 interface Deposit {
@@ -61,14 +65,24 @@ export function CashRegisterExport({
 
     // Add transactions
     transactions.forEach((t) => {
+      // Get section name - prioritize flattened sectionName, then section.name
+      const sectionName = t.sectionName || t.section?.name || "-"
+      // Get amount - if already negative (from client.tsx transformation), use as is
+      // Otherwise fall back to legacy fields
+      const rawAmount = t.amount !== undefined 
+        ? t.amount  // Already processed (might be negative)
+        : -(t.finalAmount || t.estimatedAmount || 0) // Legacy: negate for expenses
+      // If amount is positive but this is a transaction, it should be negative
+      const amount = rawAmount > 0 ? -rawAmount : rawAmount
+      
       rows.push({
-        date: new Date(t.dueDate || new Date()),
+        date: new Date(t.date || t.dueDate || new Date()),
         type: "transaction",
-        section: t.section?.name || "-",
-        purpose: t.purpose,
+        section: sectionName,
+        purpose: t.purpose || "-",
         store: t.store || "-",
-        amount: -(t.finalAmount || t.estimatedAmount), // Negative for expenses
-        expenseType: t.expenseType === "MATERIAL" ? "Materiál" : "Služba",
+        amount: amount,
+        expenseType: t.expenseType === "MATERIAL" ? "Materiál" : (t.expenseType === "SERVICE" ? "Služba" : "-"),
       })
     })
 
