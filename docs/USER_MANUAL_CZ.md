@@ -10,16 +10,28 @@
 
 ### Přihlášení
 
+#### Přihlášení přes Slack (doporučeno)
+
 1. Otevřete aplikaci v prohlížeči
-2. Zadejte svůj **email** a **heslo**
-3. Klikněte na **Přihlásit se**
+2. Klikněte na tlačítko **Sign in with Slack**
+3. Přihlaste se do vašeho 4FIS Slack workspace
+4. Budete automaticky přesměrováni do aplikace
+
+> ⚠️ **Poznámka**: Přihlášení je povoleno pouze členům 4FIS Slack workspace.
+
+#### Přihlášení pomocí hesla (pouze pro administrátory)
+
+1. Otevřete aplikaci v prohlížeči
+2. Pod tlačítkem Slack najděte sekci "Nebo admin přihlášení"
+3. Zadejte svůj **email** a **heslo**
+4. Klikněte na **Přihlásit se**
 
 ### Přehled (Dashboard)
+
 Po přihlášení uvidíte:
-- **Počet vašich žádostí** - počet žádostí podaných v **aktuálním semestru**
-- **Čeká na schválení** - Celkový počet vašich žádostí čekajících na vyřízení (napříč všemi semestry)
-- **Celkem vyčerpáno** - Suma financí za schválené a nakoupené položky v daném semestru
-- **Moje žádosti** - tabulka všech vašich žádostí, rozdělená podle semestrů a měsíců
+- **Vaše žádosti** - přehled všech vašich žádostí o nákup
+- **Statistiky** - celkový počet žádostí a čekající na schválení
+- **Filtry** - možnost filtrovat podle stavu (čekající, schválené, atd.)
 
 ---
 
@@ -35,6 +47,7 @@ Po přihlášení uvidíte:
 2. Vyplňte formulář:
    - **Účel nákupu** - stručný popis, co kupujete a proč
    - **Odhadovaná částka** - předpokládaná cena v Kč
+   - **Sekce** - pro kterou sekci je nákup
    - **Plánované datum nákupu** - kdy chcete nákup provést
 3. Klikněte na **Odeslat žádost**
 
@@ -42,11 +55,11 @@ Po přihlášení uvidíte:
 
 | Stav | Popis |
 |------|-------|
-| 🟡 **Čeká na schválení** | Žádost čeká na schválení vedoucím |
-| ✅ **Schváleno** | Můžete provést nákup |
+| 🟡 **Čeká na schválení** | Žádost čeká na schválení administrátorem |
+| 🔵 **Schváleno** | Můžete provést nákup |
+| 🟣 **Ověřování** | Účtenka nahrána, čeká na kontrolu |
+| ✅ **Hotovo** | Účtenka zkontrolována a schválena |
 | ❌ **Zamítnuto** | Žádost byla zamítnuta |
-| 🔵 **Nakoupeno** | Nákup proveden, účtenka nahrána |
-| ✔️ **Ověřeno** | Účtenka zkontrolována týmem Finance |
 
 ---
 
@@ -54,13 +67,15 @@ Po přihlášení uvidíte:
 
 ### Po provedení nákupu:
 
-1. V tabulce žádostí najděte schválenou žádost
-2. Klikněte na **Nahrát účtenku**
-3. Vyplňte:
+1. V přehledu najděte schválenou žádost
+2. Klikněte na žádost pro zobrazení detailu
+3. Klikněte na **Nahrát účtenku**
+4. Vyplňte:
    - **Obrázek účtenky** - fotografie nebo sken
    - **Obchod** - kde jste nakoupili
    - **Datum nákupu** - skutečné datum z účtenky
    - **Skutečná částka** - přesná částka z účtenky
+   - **Typ výdaje** - Materiál nebo Služba
 
 ### Požadavky na fotografii účtenky
 
@@ -85,23 +100,52 @@ Na účtence **MUSÍ být čitelné:**
 
 ## Pro vedoucí sekcí
 
-### Přehled žádostí
+### Přehled žádostí sekce
 
-Jako vedoucí sekce máte přístup k přehledu všech žádostí vaší sekce. Administrátoři mají navíc přístup ke všem sekcím najednou:
+Jako vedoucí sekce máte přístup k přehledu všech žádostí vaší sekce v podobě **Kanban boardu**:
 
 1. V menu klikněte na **Žádosti sekce**
-2. Vedoucí sekce uvidí seznam všech žádostí od členů své sekce
-3. **Administrátoři** mohou v horní části stránky přepínat mezi jednotlivými sekcemi pomocí výběrového pole
-4. Statistiky v horní části (**Celkem žádostí sekce**) se vztahují k **aktuálně rozbalenému semestru**, zatímco počet **čekajících žádostí** je celkový.
-5. Můžete sledovat stav jednotlivých žádostí
-
-> ⚠️ **Poznámka:** Schvalování žádostí provádí **pouze tým Finance**. Vedoucí sekce má přístup pouze pro čtení. Administrátoři mohou žádosti schvalovat přímo v tomto přehledu.
+2. Uvidíte žádosti rozdělené do sloupců podle stavu
+3. Můžete sledovat postup jednotlivých žádostí
 
 ### Co můžete sledovat?
 
-- Stav žádostí (čeká, schváleno, nakoupeno, ověřeno)
+- Stav žádostí (čekající, schváleno, ověřování, hotovo)
 - Účel a odhadovanou částku
 - Datum plánovaného nákupu
+- Nahrané účtenky
+
+> ⚠️ **Poznámka:** Schvalování žádostí provádí **pouze administrátoři**. Vedoucí sekce má přístup pouze pro čtení.
+
+---
+
+## Pro administrátory
+
+### Schvalování žádostí
+
+1. V přehledu žádostí klikněte na žádost
+2. Zkontrolujte detaily a účel nákupu
+3. Použijte tlačítko **Schválit** nebo **Zamítnout**
+
+### Ověření účtenek
+
+Po nahrání účtenky:
+1. Zkontrolujte nahranou fotografii
+2. Ověřte, že údaje odpovídají žádosti
+3. Označte jako **Ověřeno** nebo vraťte k opravě
+
+### Správa pokladny
+
+V sekci **Pokladna** můžete:
+- Evidovat vklady hotovosti
+- Sledovat dluh z chyb
+- Zobrazit přehled všech transakcí
+- Exportovat data do CSV
+
+### Označení stavu účtenek
+
+- **Proplaceno** (zelená fajfka) - hotovost byla vyplacena
+- **Zařazeno** (modrá fajfka) - účtenka byla zařazena do evidence
 
 ---
 
@@ -120,13 +164,16 @@ To je v pořádku - při nahrání účtenky zadáte skutečnou částku.
 Podporujeme **JPG, PNG** a **HEIC** (iPhone fotky - automaticky se konvertují).
 
 ### Co když je účtenka nečitelná?
-Tým Finance vás kontaktuje a požádá o novou fotografii.
+Administrátor vás kontaktuje a požádá o novou fotografii.
+
+### Nemohu se přihlásit přes Slack
+Ujistěte se, že jste členem 4FIS Slack workspace. Pokud problémy přetrvávají, kontaktujte administrátora.
 
 ---
 
 ## Kontakt a podpora
 
-V případě problémů kontaktujte tým Finance.
+V případě problémů kontaktujte administrátory aplikace.
 
 ---
 
