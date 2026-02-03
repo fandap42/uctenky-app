@@ -42,8 +42,8 @@ export default async function DashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-black text-foreground mb-1 tracking-tight">
-            Pracovní plocha
+          <h1 className="text-3xl font-black text-foreground mb-2">
+            Přehled
           </h1>
         </div>
         <RequestForm sections={sections} />
