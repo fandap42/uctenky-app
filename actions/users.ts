@@ -91,3 +91,28 @@ export async function changeUserPassword(
     return { success: false, error: "Nepodařilo se změnit heslo" }
   }
 }
+
+export async function deleteUser(userId: string) {
+  const session = await auth()
+
+  if (session?.user?.role !== "ADMIN") {
+    return { error: "Oprávnění pouze pro administrátora" }
+  }
+
+  try {
+    // Check if user is deleting themselves
+    if (session.user.id === userId) {
+      return { error: "Nemůžete smazat sami sebe" }
+    }
+
+    // Hard delete - tickets will be unlinked (requesterId set to null)
+    await prisma.user.delete({
+      where: { id: userId },
+    })
+
+    revalidatePath("/dashboard/users")
+    return { success: true }
+  } catch (error) {
+    return { error: "Nepodařilo se smazat uživatele" }
+  }
+}

@@ -8,9 +8,10 @@
 4. [Database Schema](#database-schema)
 5. [Authentication & Authorization](#authentication--authorization)
 6. [Project Structure](#project-structure)
-7. [Core Features](#core-features)
-8. [API Routes](#api-routes)
-9. [Deployment](#deployment)
+7. [Design System](#design-system)
+8. [Core Features](#core-features)
+9. [API Routes](#api-routes)
+10. [Deployment](#deployment)
 
 ---
 
@@ -20,12 +21,14 @@
 
 ### Key Features
 
+- Slack OAuth authentication with workspace restriction
 - User authentication with role-based access control
-- Purchase request submission and approval workflow
+- Purchase request (Ticket) submission and approval workflow
 - Receipt upload with HEIC/HEIF conversion support
 - Cash register (Pokladna) management
 - Budget tracking by section and semester
 - CSV export functionality (Czech Excel compatible)
+- Comprehensive design system for consistent UI
 
 ---
 
@@ -36,8 +39,8 @@ graph TD
     subgraph Frontend
         A[Next.js 16 App Router]
         B[React 19]
-        C[Tailwind CSS]
-        D[Shadcn/UI Components]
+        C[Tailwind CSS 4]
+        D[Shadcn/UI + 4FIS Design System]
     end
     
     subgraph Backend
@@ -55,7 +58,8 @@ graph TD
     
     subgraph Auth
         I[NextAuth.js v5]
-        J[bcryptjs]
+        J[Slack OAuth]
+        K[bcryptjs]
     end
     
     A --> E
@@ -67,6 +71,7 @@ graph TD
     E --> H
     I --> E
     J --> I
+    K --> I
 ```
 
 | Layer | Technology | Version |
@@ -75,10 +80,10 @@ graph TD
 | Runtime | React | 19.x |
 | Language | TypeScript | 5.x |
 | Styling | Tailwind CSS | 4.x |
-| UI Components | Shadcn/UI | Latest |
+| UI Components | Shadcn/UI + 4FIS Design System | Latest |
 | ORM | Prisma | 7.2.0 |
 | Database | PostgreSQL | 14+ |
-| Authentication | NextAuth.js | 5.x (Beta) |
+| Authentication | NextAuth.js | 5.x (Slack OAuth + Credentials) |
 | Storage | MinIO (S3-compatible) | - |
 | Image Conversion | heic2any | 0.0.4 |
 
@@ -99,12 +104,13 @@ flowchart TB
         APP[App Router]
         ACTIONS[Server Actions]
         AUTH[Auth Middleware]
-        PROXY[Proxy/Middleware]
+        STREAM[Streaming Proxy /api/receipts/view]
     end
     
     subgraph External["External Services"]
         DB[(PostgreSQL)]
         STORAGE[MinIO S3 Storage]
+        SLACK[Slack OAuth]
     end
     
     UI --> SA
@@ -113,7 +119,10 @@ flowchart TB
     AUTH --> ACTIONS
     ACTIONS --> DB
     ACTIONS --> STORAGE
-    PROXY --> APP
+    UI --> STREAM
+    STREAM --> AUTH
+    STREAM --> STORAGE
+    AUTH --> SLACK
 ```
 
 ### Request Flow
@@ -148,17 +157,40 @@ sequenceDiagram
 
 ```mermaid
 erDiagram
-    User ||--o{ Transaction : creates
-    Section ||--o{ Transaction : has
+    User ||--o{ Ticket : creates
+    User ||--o{ Account : has
+    User ||--o{ Session : has
+    Section ||--o{ Ticket : has
+    Ticket ||--o{ Receipt : contains
     
     User {
         string id PK
         string email UK
-        string passwordHash
+        string passwordHash "nullable for OAuth users"
         string fullName
+        string name
+        string image
         enum role
         datetime createdAt
         datetime updatedAt
+    }
+    
+    Account {
+        string id PK
+        string userId FK
+        string type
+        string provider
+        string providerAccountId
+        string refresh_token
+        string access_token
+        int expires_at
+    }
+    
+    Session {
+        string id PK
+        string sessionToken UK
+        string userId FK
+        datetime expires
     }
     
     Section {
@@ -169,20 +201,32 @@ erDiagram
         datetime updatedAt
     }
     
-    Transaction {
+    Ticket {
         string id PK
         string requesterId FK
         string sectionId FK
         enum status
         string purpose
+        datetime targetDate
+        decimal budgetAmount
+        boolean isFiled
+        string note
+        datetime createdAt
+        datetime updatedAt
+    }
+    
+    Receipt {
+        string id PK
         string store
-        datetime dueDate
-        decimal estimatedAmount
-        decimal finalAmount
-        string receiptUrl
+        datetime date
+        decimal amount
+        string fileUrl
         boolean isPaid
         boolean isFiled
         enum expenseType
+        enum status
+        string ticketId FK
+        string note
         datetime createdAt
         datetime updatedAt
     }
@@ -227,13 +271,18 @@ enum AppRole {
   ADMIN             // Administrator (full access)
 }
 
-enum TransStatus {
-  DRAFT      // Initial state
-  PENDING    // Awaiting approval
-  APPROVED   // Approved by head
-  REJECTED   // Rejected
-  PURCHASED  // Purchase completed, receipt uploaded
-  VERIFIED   // Receipt verified by admin
+enum TicketStatus {
+  PENDING_APPROVAL  // Awaiting approval
+  APPROVED          // Approved, can proceed with purchase
+  VERIFICATION      // Receipt uploaded, awaiting verification
+  DONE              // Fully verified and complete
+  REJECTED          // Rejected
+}
+
+enum ReceiptStatus {
+  PENDING   // Awaiting review
+  APPROVED  // Receipt approved
+  REJECTED  // Receipt rejected
 }
 
 enum ExpenseType {
@@ -252,14 +301,55 @@ enum ExpenseType {
 flowchart TD
     A[User visits /login] --> B{Has valid session?}
     B -->|Yes| C[Redirect to /dashboard]
-    B -->|No| D[Show login form]
-    D --> E[Submit credentials]
-    E --> F{Valid credentials?}
-    F -->|No| G[Show error]
-    G --> D
-    F -->|Yes| H[Create session]
-    H --> I[Set session cookie]
-    I --> C
+    B -->|No| D[Show login page]
+    D --> E{Choose auth method}
+    E -->|Slack| F[Redirect to Slack OAuth]
+    F --> G{Slack workspace?}
+    G -->|Wrong workspace| H[Access Denied]
+    G -->|Correct workspace| I[Create/Update user]
+    I --> J[Create session]
+    E -->|Credentials| K[Submit email/password]
+    K --> L{Valid credentials?}
+    L -->|No| M[Show error]
+    M --> D
+    L -->|Yes| J
+    J --> N[Set session cookie]
+    N --> C
+```
+
+### Slack OAuth Configuration
+
+The application uses Slack as the primary authentication method with workspace restriction:
+
+```typescript
+// auth.ts
+Slack({
+  clientId: process.env.AUTH_SLACK_ID,
+  clientSecret: process.env.AUTH_SLACK_SECRET,
+  allowDangerousEmailAccountLinking: true,
+  profile(profile) {
+    return {
+      id: profile.sub,
+      name: profile.name,
+      email: profile.email,
+      image: profile.picture,
+    }
+  },
+}),
+```
+
+**Workspace Restriction**: Only members of the configured Slack workspace can log in:
+
+```typescript
+// signIn callback
+if (account?.provider === "slack") {
+  const allowedTeamId = process.env.SLACK_ALLOWED_TEAM_ID
+  const userTeamId = profile?.team_id
+  
+  if (userTeamId !== allowedTeamId) {
+    return false // Access denied
+  }
+}
 ```
 
 ### Role-Based Access Control
@@ -267,49 +357,13 @@ flowchart TD
 | Route | MEMBER | HEAD_* | ADMIN |
 |-------|--------|--------|-------|
 | `/dashboard` | ✅ | ✅ | ✅ |
-| `/dashboard/head` | ❌ | ✅ (read-only) | ❌ |
+| `/dashboard/head` | ❌ | ✅ | ✅ |
 | `/dashboard/admin` | ❌ | ❌ | ✅ |
 | `/dashboard/pokladna` | ❌ | ❌ | ✅ |
 | `/dashboard/budget` | ❌ | ❌ | ✅ |
 | `/dashboard/users` | ❌ | ❌ | ✅ |
 
-> **Note:** Section heads (HEAD_*) can only **view** transactions for their section. Approval is done exclusively by ADMIN.
-
-### Implementation
-
-Authentication is handled by NextAuth.js v5 with credentials provider:
-
-```typescript
-// auth.ts
-export const { handlers, signIn, signOut, auth } = NextAuth({
-  providers: [
-    Credentials({
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
-      },
-      async authorize(credentials) {
-        // Validate credentials against database
-        // Return user object or null
-      },
-    }),
-  ],
-  callbacks: {
-    jwt({ token, user }) {
-      if (user) {
-        token.id = user.id
-        token.role = user.role
-      }
-      return token
-    },
-    session({ session, token }) {
-      session.user.id = token.id
-      session.user.role = token.role
-      return session
-    },
-  },
-})
-```
+> **Note:** Section heads (HEAD_*) can only **view** tickets for their section. Approval is done exclusively by ADMIN.
 
 ---
 
@@ -327,15 +381,14 @@ uctenky-app/
 │   │   ├── head/                 # Section head panel
 │   │   ├── pokladna/             # Cash register
 │   │   └── users/                # User management
-│   ├── login/                    # Login page
+│   ├── login/                    # Login page (Slack + Credentials)
+│   ├── globals.css               # Design system tokens
 │   └── layout.tsx                # Root layout
 │
 ├── components/                   # React components
 │   ├── dashboard/                # Dashboard components
 │   │   ├── sidebar.tsx           # Navigation sidebar
-│   │   ├── semester-structured-list.tsx
-│   │   ├── paid-status-select.tsx
-│   │   ├── filed-status-select.tsx
+│   │   ├── ticket-kanban.tsx     # Kanban board for section heads
 │   │   └── ...
 │   ├── pokladna/                 # Cash register components
 │   │   ├── deposit-dialog.tsx
@@ -344,18 +397,22 @@ uctenky-app/
 │   │   ├── overview-table.tsx
 │   │   └── cash-register-export.tsx
 │   ├── receipts/                 # Receipt components
-│   │   └── receipt-upload.tsx    # UI component for upload
+│   │   └── receipt-upload.tsx
 │   ├── requests/                 # Request components
-│   │   ├── new-request-dialog.tsx
+│   │   ├── request-form.tsx
 │   │   └── approval-actions.tsx
-│   └── ui/                       # Shadcn/UI components
+│   └── ui/                       # Design System + Shadcn/UI
+│       ├── status-badge.tsx      # Semantic status badges
+│       ├── expense-type-badge.tsx # Material/Service badges
+│       ├── functional-checkbox.tsx # Paid/Filed checkboxes
+│       └── ...                   # Other Shadcn components
 │
 ├── hooks/                        # React hooks
-│   └── useReceiptUpload.ts       # Upload logic and state
+│   └── useReceiptUpload.ts
 │
 ├── lib/                          # Utilities and configurations
 │   ├── actions/                  # Server actions
-│   │   ├── transactions.ts       # Transaction CRUD
+│   │   ├── tickets.ts            # Ticket CRUD
 │   │   ├── cash-register.ts      # Cash register operations
 │   │   └── semesters.ts          # Semester utilities
 │   ├── constants/                # App constants
@@ -363,38 +420,68 @@ uctenky-app/
 │   ├── prisma.ts                 # Prisma client
 │   ├── s3.ts                     # MinIO/S3 storage client
 │   └── utils/                    # Utility functions
-│       ├── semesters.ts          # Semester calculations
-│       ├── roles.ts              # Role utilities
-│       ├── rate-limit.ts         # Rate limiting class
-│       └── file-validator.ts     # File validation logic
+│       ├── semesters.ts
+│       ├── roles.ts
+│       ├── rate-limit.ts
+│       └── file-validator.ts
 │
 ├── prisma/                       # Prisma configuration
-│   ├── schema.prisma             # Database schema
-│   └── prisma.config.ts          # Prisma configuration
-│
-├── actions/                      # Additional server actions
-│   └── users.ts                  # User management
+│   └── schema.prisma             # Database schema
 │
 ├── auth.ts                       # NextAuth configuration
-├── proxy.ts                      # Next.js middleware
+├── auth.config.ts                # Auth configuration options
+├── middleware.ts                 # Next.js middleware
 └── docs/                         # Documentation
+    ├── USER_MANUAL_CZ.md
+    ├── TECHNICAL_DOCUMENTATION.md
+    └── DESIGN_SYSTEM.md
 ```
+
+---
+
+## Design System
+
+The application uses a comprehensive design system defined in `globals.css` and component atoms.
+
+### Semantic Color Tokens
+
+Defined as CSS custom properties that adapt to light/dark mode:
+
+| Token | Purpose |
+|-------|---------|
+| `--status-pending` | Warning/Amber (Pending Approval) |
+| `--status-approved` | Info/Blue (Approved) |
+| `--status-verification` | Purple (Verification) |
+| `--status-success` | Green (Done/Paid) |
+| `--paid` / `--unpaid` | Financial status |
+| `--filed` | Document filing status |
+| `--expense-material` | Material expense type |
+| `--expense-service` | Service expense type |
+
+### Atom Components
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| `StatusBadge` | `components/ui/status-badge.tsx` | Display ticket/receipt status |
+| `ExpenseTypeBadge` | `components/ui/expense-type-badge.tsx` | Material vs Service indicator |
+| `FunctionalCheckbox` | `components/ui/functional-checkbox.tsx` | Paid/Filed semantic checkboxes |
+
+For detailed documentation, see [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md).
 
 ---
 
 ## Core Features
 
-### 1. Transaction Workflow
+### 1. Ticket Workflow
 
 ```mermaid
 stateDiagram-v2
-    [*] --> DRAFT: Create request
-    DRAFT --> PENDING: Submit
-    PENDING --> APPROVED: Admin approves
-    PENDING --> REJECTED: Admin rejects
-    APPROVED --> PURCHASED: Upload receipt
-    PURCHASED --> VERIFIED: Admin verifies
-    VERIFIED --> [*]
+    [*] --> PENDING_APPROVAL: Create ticket
+    PENDING_APPROVAL --> APPROVED: Admin approves
+    PENDING_APPROVAL --> REJECTED: Admin rejects
+    APPROVED --> VERIFICATION: Upload receipt
+    VERIFICATION --> DONE: Admin verifies
+    DONE --> [*]
     REJECTED --> [*]
 ```
 
@@ -403,7 +490,6 @@ stateDiagram-v2
 The application supports iPhone photos (HEIC/HEIF format) with automatic client-side conversion to JPEG:
 
 ```typescript
-// Simplified flow
 async function handleFileChange(file: File) {
   if (file.name.endsWith('.heic') || file.name.endsWith('.heif')) {
     const heic2any = (await import('heic2any')).default
@@ -429,7 +515,7 @@ The cash register module tracks:
 ```mermaid
 flowchart LR
     D[Deposits] --> B[Balance]
-    T[Paid Transactions] --> B
+    T[Paid Receipts] --> B
     B --> RC[Real Cash]
     DE[Debt Errors] --> RC
     COH[Cash on Hand] --> RC
@@ -449,26 +535,36 @@ Sekce;Účel;Částka
 ## API Routes
 
 ### `/api/auth/[...nextauth]`
-NextAuth.js authentication endpoints.
+NextAuth.js authentication endpoints (Slack OAuth + Credentials).
 
 ### `/api/upload` (POST)
 Handles receipt file uploads to MinIO S3-compatible storage.
 
 **Security Features:**
 - **Authentication**: Requires a valid user session.
-- **Ownership Verification**: Verifies that the `transactionId` belongs to the authenticated user (or user is ADMIN).
+- **Ownership Verification**: Verifies that the `ticketId` belongs to the authenticated user (or user is ADMIN).
 - **Rate Limiting**: Limited to 10 requests per minute per IP.
 - **Deep Validation**: Inspects file magic bytes (not just MIME type) and whitelists extensions.
 
 **Request:**
-- `FormData` with `file` and `transactionId`
+- `FormData` with `file` and `ticketId`
 
 **Response:**
 ```json
 {
-  "url": "http://localhost:9000/receipts/..."
+  "url": "receipts/2026/01/key.png"
 }
 ```
+
+### `/api/receipts/view` (GET)
+Authenticated streaming proxy for viewing receipt images.
+
+**Security Logic:**
+1.  **Authentication**: Verifies valid user session.
+2.  **Authorization**: Verifies user is the owner of the ticket or has ADMIN role.
+3.  **On-the-fly Streaming**: Fetches the image from MinIO and streams it directly to the client.
+4.  **No URL Exposure**: The actual MinIO/S3 URL is never exposed to the client.
+5.  **Caching**: Returns `private, max-age=3600` headers.
 
 ---
 
@@ -483,6 +579,12 @@ DATABASE_URL="postgresql://user:pass@host:5432/db"
 # NextAuth
 AUTH_SECRET="your-secret-key"
 AUTH_URL="https://your-domain.com"
+AUTH_TRUST_HOST=true
+
+# Slack OAuth
+AUTH_SLACK_ID="your-slack-client-id"
+AUTH_SLACK_SECRET="your-slack-client-secret"
+SLACK_ALLOWED_TEAM_ID="your-slack-workspace-team-id"
 
 # MinIO S3 Storage
 S3_ENDPOINT="http://localhost:9000"
@@ -533,8 +635,6 @@ CMD ["npm", "start"]
 
 ### Testing Strategy Overview
 
-The application should be tested at multiple levels to ensure reliability and maintainability:
-
 ```mermaid
 graph TD
     subgraph Tests["Testing Pyramid"]
@@ -550,130 +650,6 @@ graph TD
     style INT fill:#60a5fa
     style E2E fill:#f472b6
 ```
-
-### Recommended Testing Stack
-
-| Test Type | Tool | Purpose |
-|-----------|------|---------|
-| Unit Tests | Vitest | Fast, ESM-native, TypeScript support |
-| Integration Tests | Vitest + Prisma | Server actions with database |
-| E2E Tests | Playwright | Full user flow testing |
-| Component Tests | React Testing Library | UI component behavior |
-
-### What to Test
-
-#### 1. Unit Tests (High Priority)
-
-Pure utility functions that can be tested in isolation:
-
-**`lib/utils/semesters.ts`**
-```typescript
-// Test cases for getSemester():
-// - September 2025 → "ZS25"
-// - January 2026 → "ZS25" (belongs to previous semester)
-// - February 2026 → "LS26"
-// - December 2025 → "ZS25"
-// - Year boundary edge cases
-```
-
-**`lib/utils/roles.ts`**
-```typescript
-// Test cases:
-// - isHeadRole("HEAD_FINANCE") → true
-// - isHeadRole("MEMBER") → false
-// - isAdmin("ADMIN") → true
-// - getSectionForRole("HEAD_HR") → "HR"
-// - canViewSection("ADMIN", "Finance") → true
-// - canViewSection("HEAD_HR", "Finance") → false
-```
-
-#### 2. Integration Tests (High Priority)
-
-Server actions with mocked/test database:
-
-**`lib/actions/transactions.ts`**
-| Function | Key Test Scenarios |
-|----------|-------------------|
-| `createTransaction` | Valid creation, missing fields, unauthorized user |
-| `updateTransactionStatus` | ADMIN-only enforcement, valid state transitions |
-| `updateTransactionReceipt` | Owner vs non-owner access, status change to PURCHASED |
-| `deleteTransaction` | Owner can delete DRAFT/PENDING, ADMIN can delete any |
-
-**`lib/actions/cash-register.ts`**
-| Function | Key Test Scenarios |
-|----------|-------------------|
-| `getAllCashRegisterData` | Balance calculations, real cash formula |
-| `createDeposit` | ADMIN-only, positive amounts |
-| `getBalanceAtDate` | Historical balance accuracy |
-
-**Authorization Matrix Tests:**
-```typescript
-// Verify that non-ADMIN users cannot:
-// - Approve/reject transactions
-// - Update paid/filed status
-// - Modify expense types
-// - Access cash register operations
-```
-
-#### 3. Authentication Tests (High Priority)
-
-**`auth.ts`**
-- Valid credentials return user object
-- Invalid password returns null
-- Non-existent user returns null
-- Password hash comparison
-
-**`middleware.ts`**
-- Unauthenticated user redirected from `/dashboard/*`
-- Authenticated user redirected from `/login`
-- Root path redirects appropriately
-
-#### 4. E2E Tests (Medium Priority)
-
-Complete user workflows using Playwright:
-
-| Flow | Steps |
-|------|-------|
-| Member Request | Login → Create request → Submit → View in list |
-| Admin Approval | Login as ADMIN → View requests → Approve → Verify status |
-| Receipt Upload | Login → Select approved request → Upload image → Confirm |
-| Cash Register | Login as ADMIN → Add deposit → View balance update |
-
-### Test File Structure
-
-```
-uctenky-app/
-├── __tests__/                    # Test directory
-│   ├── unit/                     # Unit tests
-│   │   ├── semesters.test.ts
-│   │   ├── roles.test.ts
-│   │   ├── file-validator.test.ts
-│   │   └── rate-limit.test.ts
-│   ├── integration/              # Integration tests
-│   │   ├── transactions.test.ts
-│   │   └── cash-register.test.ts
-│   └── e2e/                      # E2E tests (Playwright)
-│       ├── auth.spec.ts
-│       └── workflows.spec.ts
-├── vitest.config.ts              # Vitest configuration
-└── playwright.config.ts          # Playwright configuration
-```
-
-### Database Testing Strategy
-
-For integration tests involving Prisma:
-
-1. **Option A: Separate Test Database**
-   - Use `DATABASE_URL` pointing to dedicated test PostgreSQL instance
-   - Reset database between test runs with `prisma migrate reset`
-
-2. **Option B: In-Memory Database (SQLite)**
-   - Faster but may have compatibility differences
-   - Use Prisma's `--preview-feature` for SQLite
-
-3. **Option C: Transaction Rollback**
-   - Wrap each test in a transaction
-   - Rollback after test completion
 
 ### Running Tests
 
@@ -695,31 +671,19 @@ npm run test:watch
 
 ## Security Considerations
 
-1. **Password Hashing**: bcryptjs with salt rounds of 10
-2. **Session Security**: HTTP-only cookies, secure in production
-3. **CSRF Protection**: Built-in Next.js protection
-4. **Input Validation**: Server-side validation in all actions using Zod or custom logic
+1. **Authentication**: Slack OAuth with workspace restriction + optional credentials fallback
+2. **Password Hashing**: bcryptjs with salt rounds of 10 (for credential users)
+3. **Session Security**: HTTP-only cookies, secure in production
+4. **CSRF Protection**: Built-in Next.js protection
 5. **Role Checks**: Every protected action verifies user role
 6. **File Upload**: 
    - Strict extension whitelist (`jpg, jpeg, png, gif, webp, heic, heif`)
    - Magic byte inspection using `file-type`
    - Size limit (5MB)
-7. **Transaction Ownership**: API endpoints verify user owns the data they are modifying
+7. **Ticket Ownership**: API endpoints verify user owns the data they are modifying
 8. **Rate Limiting**: Centralized `RateLimiter` class for sensitive endpoints
-9. **Centralized Messaging**: Consistent error messages through `lib/constants/messages.ts`
-10. **Honeypot Protection**: Hidden fields in public and sensitive forms to detect and block automated bot submissions.
 
 ---
 
-## Performance Optimizations
-
-1. **Server Components**: Majority of UI uses React Server Components
-2. **Streaming**: Progressive page rendering
-3. **Image Optimization**: Client-side HEIC conversion reduces server load
-4. **Caching**: Next.js path revalidation on data changes
-5. **Database**: Prisma query optimization with selective includes
-
----
-
-*4FISuctenky Technical Documentation - Version 1.1*
-*Last Updated: January 21, 2026*
+*4FISuctenky Technical Documentation - Version 2.0*
+*Last Updated: February 2026*

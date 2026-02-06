@@ -1,14 +1,21 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { SemesterStructuredList } from "@/components/dashboard/semester-structured-list"
+import { Card } from "@/components/ui/card"
 import { isHeadRole, isAdmin, getSectionForRole } from "@/lib/utils/roles"
+import { getTickets } from "@/lib/actions/tickets"
+import { SectionFilter } from "@/components/dashboard/section-filter"
+import { SectionDashboardClient } from "./section-dashboard-client"
 
 export const dynamic = "force-dynamic"
 
-export default async function SectionHeadDashboardPage() {
+interface PageProps {
+  searchParams: Promise<{ sectionId?: string }>
+}
+
+export default async function SectionHeadDashboardPage({ searchParams }: PageProps) {
   const session = await auth()
+  const { sectionId } = await searchParams
 
   if (!session?.user?.id) {
     redirect("/login")
@@ -25,108 +32,85 @@ export default async function SectionHeadDashboardPage() {
     redirect("/dashboard")
   }
 
-  // Get section name from role mapping
-  const sectionName = getSectionForRole(user.role)
+  // Handle section selection
+  let section = null
+  let allSections: any[] = []
+  const userIsAdmin = isAdmin(user.role)
 
-  // If admin and no section mapping, show all (or redirect to admin page)
-  if (!sectionName && isAdmin(user.role)) {
-    redirect("/dashboard/admin")
+  if (userIsAdmin) {
+    allSections = await prisma.section.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    })
+
+    if (sectionId) {
+      section = allSections.find(s => s.id === sectionId) || null
+    }
+    
+    // Default to first section if nothing selected
+    if (!section && allSections.length > 0) {
+      section = allSections[0]
+    }
+  } else {
+    const sectionName = getSectionForRole(user.role)
+    if (sectionName) {
+      section = await prisma.section.findFirst({
+        where: { name: sectionName, isActive: true },
+        select: { id: true, name: true },
+      })
+    }
   }
-
-  // If no section found for role
-  if (!sectionName) {
-    return (
-      <div className="space-y-8 p-6">
-        <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Žádosti sekce</h1>
-          <p className="text-slate-400">
-            Vaše role není přiřazena k žádné sekci.
-          </p>
-        </div>
-      </div>
-    )
-  }
-
-  // Find section by name
-  const section = await prisma.section.findFirst({
-    where: { name: sectionName, isActive: true },
-    select: { id: true, name: true },
-  })
 
   if (!section) {
     return (
-      <div className="space-y-8 p-6">
+      <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Žádosti sekce</h1>
-          <p className="text-slate-400">
-            Sekce "{sectionName}" nebyla nalezena.
-          </p>
+          <h1 className="text-3xl font-black text-foreground mb-2">Žádosti sekce</h1>
+          <p className="text-muted-foreground">Nebyla nalezena žádná aktivní sekce.</p>
         </div>
       </div>
     )
   }
 
-  // Fetch section's transactions
-  const rawTxList = await prisma.transaction.findMany({
-    where: { sectionId: section.id },
-    orderBy: { createdAt: "desc" },
-    include: {
-      requester: { select: { id: true, fullName: true } },
-    },
-  })
+  // Fetch tickets for the section
+  const { tickets: rawTickets = [] } = await getTickets({ sectionId: section.id })
 
-  // Serialize Decimals for Client Components
-  const transactions = rawTxList.map(t => ({
+  // Explicitly serialize to ensure no Decimal objects pass through
+  const tickets = rawTickets.map(t => ({
     ...t,
-    estimatedAmount: Number(t.estimatedAmount),
-    finalAmount: t.finalAmount ? Number(t.finalAmount) : null,
-    createdAt: t.createdAt.toISOString(),
-    updatedAt: t.updatedAt.toISOString(),
-    dueDate: t.dueDate ? t.dueDate.toISOString() : null,
-  })) as any
+    budgetAmount: Number(t.budgetAmount),
+    receipts: t.receipts.map(r => ({
+      ...r,
+      amount: Number(r.amount)
+    }))
+  }))
 
-  // Calculate spent
-  const totalSpent = (transactions as any[])
-    .filter((t: any) => t.status === "VERIFIED" || t.status === "PURCHASED")
-    .reduce((sum: number, t: any) => sum + Number(t.finalAmount || t.estimatedAmount), 0)
-
-  const pendingTransactions = (transactions as any[]).filter((t: any) => t.status === "PENDING")
+  // Stats for the section (kept for potential future use)
+  // const pendingCount = tickets.filter(t => t.status === "PENDING_APPROVAL").length
+  // const totalCount = tickets.length
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-20">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-white mb-2">
-          Žádosti sekce: {section.name}
-        </h1>
-        <p className="text-slate-400">
-          Správa a přehled všech žádostí vaší sekce
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-black text-foreground mb-2">
+            Žádosti sekce: {section.name}
+          </h1>
+        </div>
+        {userIsAdmin && (
+          <SectionFilter sections={allSections} currentSectionId={section.id} />
+        )}
       </div>
 
-      {/* Quick stats */}
-      <div className="grid grid-cols-1 md:grid-cols-1 gap-6 max-w-sm">
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardHeader className="pb-2">
-            <CardDescription className="text-slate-400">
-              Čeká na schválení
-            </CardDescription>
-            <CardTitle className="text-4xl font-bold text-yellow-400">
-              {pendingTransactions.length}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
-
-      {/* Structured Transactions List */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-white">Přehled žádostí sekce</h2>
-        <SemesterStructuredList
-          transactions={transactions}
-          showSection={false}
-          showActions={true}
-        />
-      </div>
+      {/* Kanban Board */}
+      <SectionDashboardClient 
+        initialTickets={tickets as any}
+        currentUserId={session.user.id}
+        currentUserRole={user.role}
+      />
     </div>
   )
 }
+

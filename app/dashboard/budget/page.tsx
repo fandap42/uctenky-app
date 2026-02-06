@@ -1,9 +1,11 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { getSemester } from "@/lib/utils/semesters"
 import { BudgetSemesterExport } from "@/components/dashboard/budget-semester-export"
+import { cn } from "@/lib/utils"
 
 export const dynamic = "force-dynamic"
 
@@ -45,41 +47,66 @@ export default async function BudgetPage() {
     orderBy: { name: "asc" },
   })
 
-  // Fetch all transactions with section info
-  const transactions = await prisma.transaction.findMany({
+  // Fetch all tickets with section info (for pending budgets)
+  const tickets = await prisma.ticket.findMany({
+    where: {
+      status: "PENDING_APPROVAL"
+    },
     include: {
       section: { select: { id: true, name: true } },
     },
   })
 
-  // Group transactions by semester and section
+  // Fetch all receipts with ticket and section info (for spent calculation)
+  const receipts = await prisma.receipt.findMany({
+    include: {
+      ticket: {
+        include: {
+          section: { select: { id: true, name: true } },
+        }
+      }
+    },
+  })
+
+  // Group by semester and section
   const semesterMap = new Map<string, Map<string, { spent: number; pending: number; sectionName: string }>>()
 
-  transactions.forEach((tx) => {
-    const date = new Date(tx.dueDate || tx.createdAt)
-    const semester = getSemester(date)
-    
+  // Helper function to ensure semester and section exist in map
+  const ensureSemesterSection = (semester: string, sectionId: string, sectionName: string) => {
     if (!semesterMap.has(semester)) {
       semesterMap.set(semester, new Map())
     }
-    
     const sectionMap = semesterMap.get(semester)!
-    if (!sectionMap.has(tx.sectionId)) {
-      sectionMap.set(tx.sectionId, { 
+    if (!sectionMap.has(sectionId)) {
+      sectionMap.set(sectionId, { 
         spent: 0, 
         pending: 0, 
-        sectionName: tx.section?.name || "Neznámá sekce" 
+        sectionName 
       })
     }
+    return sectionMap.get(sectionId)!
+  }
+
+  // Calculate SPENT from actual receipts based on receipt date
+  receipts.forEach((receipt) => {
+    const receiptDate = new Date(receipt.date)
+    const semester = getSemester(receiptDate)
+    const sectionId = receipt.ticket.sectionId
+    const sectionName = receipt.ticket.section?.name || "Neznámá sekce"
     
-    const sectionData = sectionMap.get(tx.sectionId)!
-    const amount = Number(tx.finalAmount || tx.estimatedAmount)
+    const sectionData = ensureSemesterSection(semester, sectionId, sectionName)
+    sectionData.spent += Number(receipt.amount)
+  })
+
+  // Calculate PENDING from tickets in PENDING_APPROVAL status based on ticket date
+  tickets.forEach((ticket) => {
+    const ticketDate = new Date(ticket.targetDate || ticket.createdAt)
+    const semester = getSemester(ticketDate)
+    const sectionId = ticket.sectionId
+    const sectionName = ticket.section?.name || "Neznámá sekce"
     
-    if (tx.status === "VERIFIED" || tx.status === "PURCHASED") {
-      sectionData.spent += amount
-    } else if (tx.status === "PENDING" || tx.status === "APPROVED") {
-      sectionData.pending += amount
-    }
+    const sectionData = ensureSemesterSection(semester, sectionId, sectionName)
+    sectionData.pending += Number(ticket.budgetAmount)
   })
 
   // Convert to array and sort by semester (newest first)
@@ -111,21 +138,18 @@ export default async function BudgetPage() {
     })
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-10">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white mb-2">Rozpočty</h1>
-        <p className="text-slate-400">
-          Přehled čerpání rozpočtu po sekcích pro každý semestr
-        </p>
+        <h1 className="text-3xl font-black text-foreground mb-2">Rozpočty</h1>
       </div>
 
       {/* Semester sections */}
       {semesterData.length > 0 ? (
         semesterData.map((sem) => (
-          <Card key={sem.semester} className="bg-slate-800/50 border-slate-700">
-            <CardHeader className="flex flex-row items-center justify-between pb-4">
-              <CardTitle className="text-xl font-bold text-white">
+          <Card key={sem.semester} className="bg-card border-border shadow-sm overflow-hidden rounded-[2.5rem]">
+            <CardHeader className="flex flex-row items-center justify-between pb-6 border-b border-border bg-muted/20">
+              <CardTitle className="text-2xl font-black text-foreground">
                 {sem.semester}
               </CardTitle>
               <BudgetSemesterExport 
@@ -133,56 +157,56 @@ export default async function BudgetPage() {
                 sections={sem.sections}
               />
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-slate-700">
-                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-400">Sekce</th>
-                      <th className="text-right py-3 px-4 text-sm font-medium text-slate-400">Vyčerpáno</th>
-                      <th className="text-right py-3 px-4 text-sm font-medium text-slate-400">Čekající</th>
-                      <th className="text-right py-3 px-4 text-sm font-medium text-slate-400">Celkem</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <Table>
+                  <TableHeader className="bg-muted/80 border-b border-border">
+                    <TableRow className="border-border hover:bg-transparent">
+                      <TableHead className="table-header-cell">Sekce</TableHead>
+                      <TableHead className="table-header-cell text-right">Vyčerpáno</TableHead>
+                      <TableHead className="table-header-cell text-right">Čekající</TableHead>
+                      <TableHead className="table-header-cell text-right">Celkem</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {sem.sections.map((section) => (
-                      <tr key={section.sectionId} className="border-b border-slate-700/50 hover:bg-slate-700/20">
-                        <td className="py-3 px-4 text-sm text-white">{section.sectionName}</td>
-                        <td className="py-3 px-4 text-sm text-right text-green-400">
+                      <TableRow key={section.sectionId} className="border-border hover:bg-muted/10 transition-colors">
+                        <TableCell className="py-3 px-4 text-sm font-semibold text-foreground">{section.sectionName}</TableCell>
+                        <TableCell className="py-3 px-4 text-sm text-right text-status-success font-bold tabular-nums">
                           {section.spent.toLocaleString("cs-CZ")} Kč
-                        </td>
-                        <td className="py-3 px-4 text-sm text-right text-yellow-400">
+                        </TableCell>
+                        <TableCell className="py-3 px-4 text-sm text-right text-status-pending font-bold tabular-nums">
                           {section.pending.toLocaleString("cs-CZ")} Kč
-                        </td>
-                        <td className="py-3 px-4 text-sm text-right text-white font-medium">
+                        </TableCell>
+                        <TableCell className="py-3 px-4 text-sm text-right text-foreground font-bold tabular-nums">
                           {(section.spent + section.pending).toLocaleString("cs-CZ")} Kč
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-slate-700/30">
-                      <td className="py-3 px-4 text-sm font-bold text-white">Celkem</td>
-                      <td className="py-3 px-4 text-sm text-right font-bold text-green-400">
+                  </TableBody>
+                  <tfoot className="bg-muted/40 border-t border-border">
+                    <TableRow className="hover:bg-transparent">
+                      <TableCell className="py-4 px-4 text-sm font-bold text-foreground uppercase tracking-wider">Celkem</TableCell>
+                      <TableCell className="py-4 px-4 text-sm text-right font-bold text-status-success tabular-nums text-base">
                         {sem.totalSpent.toLocaleString("cs-CZ")} Kč
-                      </td>
-                      <td className="py-3 px-4 text-sm text-right font-bold text-yellow-400">
+                      </TableCell>
+                      <TableCell className="py-4 px-4 text-sm text-right font-bold text-status-pending tabular-nums text-base">
                         {sem.totalPending.toLocaleString("cs-CZ")} Kč
-                      </td>
-                      <td className="py-3 px-4 text-sm text-right font-bold text-white">
+                      </TableCell>
+                      <TableCell className="py-4 px-4 text-sm text-right font-bold text-foreground tabular-nums text-base">
                         {(sem.totalSpent + sem.totalPending).toLocaleString("cs-CZ")} Kč
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   </tfoot>
-                </table>
+                </Table>
               </div>
             </CardContent>
           </Card>
         ))
       ) : (
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardContent className="py-12 text-center">
-            <p className="text-slate-400">Žádná data k zobrazení</p>
+        <Card className="bg-card border-border shadow-sm">
+          <CardContent className="py-24 text-center">
+            <p className="text-muted-foreground font-bold italic">Žádná data k zobrazení</p>
           </CardContent>
         </Card>
       )}

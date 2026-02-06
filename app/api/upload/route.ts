@@ -6,14 +6,15 @@ import { fileTypeFromBuffer } from "file-type"
 import { MESSAGES } from "@/lib/constants/messages"
 
 // Allowed file extensions and MIME types for receipts
-const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif']
+const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif', 'pdf']
 const ALLOWED_MIME_TYPES = [
   'image/jpeg',
   'image/png', 
   'image/gif',
   'image/webp',
   'image/heic',
-  'image/heif'
+  'image/heif',
+  'application/pdf'
 ]
 
 export async function POST(request: NextRequest) {
@@ -29,29 +30,29 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData()
     const file = formData.get("file") as File
-    const transactionId = formData.get("transactionId") as string
+    const ticketId = formData.get("ticketId") as string
 
-    // Verify transaction ownership
-    if (!transactionId) {
+    // Verify ticket ownership
+    if (!ticketId) {
       return NextResponse.json(
         { error: MESSAGES.TRANSACTION.MISSING_ID },
         { status: 400 }
       )
     }
 
-    const transaction = await prisma.transaction.findUnique({
-      where: { id: transactionId },
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
       select: { requesterId: true }
     })
 
-    if (!transaction) {
+    if (!ticket) {
       return NextResponse.json(
-        { error: MESSAGES.TRANSACTION.TRANSACTION_NOT_FOUND },
+        { error: "Žádost nebyla nalezena" },
         { status: 404 }
       )
     }
 
-    const isOwner = transaction.requesterId === session.user.id
+    const isOwner = ticket.requesterId === session.user.id
     const isAdmin = session.user.role === "ADMIN"
     if (!isOwner && !isAdmin) {
       return NextResponse.json(
@@ -76,8 +77,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate file size (5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    // Validate file size (20MB)
+    if (file.size > 20 * 1024 * 1024) {
       return NextResponse.json(
         { error: MESSAGES.UPLOAD.FILE_TOO_LARGE },
         { status: 400 }
@@ -101,7 +102,7 @@ export async function POST(request: NextRequest) {
     const now = new Date()
     const year = now.getFullYear()
     const month = String(now.getMonth() + 1).padStart(2, "0")
-    const key = `receipts/${year}/${month}/${transactionId}-${Date.now()}.${fileType.ext}`
+    const key = `receipts/${year}/${month}/${ticketId}-${Date.now()}.${fileType.ext}`
 
     // Upload to MinIO
     const url = await uploadFile(buffer, key, fileType.mime)

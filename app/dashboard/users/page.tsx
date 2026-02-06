@@ -13,17 +13,20 @@ export default async function UsersPage() {
   }
 
   const users = await getUsers()
+  
+  // Serialize dates for client component
+  const serializedUsers = users.map(user => ({
+    ...user,
+    createdAt: user.createdAt.toISOString()
+  })) as any
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-white mb-2">Správa uživatelů</h1>
-        <p className="text-slate-400">
-          Správa rolí uživatelů
-        </p>
+        <h1 className="text-3xl font-black text-foreground mb-2">Správa uživatelů</h1>
       </div>
 
-      <UserManagement initialUsers={users} />
+      <UserManagement initialUsers={serializedUsers} />
     </div>
   )
 }

@@ -1,6 +1,5 @@
-"use client"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import {
     Select,
     SelectContent,
@@ -8,7 +7,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { updateTransactionExpenseType } from "@/lib/actions/transactions"
+import { updateReceiptExpenseType } from "@/lib/actions/receipts"
+import { ExpenseType } from "@prisma/client"
 import { toast } from "sonner"
 
 interface ExpenseTypeSelectProps {
@@ -22,16 +22,24 @@ export function ExpenseTypeSelect({
 }: ExpenseTypeSelectProps) {
     const [expenseType, setExpenseType] = useState(initialType)
     const [isLoading, setIsLoading] = useState(false)
+    const router = useRouter()
+
+    // Sync state with props when data is refreshed silently
+    useEffect(() => {
+        setExpenseType(initialType)
+    }, [initialType])
 
     async function handleChange(value: string) {
         setIsLoading(true)
-        const result = await updateTransactionExpenseType(transactionId, value as "MATERIAL" | "SERVICE")
+        const result = await updateReceiptExpenseType(transactionId, value as any)
 
         if (result.error) {
             toast.error(result.error)
         } else {
             setExpenseType(value)
             toast.success(value === "MATERIAL" ? "Označeno jako materiál" : "Označeno jako služba")
+            window.dispatchEvent(new CustomEvent("app-data-refresh"))
+            router.refresh()
         }
         setIsLoading(false)
     }
@@ -42,12 +50,12 @@ export function ExpenseTypeSelect({
             onValueChange={handleChange}
             disabled={isLoading}
         >
-            <SelectTrigger className={`w-[110px] h-8 bg-slate-900 border-slate-700 text-xs ${expenseType === "MATERIAL" ? "text-blue-400" : "text-purple-400"}`}>
+            <SelectTrigger className={`w-[110px] h-8 bg-background border-border text-xs ${expenseType === "MATERIAL" ? "text-expense-material" : "text-expense-service"}`}>
                 <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-slate-800 border-slate-700 text-white">
-                <SelectItem value="MATERIAL" className="text-blue-400">Materiál</SelectItem>
-                <SelectItem value="SERVICE" className="text-purple-400">Služba</SelectItem>
+            <SelectContent position="popper" className="bg-card border-border max-h-[none]">
+                <SelectItem value="MATERIAL" className="text-expense-material">Materiál</SelectItem>
+                <SelectItem value="SERVICE" className="text-expense-service">Služba</SelectItem>
             </SelectContent>
         </Select>
     )

@@ -16,14 +16,20 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { createDebtError } from "@/lib/actions/cash-register"
 import { toast } from "sonner"
+import { AlertCircle, Plus, Minus } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface DebtErrorDialogProps {
   currentTotal: number
   onSuccess?: () => void
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
-export function DebtErrorDialog({ currentTotal, onSuccess }: DebtErrorDialogProps) {
-  const [open, setOpen] = useState(false)
+export function DebtErrorDialog({ currentTotal, onSuccess, open: propOpen, onOpenChange: propOnOpenChange }: DebtErrorDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = propOpen !== undefined ? propOpen : internalOpen
+  const setOpen = propOnOpenChange !== undefined ? propOnOpenChange : setInternalOpen
   const [loading, setLoading] = useState(false)
   const [amount, setAmount] = useState("")
   const [isAdding, setIsAdding] = useState(true)
@@ -54,34 +60,12 @@ export function DebtErrorDialog({ currentTotal, onSuccess }: DebtErrorDialogProp
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="border-red-500/50 text-red-400 hover:bg-red-500/10">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4 mr-1"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-            />
-          </svg>
-          Upravit
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="bg-slate-800 border-slate-700">
+      <DialogContent className="bg-card border-border max-w-md rounded-[2.5rem]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle className="text-white">Dluh z chyb</DialogTitle>
-            <DialogDescription className="text-slate-400">
-              Aktuální stav: {currentTotal.toLocaleString("cs-CZ")} Kč
-            </DialogDescription>
+            <DialogTitle className="text-2xl font-black text-foreground">Oprava chybného dluhu</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-6 py-6">
             {/* Honeypot field - visually hidden, should not be filled by users */}
             <div className="hidden" aria-hidden="true">
               <Label htmlFor="phone_honey">Phone</Label>
@@ -92,26 +76,27 @@ export function DebtErrorDialog({ currentTotal, onSuccess }: DebtErrorDialogProp
                 autoComplete="off"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-3 bg-muted/30 p-1 rounded-2xl border border-border">
               <Button
                 type="button"
-                variant={isAdding ? "default" : "outline"}
+                className={`flex-1 rounded-xl h-10 font-black ${isAdding ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "bg-transparent text-muted-foreground hover:text-foreground"}`}
+                variant={isAdding ? "default" : "ghost"}
                 onClick={() => setIsAdding(true)}
-                className={isAdding ? "bg-red-600 hover:bg-red-700" : "border-slate-600"}
               >
-                + Přidat
+                <Plus className="w-4 h-4 mr-1" /> Přidat dluh
               </Button>
               <Button
                 type="button"
-                variant={!isAdding ? "default" : "outline"}
+                className={`flex-1 rounded-xl h-10 font-black ${!isAdding ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "bg-transparent text-muted-foreground hover:text-foreground"}`}
+                variant={!isAdding ? "default" : "ghost"}
                 onClick={() => setIsAdding(false)}
-                className={!isAdding ? "bg-green-600 hover:bg-green-700" : "border-slate-600"}
               >
-                − Odečíst
+                <Minus className="w-4 h-4 mr-1" /> Odečíst dluh
               </Button>
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="amount" className="text-slate-300">
+            
+            <div className="space-y-2">
+              <Label htmlFor="amount" className="text-sm font-black uppercase tracking-widest text-muted-foreground">
                 Částka (Kč) *
               </Label>
               <Input
@@ -121,40 +106,40 @@ export function DebtErrorDialog({ currentTotal, onSuccess }: DebtErrorDialogProp
                 min="0"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                placeholder="100"
+                placeholder="0.00"
                 required
-                className="bg-slate-900 border-slate-700 text-white"
+                className="bg-background border-border rounded-xl font-bold h-12 tabular-nums"
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="reason" className="text-slate-300">
-                Důvod *
+            <div className="space-y-2">
+              <Label htmlFor="reason" className="text-sm font-black uppercase tracking-widest text-muted-foreground">
+                Důvod / Poznámka *
               </Label>
               <Textarea
                 id="reason"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                placeholder="Popište důvod změny..."
+                placeholder="Uveďte důvod manuální opravy dluhu..."
                 required
-                className="bg-slate-900 border-slate-700 text-white resize-none"
+                className="bg-background border-border rounded-xl font-bold min-h-[100px] resize-none"
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               onClick={() => setOpen(false)}
-              className="text-slate-400"
+              className="rounded-full font-bold border-border"
             >
               Zrušit
             </Button>
             <Button
               type="submit"
               disabled={loading || !amount || !reason}
-              className={isAdding ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"}
+              className="rounded-full px-8 font-black bg-primary hover:bg-primary/90 text-primary-foreground"
             >
-              {loading ? "Ukládám..." : isAdding ? "Přidat dluh" : "Odečíst dluh"}
+              {loading ? "Ukládám..." : isAdding ? "Potvrdit dluh" : "Potvrdit odečet"}
             </Button>
           </DialogFooter>
         </form>

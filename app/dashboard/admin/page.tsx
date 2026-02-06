@@ -3,6 +3,9 @@ import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { SemesterStructuredList } from "@/components/dashboard/semester-structured-list"
+import { getSemester, sortSemesterKeys, getSemesterRange } from "@/lib/utils/semesters"
+
+import { getTicketsBySemester, getTicketSemesterTotals } from "@/lib/actions/tickets"
 
 export const dynamic = "force-dynamic"
 
@@ -24,70 +27,73 @@ export default async function FinanceDashboardPage() {
     redirect("/dashboard")
   }
 
-  // Fetch all transactions
-  const rawTransactionsList = await prisma.transaction.findMany({
-    orderBy: { createdAt: "desc" },
-    include: {
-      requester: { select: { id: true, fullName: true } },
-      section: { select: { id: true, name: true } },
-    },
+  // Get all unique semester keys from Tickets
+  const ticketDates = await prisma.ticket.findMany({
+    select: { createdAt: true, targetDate: true },
   })
 
-  // Serialize Decimals for Client Components
-  const transactions = rawTransactionsList.map(t => ({
-    ...t,
-    estimatedAmount: Number(t.estimatedAmount),
-    finalAmount: t.finalAmount ? Number(t.finalAmount) : null,
-    createdAt: t.createdAt.toISOString(),
-    updatedAt: t.updatedAt.toISOString(),
-    dueDate: t.dueDate ? t.dueDate.toISOString() : null,
-  })) as any
+  const semesterKeys = Array.from(new Set(
+    ticketDates.map(d => getSemester(new Date(d.targetDate || d.createdAt)))
+  ))
 
-  const pendingTransactions = (transactions as any[]).filter((t: any) => t.status === "PENDING")
-  const purchasedTransactions = (transactions as any[]).filter((t: any) => t.status === "PURCHASED")
+  const sortedKeys = sortSemesterKeys(semesterKeys)
+  const currentSem = sortedKeys[0]
+
+  // Get initial tickets (only for the expanded semester)
+  const { transactions: initialTransactions = [] } = currentSem 
+    ? await getTicketsBySemester(currentSem) 
+    : { transactions: [] }
+
+  // Fetch global ticket semester totals
+  const totalsResult = await getTicketSemesterTotals()
+  const semesterTotals = "totals" in totalsResult ? totalsResult.totals : {}
+
+  const pendingCount = await prisma.ticket.count({
+    where: { status: "PENDING_APPROVAL" }
+  })
+  const purchasedCount = await prisma.ticket.count({
+    where: { 
+      status: "APPROVED",
+      receipts: { some: {} } // Has at least one receipt but still in APPROVED phase
+    }
+  })
 
   return (
     <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Správa účtenek</h1>
-          <p className="text-slate-400">
-            Přehled všech finančních operací
-          </p>
+          <h1 className="text-3xl font-black text-foreground mb-2">Správa žádostí</h1>
         </div>
       </div>
 
       {/* Overview stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardHeader className="pb-2">
-            <CardDescription className="text-slate-400">
-              Čeká na schválení
-            </CardDescription>
-            <CardTitle className="text-4xl font-bold text-yellow-400">
-              {pendingTransactions.length}
-            </CardTitle>
-          </CardHeader>
+        <Card className="bg-card border-border shadow-sm rounded-[2.5rem] p-8 flex flex-col justify-between min-h-[160px]">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Čeká na schválení</h3>
+          <div className="flex items-baseline gap-2 mt-auto">
+            <span className="text-4xl font-black text-[oklch(0.75_0.15_85)] tabular-nums">
+              {pendingCount}
+            </span>
+          </div>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardHeader className="pb-2">
-            <CardDescription className="text-slate-400">
-              K ověření
-            </CardDescription>
-            <CardTitle className="text-4xl font-bold text-blue-400">
-              {purchasedTransactions.length}
-            </CardTitle>
-          </CardHeader>
+        <Card className="bg-card border-border shadow-sm rounded-[2.5rem] p-8 flex flex-col justify-between min-h-[160px]">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">K ověření</h3>
+          <div className="flex items-baseline gap-2 mt-auto">
+            <span className="text-4xl font-black text-foreground tabular-nums">
+              {purchasedCount}
+            </span>
+          </div>
         </Card>
       </div>
 
-      {/* Structured Transactions List */}
+      {/* Structured List */}
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-white">Přehled žádostí</h2>
         <SemesterStructuredList
-          transactions={transactions}
+          initialTransactions={initialTransactions as any}
+          semesterKeys={sortedKeys}
+          semesterTotals={semesterTotals}
           isAdmin={true}
           showActions={true}
         />

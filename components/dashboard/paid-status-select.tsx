@@ -1,6 +1,5 @@
-"use client"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import {
   Select,
   SelectContent,
@@ -8,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { updateTransactionPaidStatus } from "@/lib/actions/transactions"
+import { toggleReceiptPaid } from "@/lib/actions/receipts"
 import { toast } from "sonner"
 
 interface PaidStatusSelectProps {
@@ -22,17 +21,25 @@ export function PaidStatusSelect({
 }: PaidStatusSelectProps) {
   const [isPaid, setIsPaid] = useState(initialStatus)
   const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
+
+  // Sync state with props when data is refreshed silently
+  useEffect(() => {
+    setIsPaid(initialStatus)
+  }, [initialStatus])
 
   async function handleToggle(value: string) {
     const checked = value === "paid"
     setIsLoading(true)
-    const result = await updateTransactionPaidStatus(transactionId, checked)
+    const result = await toggleReceiptPaid(transactionId, checked)
 
     if (result.error) {
       toast.error(result.error)
     } else {
       setIsPaid(checked)
       toast.success(checked ? "Označeno jako proplaceno" : "Označeno jako neproplaceno")
+      window.dispatchEvent(new CustomEvent("app-data-refresh"))
+      router.refresh()
     }
     setIsLoading(false)
   }
@@ -43,12 +50,12 @@ export function PaidStatusSelect({
       onValueChange={handleToggle}
       disabled={isLoading}
     >
-      <SelectTrigger className={`w-[140px] h-8 bg-slate-900 border-slate-700 text-xs ${isPaid ? "text-green-400" : "text-yellow-400"}`}>
+      <SelectTrigger className={`w-[140px] h-8 bg-background border-border text-xs ${isPaid ? "text-status-success" : "text-status-pending"}`}>
         <SelectValue />
       </SelectTrigger>
-      <SelectContent className="bg-slate-800 border-slate-700 text-white">
-        <SelectItem value="unpaid" className="text-yellow-400">Neproplaceno</SelectItem>
-        <SelectItem value="paid" className="text-green-400">Proplaceno</SelectItem>
+      <SelectContent position="popper" className="bg-card border-border max-h-[none]">
+        <SelectItem value="unpaid" className="text-status-pending">Neproplaceno</SelectItem>
+        <SelectItem value="paid" className="text-status-success">Proplaceno</SelectItem>
       </SelectContent>
     </Select>
   )

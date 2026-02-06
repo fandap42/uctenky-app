@@ -1,9 +1,150 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+  binaryTargets   = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String?   @map("password_hash")
+  fullName      String?   @map("full_name")
+  role          AppRole   @default(MEMBER)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  emailVerified DateTime? @map("email_verified")
+  image         String?
+  name          String?
+  sectionId     String?   @map("section_id")
+  accounts      Account[]
+  sessions      Session[]
+  tickets       Ticket[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model Section {
+  id        String   @id @default(cuid())
+  name      String
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  tickets   Ticket[]
+
+  @@map("sections")
+}
+
+model Ticket {
+  id           String       @id @default(cuid())
+  requesterId  String?      @map("requester_id")
+  sectionId    String       @map("section_id")
+  status       TicketStatus @default(PENDING_APPROVAL)
+  purpose      String
+  targetDate   DateTime     @map("target_date")
+  budgetAmount Decimal      @map("budget_amount") @db.Decimal(12, 2)
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+  note         String?
+  isFiled      Boolean      @default(false) @map("is_filed")
+  receipts     Receipt[]
+  requester    User?        @relation(fields: [requesterId], references: [id])
+  section      Section      @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@index([requesterId])
+  @@index([sectionId])
+  @@index([status])
+  @@map("tickets")
+}
+
+model Receipt {
+  id          String        @id @default(cuid())
+  store       String
+  date        DateTime
+  amount      Decimal       @db.Decimal(12, 2)
+  fileUrl     String        @map("file_url")
+  isPaid      Boolean       @default(false) @map("is_paid")
+  expenseType ExpenseType   @default(MATERIAL) @map("expense_type")
+  status      ReceiptStatus @default(PENDING)
+  ticketId    String        @map("ticket_id")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  isFiled     Boolean       @default(false) @map("is_filed")
+  note        String?
+  ticket      Ticket        @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@index([status])
+  @@map("receipts")
+}
+
+model Deposit {
+  id          String   @id @default(cuid())
+  amount      Decimal  @db.Decimal(12, 2)
+  description String?
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("deposits")
+}
+
+model DebtError {
+  id        String   @id @default(cuid())
+  amount    Decimal  @db.Decimal(12, 2)
+  reason    String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("debt_errors")
+}
+
+model CashOnHand {
+  id        String   @id @default(cuid())
+  amount    Decimal  @db.Decimal(12, 2)
+  reason    String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("cash_on_hand")
 }
 
 enum AppRole {
@@ -20,95 +161,21 @@ enum AppRole {
   ADMIN
 }
 
-enum TransStatus {
-  DRAFT
+enum TicketStatus {
+  PENDING_APPROVAL
+  APPROVED
+  VERIFICATION
+  DONE
+  REJECTED
+}
+
+enum ReceiptStatus {
   PENDING
   APPROVED
-  PURCHASED
-  VERIFIED
   REJECTED
 }
 
 enum ExpenseType {
   MATERIAL
   SERVICE
-}
-
-model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  passwordHash  String    @map("password_hash")
-  fullName      String    @map("full_name")
-  role          AppRole   @default(MEMBER)
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
-  
-  transactions  Transaction[]
-  
-  @@map("users")
-}
-
-model Section {
-  id          String    @id @default(cuid())
-  name        String
-  isActive    Boolean   @default(true) @map("is_active")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-  
-  transactions Transaction[]
-  
-  @@map("sections")
-}
-
-model Transaction {
-  id              String      @id @default(cuid())
-  requesterId     String      @map("requester_id")
-  requester       User        @relation(fields: [requesterId], references: [id], onDelete: Cascade)
-  sectionId       String      @map("section_id")
-  section         Section     @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  status          TransStatus @default(DRAFT)
-  purpose         String
-  store           String?
-  dueDate         DateTime?   @map("due_date")
-  estimatedAmount Decimal     @map("estimated_amount") @db.Decimal(12, 2)
-  finalAmount     Decimal?    @map("final_amount") @db.Decimal(12, 2)
-  receiptUrl      String?     @map("receipt_url")
-  isPaid          Boolean     @default(false) @map("is_paid")
-  isFiled         Boolean     @default(false) @map("is_filed")
-  expenseType     ExpenseType @default(MATERIAL) @map("expense_type")
-  createdAt       DateTime    @default(now()) @map("created_at")
-  updatedAt       DateTime    @updatedAt @map("updated_at")
-  
-  @@index([requesterId])
-  @@index([sectionId])
-  @@index([status])
-  @@map("transactions")
-}
-
-model Deposit {
-  id          String   @id @default(cuid())
-  amount      Decimal  @db.Decimal(12, 2)
-  description String?
-  date        DateTime @default(now())
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  @@map("deposits")
-}
-
-model DebtError {
-  id          String   @id @default(cuid())
-  amount      Decimal  @db.Decimal(12, 2)
-  reason      String
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  @@map("debt_errors")
-}
-
-model CashOnHand {
-  id          String   @id @default(cuid())
-  amount      Decimal  @db.Decimal(12, 2)
-  reason      String
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  @@map("cash_on_hand")
 }

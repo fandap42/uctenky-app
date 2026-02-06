@@ -1,13 +1,34 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
+/* ============================================
+   4FIS BRAND IDENTITY & DESIGN SYSTEM
+   Light Mode - Official 4FIS Aesthetic
+   ============================================ */
 
 @theme inline {
+  /* 4FIS Brand Colors */
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  
+  /* Semantic Colors */
+  --color-success: oklch(0.86 0.22 163); /* 4FIS Mint */
+  --color-warning: oklch(0.85 0.20 85);
+  --color-destructive: oklch(0.60 0.25 25);
+  
+  /* Surface & Background */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-surface: oklch(1 0 0);
+  --color-border: var(--border);
+  
+  /* Typography */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
+  
+  /* Sidebar tokens */
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -16,27 +37,27 @@
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
+  
+  /* Chart colors */
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
+  
+  /* UI tokens */
   --color-ring: var(--ring);
   --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
   --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  
+  /* Border radius - Increased for modern 4FIS feel */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -44,75 +65,219 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+  
+  /* === STATUS COLORS === */
+  --color-status-pending: var(--status-pending);
+  --color-status-pending-foreground: var(--status-pending-foreground);
+  --color-status-pending-muted: var(--status-pending-muted);
+  
+  --color-status-approved: var(--status-approved);
+  --color-status-approved-foreground: var(--status-approved-foreground);
+  --color-status-approved-muted: var(--status-approved-muted);
+  
+  --color-status-verification: var(--status-verification);
+  --color-status-verification-foreground: var(--status-verification-foreground);
+  --color-status-verification-muted: var(--status-verification-muted);
+  
+  --color-status-success: var(--status-success);
+  --color-status-success-foreground: var(--status-success-foreground);
+  --color-status-success-muted: var(--status-success-muted);
+  
+  --color-status-rejected: var(--destructive);
+  --color-status-rejected-foreground: var(--destructive-foreground);
+  --color-status-rejected-muted: oklch(0.60 0.25 25 / 0.1);
+  
+  /* === FUNCTIONAL COLORS === */
+  --color-paid: var(--paid);
+  --color-paid-foreground: var(--paid-foreground);
+  --color-unpaid: var(--unpaid);
+  --color-unpaid-foreground: var(--unpaid-foreground);
+  --color-filed: var(--filed);
+  --color-filed-foreground: var(--filed-foreground);
+  
+  /* === EXPENSE TYPE COLORS === */
+  --color-expense-material: var(--expense-material);
+  --color-expense-material-foreground: var(--expense-material-foreground);
+  --color-expense-service: var(--expense-service);
+  --color-expense-service-foreground: var(--expense-service-foreground);
+  
+  /* === TYPOGRAPHY SIZES === */
+  --text-micro: 0.5625rem;
+  --text-tiny: 0.625rem;
+  --text-caption: 0.6875rem;
 }
 
+/* ============================================
+   4FIS BRAND PALETTE - LIGHT MODE (DEFAULT)
+   ============================================ */
 :root {
-  --radius: 0.625rem;
+  --radius: 0.75rem;
+  
+  /* Canvas: Pure White */
   --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
+  --foreground: oklch(0.20 0.03 260);
+  
+  /* Surfaces */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
+  --card-foreground: oklch(0.20 0.03 260);
+  
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.984 0.003 247.858);
-  --sidebar-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-primary: oklch(0.208 0.042 265.755);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.968 0.007 247.896);
-  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.704 0.04 256.788);
+  --popover-foreground: oklch(0.20 0.03 260);
+  
+  /* Primary: 4FIS Mint */
+  --primary: oklch(0.86 0.22 163);
+  --primary-foreground: oklch(0.20 0.03 260); /* Dark text on Mint for contrast */
+  
+  /* Secondary: 4FIS Vibrant Blue */
+  --secondary: oklch(0.55 0.25 264);
+  --secondary-foreground: oklch(0.98 0.01 264);
+  
+  /* Muted: Soft grey */
+  --muted: oklch(0.96 0.01 260);
+  --muted-foreground: oklch(0.55 0.04 260);
+  
+  /* Accent: Lavender tint */
+  --accent: oklch(0.92 0.05 285);
+  --accent-foreground: oklch(0.40 0.15 285);
+  
+  /* Semantic */
+  --destructive: oklch(0.60 0.25 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  
+  /* Borders */
+  --border: oklch(0.92 0.01 260);
+  --input: oklch(0.92 0.01 260);
+  --ring: oklch(0.86 0.22 163); /* Ring follows primary mint */
+  
+  /* Chart colors */
+  --chart-1: oklch(0.86 0.22 163);
+  --chart-2: oklch(0.55 0.25 264);
+  --chart-3: oklch(0.92 0.05 285);
+  --chart-4: oklch(0.85 0.20 85);
+  --chart-5: oklch(0.60 0.25 25);
+  
+  /* Sidebar: White with Mint accents */
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.20 0.03 260);
+  --sidebar-primary: oklch(0.86 0.22 163);
+  --sidebar-primary-foreground: oklch(0.20 0.03 260);
+  --sidebar-accent: oklch(0.96 0.22 163 / 0.1);
+  --sidebar-accent-foreground: oklch(0.20 0.03 260);
+  --sidebar-border: oklch(0.92 0.01 260);
+  --sidebar-ring: oklch(0.86 0.22 163);
+  
+  /* === STATUS COLORS === */
+  --status-pending: oklch(0.80 0.15 85);              /* Amber/Yellow */
+  --status-pending-foreground: oklch(0.30 0.10 85);
+  --status-pending-muted: oklch(0.80 0.15 85 / 0.1);
+  
+  --status-approved: oklch(0.55 0.20 264);            /* Blue */
+  --status-approved-foreground: oklch(0.98 0.01 264);
+  --status-approved-muted: oklch(0.55 0.20 264 / 0.1);
+  
+  --status-verification: oklch(0.55 0.20 290);        /* Purple */
+  --status-verification-foreground: oklch(0.98 0.01 290);
+  --status-verification-muted: oklch(0.55 0.20 290 / 0.1);
+  
+  --status-success: oklch(0.55 0.18 150);             /* Emerald/Green */
+  --status-success-foreground: oklch(0.98 0.01 150);
+  --status-success-muted: oklch(0.55 0.18 150 / 0.1);
+  
+  /* === FUNCTIONAL COLORS === */
+  --paid: oklch(0.55 0.18 150);                       /* Emerald for paid */
+  --paid-foreground: oklch(0.98 0.01 150);
+  --unpaid: oklch(0.75 0.15 50);                      /* Orange for unpaid */
+  --unpaid-foreground: oklch(0.30 0.10 50);
+  --filed: oklch(0.60 0.16 150);                      /* Teal for filed */
+  --filed-foreground: oklch(0.98 0.01 150);
+  
+  /* === EXPENSE TYPE COLORS === */
+  --expense-material: oklch(0.60 0.20 280);           /* Purple */
+  --expense-material-foreground: oklch(0.98 0.01 280);
+  --expense-service: oklch(0.55 0.20 264);            /* Blue */
+  --expense-service-foreground: oklch(0.98 0.01 264);
 }
 
+/* ============================================
+   DARK MODE OVERRIDES
+   ============================================ */
 .dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
+  /* Canvas: Dark */
+  --background: oklch(0.15 0.02 260);
+  --foreground: oklch(0.95 0.01 260);
+  
+  /* Surfaces */
+  --card: oklch(0.18 0.02 260);
+  --card-foreground: oklch(0.95 0.01 260);
+  
+  --popover: oklch(0.18 0.02 260);
+  --popover-foreground: oklch(0.95 0.01 260);
+  
+  /* Primary: 4FIS Mint (slightly adjusted for dark) */
+  --primary: oklch(0.75 0.20 163);
+  --primary-foreground: oklch(0.15 0.02 260);
+  
+  /* Secondary: 4FIS Vibrant Blue */
+  --secondary: oklch(0.60 0.22 264);
+  --secondary-foreground: oklch(0.95 0.01 264);
+  
+  /* Muted */
+  --muted: oklch(0.25 0.02 260);
+  --muted-foreground: oklch(0.65 0.03 260);
+  
+  /* Accent */
+  --accent: oklch(0.30 0.05 285);
+  --accent-foreground: oklch(0.80 0.10 285);
+  
+  /* Semantic */
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.95 0 0);
+  
+  /* Borders */
+  --border: oklch(0.28 0.02 260);
+  --input: oklch(0.28 0.02 260);
+  --ring: oklch(0.75 0.20 163);
+  
+  /* Sidebar */
+  --sidebar: oklch(0.18 0.02 260);
+  --sidebar-foreground: oklch(0.95 0.01 260);
+  --sidebar-primary: oklch(0.75 0.20 163);
+  --sidebar-primary-foreground: oklch(0.15 0.02 260);
+  --sidebar-accent: oklch(0.25 0.15 163 / 0.2);
+  --sidebar-accent-foreground: oklch(0.95 0.01 260);
+  --sidebar-border: oklch(0.28 0.02 260);
+  --sidebar-ring: oklch(0.75 0.20 163);
+  
+  /* === STATUS COLORS (Dark Mode) === */
+  --status-pending: oklch(0.70 0.15 85);
+  --status-pending-foreground: oklch(0.15 0.05 85);
+  --status-pending-muted: oklch(0.70 0.15 85 / 0.15);
+  
+  --status-approved: oklch(0.60 0.18 264);
+  --status-approved-foreground: oklch(0.95 0.01 264);
+  --status-approved-muted: oklch(0.60 0.18 264 / 0.15);
+  
+  --status-verification: oklch(0.60 0.18 290);
+  --status-verification-foreground: oklch(0.95 0.01 290);
+  --status-verification-muted: oklch(0.60 0.18 290 / 0.15);
+  
+  --status-success: oklch(0.60 0.16 150);
+  --status-success-foreground: oklch(0.95 0.01 150);
+  --status-success-muted: oklch(0.60 0.16 150 / 0.15);
+  
+  /* === FUNCTIONAL COLORS (Dark Mode) === */
+  --paid: oklch(0.60 0.16 150);
+  --paid-foreground: oklch(0.95 0.01 150);
+  --unpaid: oklch(0.70 0.15 50);
+  --unpaid-foreground: oklch(0.15 0.05 50);
+  --filed: oklch(0.55 0.14 150);
+  --filed-foreground: oklch(0.95 0.01 150);
+  
+  /* === EXPENSE TYPE COLORS (Dark Mode) === */
+  --expense-material: oklch(0.55 0.18 280);
+  --expense-material-foreground: oklch(0.95 0.01 280);
+  --expense-service: oklch(0.60 0.18 264);
+  --expense-service-foreground: oklch(0.95 0.01 264);
 }
 
 @layer base {
@@ -123,3 +288,77 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ============================================
+   4FIS BRAND UTILITIES
+   ============================================ */
+@layer utilities {
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+  
+  .financial-data {
+    @apply tabular-nums font-semibold text-foreground;
+  }
+  
+  .lumina-table-head {
+    @apply text-xs uppercase tracking-wider font-medium text-muted-foreground bg-muted/30;
+  }
+
+  /* 4FIS Brand Text Gradients */
+  .text-4fis-mint {
+    color: oklch(0.86 0.22 163);
+  }
+  
+  .text-4fis-blue {
+    color: oklch(0.55 0.25 264);
+  }
+  
+  /* === TYPOGRAPHY UTILITY CLASSES === */
+  
+  /* Micro text - 9px */
+  .text-micro {
+    font-size: 0.5625rem;
+    line-height: 1.2;
+  }
+  
+  /* Tiny text - 10px */
+  .text-tiny {
+    font-size: 0.625rem;
+    line-height: 1.3;
+  }
+  
+  /* Caption text - 11px */
+  .text-caption {
+    font-size: 0.6875rem;
+    line-height: 1.4;
+  }
+  
+  /* Table header / Label styling */
+  .text-label {
+    font-size: 0.625rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    @apply text-muted-foreground;
+  }
+  
+  /* Badge text styling */
+  .text-badge {
+    font-size: 0.625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  /* Table header row styling */
+  .table-header-cell {
+    @apply py-3 px-4;
+    font-size: 0.625rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    @apply text-muted-foreground;
+  }
+}
+
