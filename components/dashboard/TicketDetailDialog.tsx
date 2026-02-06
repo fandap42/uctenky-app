@@ -330,8 +330,49 @@ export function TicketDetailDialog({
             {/* Desktop Table View */}
             <div className="hidden md:block">
               {receipts.length === 0 ? (
-                <div className="text-center py-20 border border-dashed border-border/60 rounded-xl bg-card text-muted-foreground">
-                  <p className="text-sm font-medium">Zatím nebyly nahrány žádné účtenky</p>
+                <div className="text-center py-8 border border-dashed border-border/60 rounded-xl bg-card text-muted-foreground">
+                  <p className="text-sm font-medium mb-4">Zatím nebyly nahrány žádné účtenky</p>
+                  <div className="text-left max-w-2xl mx-auto px-6 space-y-3">
+                    <div className="text-xs space-y-3">
+                      <div className="space-y-2">
+                        <p className="font-semibold text-orange-600 dark:text-orange-400 flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4" />
+                          Důležité:
+                        </p>
+                        <ul className="space-y-1.5 text-muted-foreground">
+                          <li className="flex items-start gap-2">
+                            <span className="text-orange-500 font-bold">•</span>
+                            <span>Pouze <strong>platba v hotovosti</strong></span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="text-orange-500 font-bold">•</span>
+                            <span><strong>Nesmí obsahovat alkohol</strong></span>
+                          </li>
+                        </ul>
+                      </div>
+                      <div className="pt-3 border-t border-border/40 space-y-2">
+                        <p className="font-semibold">Na účtence MUSÍ být čitelné:</p>
+                        <ul className="space-y-1.5 text-muted-foreground">
+                          <li className="flex items-start gap-2">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-green-500 mt-0.5 flex-shrink-0" />
+                            <span><strong>Datum nákupu</strong></span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-green-500 mt-0.5 flex-shrink-0" />
+                            <span><strong>Celková částka</strong></span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-green-500 mt-0.5 flex-shrink-0" />
+                            <span><strong>Platba v hotovosti</strong> musí být viditelná na účtence</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-green-500 mt-0.5 flex-shrink-0" />
+                            <span><strong>Název obchodu</strong></span>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="rounded-xl border border-border/60 overflow-hidden bg-card shadow-sm">
@@ -444,8 +485,49 @@ export function TicketDetailDialog({
             {/* Mobile Table View */}
             <div className="md:hidden">
               {receipts.length === 0 ? (
-                <div className="text-center py-10 border border-dashed border-border/60 rounded-xl bg-card text-muted-foreground">
-                  <p className="text-sm font-medium">Zatím nebyly nahrány žádné účtenky</p>
+                <div className="text-center py-6 border border-dashed border-border/60 rounded-xl bg-card text-muted-foreground">
+                  <p className="text-sm font-medium mb-3">Zatím nebyly nahrány žádné účtenky</p>
+                  <div className="text-left px-4 space-y-2">
+                    <div className="text-xs space-y-2.5">
+                      <div className="space-y-1.5">
+                        <p className="font-semibold text-orange-600 dark:text-orange-400 flex items-center gap-1.5">
+                          <AlertCircle className="w-3.5 h-3.5" />
+                          Důležité:
+                        </p>
+                        <ul className="space-y-1 text-[11px] text-muted-foreground">
+                          <li className="flex items-start gap-1.5">
+                            <span className="text-orange-500">•</span>
+                            <span>Pouze <strong>platba v hotovosti</strong></span>
+                          </li>
+                          <li className="flex items-start gap-1.5">
+                            <span className="text-orange-500">•</span>
+                            <span><strong>Nesmí obsahovat alkohol</strong></span>
+                          </li>
+                        </ul>
+                      </div>
+                      <div className="pt-2 border-t border-border/40 space-y-1.5">
+                        <p className="font-semibold">Musí být čitelné:</p>
+                        <ul className="space-y-1 text-muted-foreground text-[11px]">
+                          <li className="flex items-start gap-1.5">
+                            <CheckCircle2 className="w-3 h-3 text-green-500 mt-0.5 flex-shrink-0" />
+                            <span><strong>Datum nákupu</strong></span>
+                          </li>
+                          <li className="flex items-start gap-1.5">
+                            <CheckCircle2 className="w-3 h-3 text-green-500 mt-0.5 flex-shrink-0" />
+                            <span><strong>Celková částka</strong></span>
+                          </li>
+                          <li className="flex items-start gap-1.5">
+                            <CheckCircle2 className="w-3 h-3 text-green-500 mt-0.5 flex-shrink-0" />
+                            <span><strong>Platba v hotovosti</strong></span>
+                          </li>
+                          <li className="flex items-start gap-1.5">
+                            <CheckCircle2 className="w-3 h-3 text-green-500 mt-0.5 flex-shrink-0" />
+                            <span><strong>Název obchodu</strong></span>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="rounded-xl border border-border/60 overflow-hidden bg-card shadow-sm overflow-x-auto">
