@@ -105,17 +105,9 @@ export async function deleteUser(userId: string) {
       return { error: "Nemůžete smazat sami sebe" }
     }
 
-    // Instead of deleting, anonymize the user
-    await prisma.user.update({
+    // Hard delete - tickets will be unlinked (requesterId set to null)
+    await prisma.user.delete({
       where: { id: userId },
-      data: {
-        fullName: "smazaný uživatel",
-        name: "deleted",
-        email: `deleted-${userId}@deleted.local`,
-        emailVerified: null,
-        image: null,
-        passwordHash: null,
-      },
     })
 
     revalidatePath("/dashboard/users")

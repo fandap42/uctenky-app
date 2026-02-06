@@ -132,8 +132,8 @@ const TicketCardItem = memo(function TicketCardItem({ ticket, onClick }: { ticke
           <Badge variant="secondary" className="text-[10px] font-bold h-7 px-3 bg-muted text-muted-foreground uppercase tracking-wider rounded-lg max-w-[120px] truncate flex-shrink-0" title={ticket.section.name}>
             {ticket.section.name}
           </Badge>
-          <span className="text-xs text-muted-foreground font-medium truncate min-w-0" title={ticket.requester.fullName}>
-            {ticket.requester.fullName}
+          <span className="text-xs text-muted-foreground font-medium truncate min-w-0" title={ticket.requester?.fullName || "Smazaný uživatel"}>
+            {ticket.requester?.fullName || "Smazaný uživatel"}
           </span>
         </div>
 

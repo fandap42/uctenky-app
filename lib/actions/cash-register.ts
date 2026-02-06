@@ -264,7 +264,7 @@ export async function getAllCashRegisterData() {
           updatedAt: receipt.updatedAt.toISOString(),
           // Flatten some fields for backward compatibility
           sectionName: ticket.section.name,
-          requesterName: ticket.requester.fullName,
+          requesterName: ticket.requester?.fullName || "Smazaný uživatel",
           purpose: ticket.purpose,
           // Explicitly serialize the nested ticket to avoid Decimal crash
           ticket: {
@@ -404,7 +404,7 @@ export async function getPokladnaSemesterData(semesterKey: string) {
           createdAt: receipt.createdAt.toISOString(),
           updatedAt: receipt.updatedAt.toISOString(),
           sectionName: ticket.section.name,
-          requesterName: ticket.requester.fullName,
+          requesterName: ticket.requester?.fullName || "Smazaný uživatel",
           purpose: ticket.purpose,
           // Explicitly serialize the nested ticket to avoid Decimal crash
           ticket: {

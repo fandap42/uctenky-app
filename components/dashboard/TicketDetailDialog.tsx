@@ -280,7 +280,7 @@ export function TicketDetailDialog({
                             <User className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                           </AvatarFallback>
                         </Avatar>
-                        <span className="font-medium text-foreground">{ticket.requester.fullName}</span>
+                        <span className="font-medium text-foreground">{ticket.requester?.fullName || "Smazaný uživatel"}</span>
                       </div>
                       <div className="flex items-center gap-1 sm:gap-1.5">
                         <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
