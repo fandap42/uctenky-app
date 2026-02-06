@@ -82,10 +82,10 @@ export async function uploadReceipt(formData: FormData) {
       return { error: MESSAGES.UPLOAD.INVALID_CONTENT }
     }
 
-    // Validation: Date
+    // Validation: Date (skip for admins)
     const ticketCreatedAt = new Date(ticket.createdAt)
     const ticketDate = new Date(ticketCreatedAt < ticket.targetDate ? ticketCreatedAt : ticket.targetDate)
-    if (date < ticketDate) {
+    if (date < ticketDate && !isAdmin) {
       return { error: "Datum účtenky nesmí být starší než datum vytvoření žádosti" }
     }
 
