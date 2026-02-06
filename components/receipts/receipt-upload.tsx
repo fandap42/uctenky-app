@@ -45,6 +45,12 @@ export function ReceiptUpload({ ticketId }: ReceiptUploadProps) {
     e.preventDefault()
     if (!file || !amount || !date) return
 
+    const amountNum = parseFloat(amount)
+    if (isNaN(amountNum) || amountNum < 0) {
+      toast.error("Částka nemůže být záporné číslo")
+      return
+    }
+
     setIsLoading(true)
     const formData = new FormData()
     formData.append("file", file)
@@ -140,6 +146,8 @@ export function ReceiptUpload({ ticketId }: ReceiptUploadProps) {
                   id="amount"
                   type="number"
                   step="0.01"
+                  min="0"
+                  inputMode="decimal"
                   placeholder="0.00"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}

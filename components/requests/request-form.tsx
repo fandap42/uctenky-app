@@ -133,6 +133,7 @@ export function RequestForm({ trigger, sections }: RequestFormProps) {
                 type="number"
                 min="0"
                 step="1"
+                inputMode="decimal"
                 placeholder="0"
                 required
                 className="bg-muted/50 border-none h-12 rounded-xl text-foreground font-black tabular-nums"

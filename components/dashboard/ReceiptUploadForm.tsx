@@ -67,6 +67,12 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
       return
     }
 
+    const amountNum = parseFloat(amount)
+    if (isNaN(amountNum) || amountNum < 0) {
+      toast.error("Částka nemůže být záporná čísla")
+      return
+    }
+
     setUploading(true)
     try {
       const formData = new FormData()
@@ -152,6 +158,8 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
             <Input 
               type="number" 
               step="0.01"
+              min="0"
+              inputMode="decimal"
               value={amount} 
               onChange={(e) => setAmount(e.target.value)} 
               placeholder="0.00"
