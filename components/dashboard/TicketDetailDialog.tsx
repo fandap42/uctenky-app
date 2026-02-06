@@ -449,13 +449,15 @@ export function TicketDetailDialog({
                 </div>
               ) : (
                 <div className="rounded-xl border border-border/60 overflow-hidden bg-card shadow-sm overflow-x-auto">
-                  <Table className="min-w-[500px]">
+                  <Table className={cn("min-w-[500px]", isAdmin && "min-w-[800px]")}>
                     <TableHeader className="bg-muted/80 border-b border-border">
                       <TableRow className="hover:bg-transparent border-border/60">
                         <TableHead className="py-3 px-3 font-bold text-xs uppercase tracking-wider text-muted-foreground">Obchod</TableHead>
                         <TableHead className="py-3 px-3 font-bold text-xs uppercase tracking-wider text-muted-foreground text-right">Částka</TableHead>
+                        {isAdmin && <TableHead className="py-3 px-3 font-bold text-xs uppercase tracking-wider text-muted-foreground text-center">Typ</TableHead>}
                         <TableHead className="py-3 px-3 font-bold text-xs uppercase tracking-wider text-muted-foreground text-center">Přílohy</TableHead>
-                        <TableHead className="py-3 px-3 font-bold text-xs uppercase tracking-wider text-muted-foreground text-center">Status</TableHead>
+                        <TableHead className="py-3 px-3 font-bold text-xs uppercase tracking-wider text-muted-foreground text-center">Proplaceno</TableHead>
+                        {isAdmin && <TableHead className="py-3 px-3 font-bold text-xs uppercase tracking-wider text-muted-foreground text-center">Založeno</TableHead>}
                         <TableHead className="py-3 px-3 font-bold text-xs uppercase tracking-wider text-muted-foreground text-right">Akce</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -479,18 +481,61 @@ export function TicketDetailDialog({
                             <TableCell className="py-3 px-3 text-right">
                               <span className={cn("font-bold tabular-nums text-sm", isRejected && "line-through")}>{receipt.amount.toLocaleString("cs-CZ")} Kč</span>
                             </TableCell>
+                            {isAdmin && (
+                              <TableCell className="py-3 px-3 text-center">
+                                <div className="flex justify-center">
+                                  <Select 
+                                    value={receipt.expenseType} 
+                                    onValueChange={(v) => handleExpenseTypeChange(receipt.id, v as ExpenseType)}
+                                  >
+                                    <SelectTrigger className="h-7 w-[100px] text-xs font-medium">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="MATERIAL" className="text-xs">Materiál</SelectItem>
+                                      <SelectItem value="SERVICE" className="text-xs">Služba</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </TableCell>
+                            )}
                             <TableCell className="py-3 px-3 text-center">
                               <div className="flex items-center justify-center gap-2">
+                                {isAdmin && <EditNoteDialog receiptId={receipt.id} initialNote={receipt.note} />}
                                 <ReceiptViewDialog transactionId={receipt.id} purpose={receipt.store} />
                               </div>
                             </TableCell>
                             <TableCell className="py-3 px-3 text-center">
-                              <div className="flex justify-center">
-                                <PaymentStatusIndicator isPaid={receipt.isPaid} size="lg" />
-                              </div>
+                              {isAdmin ? (
+                                <div className="flex justify-center">
+                                  <FunctionalCheckbox 
+                                    variant="paid"
+                                    checked={receipt.isPaid} 
+                                    onCheckedChange={(checked: boolean) => handleReceiptPaidToggle(receipt.id, !!checked)}
+                                    disabled={isRejected}
+                                  />
+                                </div>
+                              ) : (
+                                <div className="flex justify-center">
+                                  <PaymentStatusIndicator isPaid={receipt.isPaid} size="lg" />
+                                </div>
+                              )}
                             </TableCell>
+                            {isAdmin && (
+                              <TableCell className="py-3 px-3 text-center">
+                                <div className="flex justify-center">
+                                  <FunctionalCheckbox 
+                                    variant="filed"
+                                    checked={receipt.isFiled} 
+                                    onCheckedChange={(checked: boolean) => handleReceiptFiledToggle(receipt.id, !!checked)}
+                                    disabled={isRejected}
+                                  />
+                                </div>
+                              </TableCell>
+                            )}
                             <TableCell className="text-right py-3 px-3">
                               <div className="flex items-center justify-end gap-1">
+                                {isAdmin && <EditReceiptDialog receipt={receipt} />}
                                 {(isOwner && (ticket.status === "APPROVED" || ticket.status === "PENDING_APPROVAL") || isAdmin) && (
                                   <Button 
                                     variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10"
