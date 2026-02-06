@@ -125,7 +125,7 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
                 <Camera className="w-5 h-5 text-primary" />
               </div>
               <p className="text-xs font-bold text-muted-foreground">Klikněte pro nahrání účtenky</p>
-              <p className="text-[10px] text-muted-foreground">JPG, PNG, PDF nebo HEIC (max 10MB)</p>
+              <p className="text-[10px] text-muted-foreground">JPG, PNG, PDF nebo HEIC (max 20MB)</p>
             </div>
           )}
           <input 

@@ -8,14 +8,15 @@ import { MESSAGES } from "@/lib/constants/messages"
 import { uploadFile } from "@/lib/s3"
 import { fileTypeFromBuffer } from "file-type"
 
-const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif']
+const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif', 'pdf']
 const ALLOWED_MIME_TYPES = [
   'image/jpeg',
   'image/png', 
   'image/gif',
   'image/webp',
   'image/heic',
-  'image/heif'
+  'image/heif',
+  'application/pdf'
 ]
 
 export async function uploadReceipt(formData: FormData) {
@@ -66,8 +67,8 @@ export async function uploadReceipt(formData: FormData) {
       return { error: MESSAGES.UPLOAD.INVALID_EXTENSION }
     }
 
-    // Validate file size (10MB)
-    if (file.size > 10 * 1024 * 1024) {
+    // Validate file size (20MB)
+    if (file.size > 20 * 1024 * 1024) {
       return { error: MESSAGES.UPLOAD.FILE_TOO_LARGE }
     }
 

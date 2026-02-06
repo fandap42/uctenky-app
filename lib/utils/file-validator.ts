@@ -4,8 +4,8 @@
 
 import { MESSAGES } from "@/lib/constants/messages"
 
-export const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif']
-export const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+export const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif', 'pdf']
+export const MAX_FILE_SIZE = 20 * 1024 * 1024 // 20MB
 
 export interface ValidationResult {
   valid: boolean
@@ -33,6 +33,11 @@ export function validateReceiptFile(file: File | null): ValidationResult {
   
   // HEIC/HEIF files are allowed (will be converted on client)
   if (fileName.endsWith('.heic') || fileName.endsWith('.heif')) {
+    return { valid: true }
+  }
+
+  // PDF files are allowed
+  if (fileName.endsWith('.pdf')) {
     return { valid: true }
   }
 

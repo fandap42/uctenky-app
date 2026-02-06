@@ -13,7 +13,7 @@ describe('File Validator', () => {
       const file = new File(['x'.repeat(MAX_FILE_SIZE + 1)], 'large.jpg', { type: 'image/jpeg' })
       const result = validateReceiptFile(file)
       expect(result.valid).toBe(false)
-      expect(result.error).toContain('5 MB')
+      expect(result.error).toContain('20 MB')
     })
 
     it('should accept valid JPEG file', () => {
@@ -41,10 +41,10 @@ describe('File Validator', () => {
       expect(result.valid).toBe(true)
     })
 
-    it('should reject invalid extension', () => {
+    it('should accept PDF file', () => {
       const file = new File(['test'], 'document.pdf', { type: 'application/pdf' })
       const result = validateReceiptFile(file)
-      expect(result.valid).toBe(false)
+      expect(result.valid).toBe(true)
     })
 
     it('should reject exe disguised as image', () => {
@@ -88,6 +88,10 @@ describe('File Validator', () => {
     it('should include HEIC/HEIF formats', () => {
       expect(ALLOWED_EXTENSIONS).toContain('heic')
       expect(ALLOWED_EXTENSIONS).toContain('heif')
+    })
+
+    it('should include PDF format', () => {
+      expect(ALLOWED_EXTENSIONS).toContain('pdf')
     })
   })
 })

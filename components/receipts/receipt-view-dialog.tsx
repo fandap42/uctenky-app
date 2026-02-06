@@ -9,7 +9,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { ImageIcon, Download, ExternalLink, Loader2, AlertCircle } from "lucide-react"
+import { ImageIcon, Download, ExternalLink, Loader2, AlertCircle, FileText } from "lucide-react"
 
 interface ReceiptViewDialogProps {
   transactionId: string
@@ -20,23 +20,47 @@ export function ReceiptViewDialog({ transactionId: receiptId, purpose }: Receipt
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [isPdf, setIsPdf] = useState(false)
   const imageUrl = `/api/receipts/view?id=${receiptId}`
 
+  // Check if the file is PDF by fetching headers
+  const checkFileType = async () => {
+    try {
+      const response = await fetch(imageUrl, { method: 'HEAD' })
+      const contentType = response.headers.get('Content-Type') || ''
+      setIsPdf(contentType.includes('application/pdf'))
+    } catch {
+      // Default to image if we can't determine
+      setIsPdf(false)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Detect file type when dialog opens
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open)
+    if (open) {
+      setLoading(true)
+      checkFileType()
+    }
+  }
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button 
           variant="ghost" 
           size="sm" 
           className="text-primary/60 hover:text-primary transition-colors p-0 h-auto"
         >
-          <ImageIcon className="w-4 h-4" />
+          {isPdf ? <FileText className="w-4 h-4" /> : <ImageIcon className="w-4 h-4" />}
         </Button>
       </DialogTrigger>
       <DialogContent className="!w-[calc(100vw-24px)] !max-w-[900px] !h-[calc(100vh-48px)] !max-h-[calc(100vh-48px)] flex flex-col p-3 sm:p-4 bg-card border-border">
         <DialogHeader className="flex flex-row items-center justify-between gap-2 pr-8 border-b border-border pb-2 shrink-0">
           <DialogTitle className="text-foreground flex items-center gap-2 text-sm sm:text-base truncate">
-            <ImageIcon className="w-4 h-4 text-primary/70 shrink-0" />
+            {isPdf ? <FileText className="w-4 h-4 text-primary/70 shrink-0" /> : <ImageIcon className="w-4 h-4 text-primary/70 shrink-0" />}
             <span className="truncate">{purpose}</span>
           </DialogTitle>
           <div className="flex items-center gap-1 shrink-0">
@@ -46,7 +70,7 @@ export function ReceiptViewDialog({ transactionId: receiptId, purpose }: Receipt
               className="h-8 w-8"
               asChild
             >
-              <a href={imageUrl} download={`uctenka-${receiptId}.png`}>
+              <a href={imageUrl} download={`uctenka-${receiptId}${isPdf ? '.pdf' : '.png'}`}>
                 <Download className="w-4 h-4" />
               </a>
             </Button>
@@ -74,6 +98,12 @@ export function ReceiptViewDialog({ transactionId: receiptId, purpose }: Receipt
             <div className="flex flex-col items-center gap-2 text-muted-foreground p-8 text-center">
               <AlertCircle className="w-10 h-10 text-destructive/50" />
               <p className="text-sm font-medium">Soubor účtenky nebyl nalezen</p>
+            </div>
+          ) : isPdf ? (
+            <div className="flex flex-col items-center gap-4 p-8 text-center">
+              <FileText className="w-16 h-16 text-primary/50" />
+              <p className="text-sm font-medium text-foreground">PDF soubor s účtenkou</p>
+              <p className="text-xs text-muted-foreground">Klikněte na ikonu {'\u2197'} pro otevření v novém okně</p>
             </div>
           ) : (
             <img
