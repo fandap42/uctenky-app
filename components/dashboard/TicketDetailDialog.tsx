@@ -597,7 +597,7 @@ export function TicketDetailDialog({
                 {isOwner && ticket.status === "APPROVED" && (
                     <Button 
                       onClick={handleSubmitForVerification}
-                      className="h-9 sm:h-12 px-6 sm:px-8 text-[11px] sm:text-base font-black bg-status-verification hover:bg-status-verification/90 text-status-verification-foreground shadow-xl shadow-status-verification/30 uppercase tracking-widest ring-2 ring-status-verification/50 ring-offset-2 ring-offset-background"
+                      className="h-8 sm:h-9 px-3.5 sm:px-4 text-[10px] sm:text-xs font-bold bg-status-verification hover:bg-status-verification/90 text-status-verification-foreground"
                       disabled={loading || receipts.length === 0}
                     >
                       Odeslat ke schválení
