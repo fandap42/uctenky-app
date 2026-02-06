@@ -10,20 +10,13 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 export const prisma = globalForPrisma.prisma ?? (() => {
-  console.log("[prisma] Initializing new PrismaClient with Adapter...")
   try {
     const pool = new Pool({ connectionString })
     const adapter = new PrismaPg(pool)
     const client = new PrismaClient({ 
       adapter,
-      log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+      log: []
     })
-    
-    // Check if models are attached
-    if (process.env.NODE_ENV === "development") {
-      const models = Object.keys(client).filter(k => !k.startsWith("$") && !k.startsWith("_"))
-      console.log("[prisma] Client initialized with models:", models)
-    }
     
     return client
   } catch (error) {
