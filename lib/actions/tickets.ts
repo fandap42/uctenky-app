@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { TicketStatus } from "@prisma/client"
 import { MESSAGES } from "@/lib/constants/messages"
-import { getSemester, getSemesterRange } from "@/lib/utils/semesters"
+import { getSemester, getSemesterRange, getCurrentSemester } from "@/lib/utils/semesters"
 
 export async function createTicket(formData: FormData) {
   const session = await auth()
@@ -184,6 +184,10 @@ export async function getTickets(filters: {
   status?: TicketStatus | TicketStatus[]
 } = {}) {
   try {
+    // Get current semester range to filter out old DONE tickets
+    const currentSemester = getCurrentSemester()
+    const { start: semesterStart } = getSemesterRange(currentSemester)
+
     const tickets = await prisma.ticket.findMany({
       where: {
         ...(filters.requesterId && { requesterId: filters.requesterId }),
@@ -193,6 +197,16 @@ export async function getTickets(filters: {
             ? { in: filters.status }
             : filters.status,
         }),
+        // Hide DONE tickets from previous semesters (based on target date)
+        OR: [
+          { status: { not: "DONE" } },
+          { 
+            AND: [
+              { status: "DONE" },
+              { targetDate: { gte: semesterStart } }
+            ]
+          }
+        ]
       },
       include: {
         requester: { select: { id: true, fullName: true } },
