@@ -79,7 +79,7 @@ model Section {
 
 model Ticket {
   id           String       @id @default(cuid())
-  requesterId  String       @map("requester_id")
+  requesterId  String?      @map("requester_id")
   sectionId    String       @map("section_id")
   status       TicketStatus @default(PENDING_APPROVAL)
   purpose      String
@@ -90,7 +90,7 @@ model Ticket {
   isFiled      Boolean      @default(false) @map("is_filed")
   note         String?
   receipts     Receipt[]
-  requester    User         @relation(fields: [requesterId], references: [id], onDelete: Cascade)
+  requester    User?        @relation(fields: [requesterId], references: [id], onDelete: SetNull)
   section      Section      @relation(fields: [sectionId], references: [id], onDelete: Cascade)
 
   @@index([requesterId])

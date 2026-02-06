@@ -105,8 +105,17 @@ export async function deleteUser(userId: string) {
       return { error: "Nemůžete smazat sami sebe" }
     }
 
-    await prisma.user.delete({
+    // Instead of deleting, anonymize the user
+    await prisma.user.update({
       where: { id: userId },
+      data: {
+        fullName: "smazaný uživatel",
+        name: "deleted",
+        email: `deleted-${userId}@deleted.local`,
+        emailVerified: null,
+        image: null,
+        passwordHash: null,
+      },
     })
 
     revalidatePath("/dashboard/users")
