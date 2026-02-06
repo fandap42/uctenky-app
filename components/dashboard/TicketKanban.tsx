@@ -12,7 +12,7 @@ interface Ticket {
   requester: { fullName: string }
   section: { name: string }
   receipts: any[]
-  createdAt: string
+  targetDate: string
 }
 
 interface TicketKanbanProps {
@@ -97,7 +97,7 @@ const TicketCard = memo(function TicketCard({ ticket, onClick }: { ticket: Ticke
         <div className="flex justify-between items-start gap-2">
           <h4 className="font-bold text-sm leading-tight line-clamp-2 min-w-0" title={ticket.purpose}>{ticket.purpose}</h4>
           <span className="text-[10px] text-muted-foreground whitespace-nowrap flex-shrink-0">
-            {new Date(ticket.createdAt).toLocaleDateString("cs-CZ")}
+            {new Date(ticket.targetDate).toLocaleDateString("cs-CZ")}
           </span>
         </div>
         
