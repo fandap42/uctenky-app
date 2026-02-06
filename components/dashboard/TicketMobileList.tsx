@@ -12,6 +12,7 @@ interface Ticket {
   requester: { fullName: string }
   section: { name: string }
   receipts: any[]
+  createdAt: string
 }
 
 interface TicketMobileListProps {
@@ -118,7 +119,12 @@ const TicketCardItem = memo(function TicketCardItem({ ticket, onClick }: { ticke
         {/* Row 1: Title + Amount */}
         <div className="flex justify-between items-start gap-2">
            <h4 className="font-bold text-lg leading-snug line-clamp-2 min-w-0 flex-1 tracking-tight" title={ticket.purpose}>{ticket.purpose}</h4>
-           <span className="text-xl font-black text-foreground tabular-nums flex-shrink-0">{ticket.budgetAmount.toLocaleString()} Kč</span>
+           <div className="flex flex-col items-end flex-shrink-0">
+             <span className="text-[10px] text-muted-foreground">
+               {new Date(ticket.createdAt).toLocaleDateString("cs-CZ")}
+             </span>
+             <span className="text-xl font-black text-foreground tabular-nums">{ticket.budgetAmount.toLocaleString()} Kč</span>
+           </div>
         </div>
         
         {/* Row 2: Metadata */}
