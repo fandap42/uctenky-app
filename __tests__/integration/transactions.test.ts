@@ -77,7 +77,7 @@ describe('Transaction Server Actions', () => {
                 createdAt: new Date(),
                 updatedAt: new Date(),
             })
-            vi.mocked(prisma.transaction.update).mockResolvedValue({} as any)
+            vi.mocked(prisma.transaction.update).mockResolvedValue({} as unknown as Awaited<ReturnType<typeof prisma.transaction.update>>)
 
             const { updateTransactionStatus } = await import('@/lib/actions/transactions')
 

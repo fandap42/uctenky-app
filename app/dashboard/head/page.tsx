@@ -1,7 +1,6 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import { Card } from "@/components/ui/card"
 import { isHeadRole, isAdmin, getSectionForRole } from "@/lib/utils/roles"
 import { getTickets } from "@/lib/actions/tickets"
 import { SectionFilter } from "@/components/dashboard/section-filter"
@@ -34,7 +33,7 @@ export default async function SectionHeadDashboardPage({ searchParams }: PagePro
 
   // Handle section selection
   let section = null
-  let allSections: any[] = []
+  let allSections: Array<{ id: string; name: string }> = []
   const userIsAdmin = isAdmin(user.role)
 
   if (userIsAdmin) {
@@ -77,7 +76,22 @@ export default async function SectionHeadDashboardPage({ searchParams }: PagePro
   const { tickets: rawTickets = [] } = await getTickets({ sectionId: section.id })
 
   // Explicitly serialize to ensure no Decimal objects pass through
-  const tickets = rawTickets.map(t => ({
+  type SerializedTicket = {
+    id: string
+    purpose: string
+    budgetAmount: number
+    status: (typeof rawTickets)[number]['status']
+    requesterId: string
+    requester: { fullName: string }
+    sectionId: string
+    section: { name: string }
+    receipts: Array<{ amount: number } & Omit<(typeof rawTickets)[number]['receipts'][number], 'amount'>>
+    createdAt: (typeof rawTickets)[number]['createdAt']
+    targetDate: (typeof rawTickets)[number]['targetDate']
+    isFiled?: boolean
+  }
+  
+  const tickets: SerializedTicket[] = rawTickets.map(t => ({
     ...t,
     budgetAmount: Number(t.budgetAmount),
     receipts: t.receipts.map(r => ({
@@ -106,7 +120,7 @@ export default async function SectionHeadDashboardPage({ searchParams }: PagePro
 
       {/* Kanban Board */}
       <SectionDashboardClient 
-        initialTickets={tickets as any}
+        initialTickets={tickets}
         currentUserId={session.user.id}
         currentUserRole={user.role}
       />

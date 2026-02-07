@@ -269,7 +269,7 @@ export function TicketDetailDialog({
                     <DialogTitle className="text-lg sm:text-xl md:text-2xl font-black text-foreground tracking-tight leading-none uppercase mt-2">
                       {ticket.purpose}
                     </DialogTitle>
-                    {isAdmin && <EditTransactionDialog transaction={ticket as any} />}
+                    {isAdmin && <EditTransactionDialog transaction={ticket as unknown as { id: string; purpose: string; budgetAmount: number; targetDate?: Date | string; status: string; note?: string | null }} />}
                   </div>
                   <DialogDescription asChild className="text-muted-foreground font-medium text-xs md:text-sm mt-1 flex items-center gap-x-3 gap-y-1.5 flex-wrap leading-none">
                     <div>

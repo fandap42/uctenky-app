@@ -81,9 +81,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (account?.provider === "slack") {
           const allowedTeamId = (process.env.SLACK_ALLOWED_TEAM_ID || "").trim()
           // Slack profile structure can vary between OpenID Connect and older OAuth
-          const userTeamId = ((profile as any)?.team_id || 
-                            (profile as any)?.team?.id || 
-                            (profile as any)?.["https://slack.com/team_id"] || "").trim()
+          const profileData = profile as unknown as { 
+            team_id?: string; 
+            team?: { id?: string }; 
+            "https://slack.com/team_id"?: string 
+          }
+          const userTeamId = (profileData?.team_id || 
+                            profileData?.team?.id || 
+                            profileData?.["https://slack.com/team_id"] || "").trim()
           
           console.log(`[auth] Slack login attempt. Team ID: "${userTeamId}", Allowed: "${allowedTeamId}"`)
 

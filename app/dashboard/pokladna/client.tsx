@@ -16,13 +16,76 @@ import { CollapsibleSemester } from "@/components/dashboard/collapsible-semester
 import { TicketDetailDialog } from "@/components/dashboard/TicketDetailDialog"
 import { useSession } from "next-auth/react"
 
+interface PokladnaUser {
+  id: string
+  fullName: string
+  pokladnaBalance: number
+}
+
+interface RegisterData {
+  debtErrors: Array<{ id: string; amount: number; reason: string; createdAt: Date | string }>
+  cashOnHand: Array<{ id: string; amount: number; reason: string; createdAt: Date | string }>
+  receipts: Array<{ ticket?: { id?: string; [key: string]: unknown }; [key: string]: unknown }>
+  realCash: number
+  currentBalance: number
+  totalDebtErrors: number
+  totalCashOnHand: number
+}
+
+interface MonthlyGroup {
+  monthName: string
+  month: number
+  year: number
+  transactions: TransactionItem[]
+  deposits: DepositItem[]
+  endBalance: number
+  startBalance: number
+}
+
+interface TransactionItem {
+  id: string
+  date?: Date | string
+  dueDate?: Date | string
+  createdAt?: Date | string
+  displayDate?: Date
+  amount?: number
+  finalAmount?: number
+  estimatedAmount?: number
+  isPaid?: boolean
+  status?: string
+  section?: { name: string }
+  requester?: { fullName: string }
+  purpose?: string
+  store?: string
+  note?: string
+  isFiled?: boolean
+  ticket?: { id: string; [key: string]: unknown }
+  [key: string]: unknown
+}
+
+interface DepositItem {
+  id: string
+  date: Date | string
+  displayDate?: Date
+  amount: number
+  description?: string
+  [key: string]: unknown
+}
+
+interface RawSemesterData {
+  openingBalance: number
+  deposits: DepositItem[]
+  transactions?: TransactionItem[]
+  receipts?: TransactionItem[]
+}
+
 interface PokladnaClientProps {
   initialBalance: number
   unpaidCount: number
-  currentUsers: any[]
-  registerData: any // Context (debtErrors, cashOnHand, etc.)
+  currentUsers: PokladnaUser[]
+  registerData: RegisterData
   semesterKeys: string[]
-  initialSemesterData: any
+  initialSemesterData: RawSemesterData
 }
 
 const MONTH_NAMES = [
@@ -30,12 +93,11 @@ const MONTH_NAMES = [
   "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec"
 ]
 
-function MonthlyPokladnaCard({ group, onTicketClick }: { group: any, onTicketClick?: (ticket: any) => void }) {
+function MonthlyPokladnaCard({ group, onTicketClick }: { group: MonthlyGroup, onTicketClick?: (ticket: { id: string; [key: string]: unknown }) => void }) {
   const [pageSize, setPageSize] = useState<number | "all">(10)
   const [currentPage, setCurrentPage] = useState(1)
 
   const totalItems = group.transactions.length + group.deposits.length
-  const effectivePageSize = pageSize === "all" ? Math.max(totalItems, 1) : pageSize
   const totalPages = pageSize === "all" ? 1 : Math.ceil(totalItems / (pageSize as number))
 
   return (
@@ -87,7 +149,7 @@ function MonthlyPokladnaCard({ group, onTicketClick }: { group: any, onTicketCli
 export function PokladnaClient({ 
   initialBalance, 
   unpaidCount, 
-  currentUsers,
+  currentUsers: _currentUsers,
   registerData,
   semesterKeys,
   initialSemesterData
@@ -101,10 +163,11 @@ export function PokladnaClient({
 
   const selectedTicket = useMemo(() => {
     if (!selectedTicketId) return null
-    return registerData.receipts.find((r: any) => r.ticket?.id === selectedTicketId)?.ticket || null
+    const receipt = registerData.receipts.find((r: { ticket?: { id?: string } }) => r.ticket?.id === selectedTicketId)
+    return receipt && 'ticket' in receipt ? receipt.ticket : null
   }, [selectedTicketId, registerData.receipts])
 
-  const renderSemesterContent = (data: any) => {
+  const renderSemesterContent = (data: RawSemesterData) => {
     // data contains openingBalance, deposits, and either transactions or receipts
     const { openingBalance, deposits } = data
     // Handle both naming conventions (server returns receipts, client prop expects transactions)
@@ -115,22 +178,22 @@ export function PokladnaClient({
       monthName: string,
       month: number,
       year: number,
-      transactions: any[],
-      deposits: any[],
+      transactions: Array<Record<string, unknown>>,
+      deposits: Array<Record<string, unknown>>,
       sortKey: number,
       endBalance: number,
       startBalance: number
     }> = {}
 
     const allData = [
-      ...transactions.map((t: any) => ({ 
+      ...transactions.map((t: Record<string, unknown>) => ({ 
         ...t, 
-        displayDate: new Date(t.date || t.dueDate || t.createdAt), 
+        displayDate: new Date((t.date || t.dueDate || t.createdAt) as string | Date), 
         type: 'TR', 
         // Handle both Receipt (amount) and older Ticket (finalAmount/estimatedAmount) structures
         amount: -Number(t.amount || t.finalAmount || t.estimatedAmount || 0) 
       })),
-      ...deposits.map((d: any) => ({ 
+      ...deposits.map((d: { date: Date | string; amount: number; [key: string]: unknown }) => ({
         ...d, 
         displayDate: new Date(d.date), 
         type: 'DEP', 

@@ -70,15 +70,15 @@ export async function GET(request: NextRequest) {
     }
 
     // Stream the body to the client
-    return new NextResponse(s3Response.Body as any, {
+    return new NextResponse(s3Response.Body as ReadableStream | null, {
       headers: {
         "Content-Type": s3Response.ContentType || "application/octet-stream",
         "Cache-Control": "private, max-age=3600",
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Handle specific S3 errors
-    if (error.name === "NoSuchKey") {
+    if (error && typeof error === 'object' && 'name' in error && error.name === "NoSuchKey") {
       return new NextResponse("Receipt file not found in storage", { status: 404 })
     }
     

@@ -16,16 +16,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const isNavigatingRef = useRef(false)
   const navTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Auto-scroll to top when pathname changes
-  useEffect(() => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = 0
-      lastScrollTop.current = 0
-    }
-    handleNavClick()
-  }, [pathname])
-
-  const handleNavClick = () => {
+  const handleNavClick = useCallback(() => {
     if (navTimeoutRef.current) {
       clearTimeout(navTimeoutRef.current)
     }
@@ -44,7 +35,16 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         lastScrollTop.current = scrollContainerRef.current.scrollTop
       }
     }, 1200)
-  }
+  }, [])
+
+  // Auto-scroll to top when pathname changes
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0
+      lastScrollTop.current = 0
+    }
+    handleNavClick()
+  }, [pathname, handleNavClick])
 
   useEffect(() => {
     const container = scrollContainerRef.current

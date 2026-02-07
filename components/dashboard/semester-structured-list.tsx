@@ -39,8 +39,8 @@ interface Transaction {
   isFiled?: boolean
   expenseType?: ExpenseType
   budgetAmount?: number
-  targetDate?: any
-  amount?: any
+  targetDate?: Date | string
+  amount?: number
   fileUrl?: string | null
   receiptUrl?: string | null
   note?: string | null
@@ -61,7 +61,7 @@ interface StructuredListProps {
   filters?: {
     requesterId?: string
     sectionId?: string
-    status?: any
+    status?: TicketStatus | TicketStatus[]
   }
   showNotes?: boolean
 }
@@ -179,7 +179,7 @@ function MonthlyTransactionCard({
                     <div className="flex items-center justify-end gap-1">
                       {isAdmin && (
                         <>
-                          <EditTransactionDialog transaction={tx as any} />
+                          <EditTransactionDialog transaction={tx as unknown as { id: string; purpose: string; budgetAmount: number; targetDate?: Date | string; status: string; note?: string | null }} />
                           <DeleteButton 
                             onDelete={() => tx.fileUrl ? deleteReceipt(tx.id) : deleteTicket(tx.id)} 
                             iconOnly 

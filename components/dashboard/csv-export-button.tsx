@@ -8,8 +8,8 @@ interface Transaction {
   id: string
   purpose: string
   store?: string | null
-  estimatedAmount: any
-  finalAmount: any
+  estimatedAmount: number
+  finalAmount: number
   status: string
   isPaid: boolean
   createdAt: Date | string

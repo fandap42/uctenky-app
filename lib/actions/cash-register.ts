@@ -273,7 +273,7 @@ export async function getAllCashRegisterData() {
             createdAt: ticket.createdAt.toISOString(),
             updatedAt: ticket.updatedAt.toISOString(),
             targetDate: ticket.targetDate.toISOString(),
-            receipts: (ticket.receipts || []).map((tr: any) => ({
+            receipts: (ticket.receipts || []).map((tr: { amount: number | { toNumber: () => number }; date: Date; createdAt: Date; updatedAt: Date; [key: string]: unknown }) => ({
               ...tr,
               amount: Number(tr.amount),
               date: tr.date.toISOString(),
@@ -413,7 +413,7 @@ export async function getPokladnaSemesterData(semesterKey: string) {
             createdAt: ticket.createdAt.toISOString(),
             updatedAt: ticket.updatedAt.toISOString(),
             targetDate: ticket.targetDate.toISOString(),
-            receipts: (ticket.receipts || []).map((tr: any) => ({
+            receipts: (ticket.receipts || []).map((tr: { amount: number | { toNumber: () => number }; date: Date; createdAt: Date; updatedAt: Date; [key: string]: unknown }) => ({
               ...tr,
               amount: Number(tr.amount),
               date: tr.date.toISOString(),
