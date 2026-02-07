@@ -24,6 +24,7 @@ import { updateUser, changeUserPassword, deleteUser } from "@/actions/users"
 import { toast } from "sonner"
 import { UserCog, Trash2, KeyRound } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { AppRole } from "@prisma/client"
 
 interface User {
   id: string
@@ -50,7 +51,7 @@ export function EditUserDialog({ user }: EditUserDialogProps) {
     setIsLoading(true)
 
     const result = await updateUser(user.id, {
-      role: role as "MEMBER" | "ADMIN" | "HEAD_VEDENI" | "HEAD_FINANCE" | "HEAD_HR" | "HEAD_PR" | "HEAD_MEDIA" | "HEAD_VCC",
+      role: role as AppRole,
     })
 
     if (result.error) {

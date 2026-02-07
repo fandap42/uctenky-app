@@ -29,12 +29,39 @@ const dateFormatter = new Intl.DateTimeFormat("cs-CZ", {
   year: "numeric",
 })
 
+interface TransactionItem {
+  id: string
+  dueDate?: Date | string
+  createdAt?: Date | string
+  displayDate?: Date
+  amount?: number
+  isPaid?: boolean
+  status?: string
+  section?: { name: string }
+  requester?: { fullName: string }
+  purpose?: string
+  store?: string
+  note?: string
+  isFiled?: boolean
+  ticket?: { id: string; [key: string]: unknown }
+  [key: string]: unknown
+}
+
+interface DepositItem {
+  id: string
+  date: Date | string
+  displayDate?: Date
+  amount: number
+  description?: string
+  [key: string]: unknown
+}
+
 interface OverviewTableProps {
-  transactions: Array<{ [key: string]: unknown }>
-  deposits: Array<{ [key: string]: unknown }>
+  transactions: TransactionItem[]
+  deposits: DepositItem[]
   pageSize?: number | "all"
   currentPage?: number
-  onTicketClick?: (ticket: unknown) => void
+  onTicketClick?: (ticket: { id: string; [key: string]: unknown }) => void
 }
 
 export function OverviewTable({ 

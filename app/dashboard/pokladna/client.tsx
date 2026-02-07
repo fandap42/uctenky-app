@@ -25,23 +25,58 @@ interface PokladnaUser {
 interface RegisterData {
   debtErrors: Array<{ id: string; amount: number; reason: string; createdAt: Date | string }>
   cashOnHand: Array<{ id: string; amount: number; reason: string; createdAt: Date | string }>
+  receipts: Array<{ ticket?: { id?: string; [key: string]: unknown }; [key: string]: unknown }>
+  realCash: number
+  currentBalance: number
+  totalDebtErrors: number
+  totalCashOnHand: number
 }
 
 interface MonthlyGroup {
   monthName: string
   month: number
   year: number
-  transactions: Array<{ [key: string]: unknown }>
-  deposits: Array<{ [key: string]: unknown }>
+  transactions: TransactionItem[]
+  deposits: DepositItem[]
   endBalance: number
   startBalance: number
 }
 
-interface SemesterData {
-  [key: string]: {
-    groups: MonthlyGroup[]
-    startingBalance: number
-  }
+interface TransactionItem {
+  id: string
+  date?: Date | string
+  dueDate?: Date | string
+  createdAt?: Date | string
+  displayDate?: Date
+  amount?: number
+  finalAmount?: number
+  estimatedAmount?: number
+  isPaid?: boolean
+  status?: string
+  section?: { name: string }
+  requester?: { fullName: string }
+  purpose?: string
+  store?: string
+  note?: string
+  isFiled?: boolean
+  ticket?: { id: string; [key: string]: unknown }
+  [key: string]: unknown
+}
+
+interface DepositItem {
+  id: string
+  date: Date | string
+  displayDate?: Date
+  amount: number
+  description?: string
+  [key: string]: unknown
+}
+
+interface RawSemesterData {
+  openingBalance: number
+  deposits: DepositItem[]
+  transactions?: TransactionItem[]
+  receipts?: TransactionItem[]
 }
 
 interface PokladnaClientProps {
@@ -50,7 +85,7 @@ interface PokladnaClientProps {
   currentUsers: PokladnaUser[]
   registerData: RegisterData
   semesterKeys: string[]
-  initialSemesterData: SemesterData
+  initialSemesterData: RawSemesterData
 }
 
 const MONTH_NAMES = [
@@ -58,7 +93,7 @@ const MONTH_NAMES = [
   "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec"
 ]
 
-function MonthlyPokladnaCard({ group, onTicketClick }: { group: MonthlyGroup, onTicketClick?: (ticket: unknown) => void }) {
+function MonthlyPokladnaCard({ group, onTicketClick }: { group: MonthlyGroup, onTicketClick?: (ticket: { id: string; [key: string]: unknown }) => void }) {
   const [pageSize, setPageSize] = useState<number | "all">(10)
   const [currentPage, setCurrentPage] = useState(1)
 
@@ -132,7 +167,7 @@ export function PokladnaClient({
     return receipt && 'ticket' in receipt ? receipt.ticket : null
   }, [selectedTicketId, registerData.receipts])
 
-  const renderSemesterContent = (data: { openingBalance: number; deposits: Array<{ date: Date | string; amount: number; [key: string]: unknown }>; transactions?: Array<Record<string, unknown>>; receipts?: Array<Record<string, unknown>> }) => {
+  const renderSemesterContent = (data: RawSemesterData) => {
     // data contains openingBalance, deposits, and either transactions or receipts
     const { openingBalance, deposits } = data
     // Handle both naming conventions (server returns receipts, client prop expects transactions)

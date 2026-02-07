@@ -5,25 +5,25 @@ import { ChevronDown, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 
-interface CollapsibleSemesterProps {
+interface CollapsibleSemesterProps<T> {
   semesterKey: string
-  fetchData: () => Promise<unknown>
-  renderContent: (data: unknown) => React.ReactNode
-  initialData?: unknown
+  fetchData: () => Promise<T | { error: string }>
+  renderContent: (data: T) => React.ReactNode
+  initialData?: T
   defaultExpanded?: boolean
   headerExtra?: React.ReactNode
 }
 
-export function CollapsibleSemester({
+export function CollapsibleSemester<T>({
   semesterKey,
   fetchData,
   renderContent,
   initialData,
   defaultExpanded = false,
   headerExtra,
-}: CollapsibleSemesterProps) {
+}: CollapsibleSemesterProps<T>) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded)
-  const [data, setData] = useState<unknown>(initialData)
+  const [data, setData] = useState<T | null>(initialData ?? null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -52,10 +52,10 @@ export function CollapsibleSemester({
     setError(null)
     try {
       const result = await fetchData()
-      if (result.error) {
-        setError(result.error)
+      if (result && typeof result === 'object' && 'error' in result) {
+        setError(result.error as string)
       } else {
-        setData(result)
+        setData(result as T)
       }
     } catch {
       if (!silent) setError("Nepodařilo se načíst data")

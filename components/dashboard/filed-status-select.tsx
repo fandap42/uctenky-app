@@ -13,7 +13,7 @@ import { toast } from "sonner"
 interface FiledStatusSelectProps {
   transactionId: string
   initialStatus: boolean
-  onStatusUpdate?: (id: string, isFiled: boolean) => Promise<unknown>
+  onStatusUpdate?: (id: string, isFiled: boolean) => Promise<{ success?: true; error?: string }>
 }
 
 export function FiledStatusSelect({

@@ -4,6 +4,12 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
+interface Receipt {
+  id: string
+  isPaid: boolean
+  [key: string]: unknown
+}
+
 interface Ticket {
   id: string
   purpose: string
@@ -11,7 +17,7 @@ interface Ticket {
   status: TicketStatus
   requester: { fullName: string }
   section: { name: string }
-  receipts: Array<{ [key: string]: unknown }>
+  receipts: Receipt[]
   targetDate: string
 }
 
