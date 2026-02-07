@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { validateReceiptFile, isHeicFile, ALLOWED_EXTENSIONS, MAX_FILE_SIZE } from '@/lib/utils/file-validator'
 
 describe('File Validator', () => {

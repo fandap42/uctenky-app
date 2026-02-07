@@ -6,10 +6,9 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { uploadReceipt } from "@/lib/actions/receipts"
 import { validateReceiptFile, isHeicFile, convertHeicToJpeg } from "@/lib/utils/file-validator"
-import { Upload, X, Loader2, Camera } from "lucide-react"
+import { Loader2, Camera } from "lucide-react"
 import { ExpenseType } from "@prisma/client"
 import { Textarea } from "@/components/ui/textarea"
 
@@ -29,7 +28,7 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
   const [store, setStore] = useState("")
   const [amount, setAmount] = useState("")
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
-  const [expenseType, setExpenseType] = useState<ExpenseType>("MATERIAL")
+  const [expenseType, _setExpenseType] = useState<ExpenseType>("MATERIAL")
   const [note, setNote] = useState("")
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,7 +47,7 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
         setConverting(true)
         toast.info("Převádím HEIC na JPEG...")
         processedFile = await convertHeicToJpeg(selectedFile)
-      } catch (error) {
+      } catch {
         toast.error("Chyba při převodu HEIC souboru")
         return
       } finally {

@@ -1,9 +1,9 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { SemesterStructuredList } from "@/components/dashboard/semester-structured-list"
-import { getSemester, sortSemesterKeys, getSemesterRange } from "@/lib/utils/semesters"
+import { getSemester } from "@/lib/utils/semesters"
 
 import { getTicketsBySemester, getTicketSemesterTotals } from "@/lib/actions/tickets"
 

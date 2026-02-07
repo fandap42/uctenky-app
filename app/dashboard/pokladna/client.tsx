@@ -35,7 +35,6 @@ function MonthlyPokladnaCard({ group, onTicketClick }: { group: any, onTicketCli
   const [currentPage, setCurrentPage] = useState(1)
 
   const totalItems = group.transactions.length + group.deposits.length
-  const effectivePageSize = pageSize === "all" ? Math.max(totalItems, 1) : pageSize
   const totalPages = pageSize === "all" ? 1 : Math.ceil(totalItems / (pageSize as number))
 
   return (
@@ -87,7 +86,7 @@ function MonthlyPokladnaCard({ group, onTicketClick }: { group: any, onTicketCli
 export function PokladnaClient({ 
   initialBalance, 
   unpaidCount, 
-  currentUsers,
+  currentUsers: _currentUsers,
   registerData,
   semesterKeys,
   initialSemesterData

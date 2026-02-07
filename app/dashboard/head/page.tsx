@@ -1,7 +1,6 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import { Card } from "@/components/ui/card"
 import { isHeadRole, isAdmin, getSectionForRole } from "@/lib/utils/roles"
 import { getTickets } from "@/lib/actions/tickets"
 import { SectionFilter } from "@/components/dashboard/section-filter"
