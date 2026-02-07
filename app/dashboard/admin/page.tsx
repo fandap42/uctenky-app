@@ -91,7 +91,7 @@ export default async function FinanceDashboardPage() {
       {/* Structured List */}
       <div className="space-y-4">
         <SemesterStructuredList
-          initialTransactions={initialTransactions as any}
+          initialTransactions={initialTransactions}
           semesterKeys={sortedKeys}
           semesterTotals={semesterTotals}
           isAdmin={true}

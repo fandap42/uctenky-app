@@ -16,13 +16,41 @@ import { CollapsibleSemester } from "@/components/dashboard/collapsible-semester
 import { TicketDetailDialog } from "@/components/dashboard/TicketDetailDialog"
 import { useSession } from "next-auth/react"
 
+interface PokladnaUser {
+  id: string
+  fullName: string
+  pokladnaBalance: number
+}
+
+interface RegisterData {
+  debtErrors: Array<{ id: string; amount: number; reason: string; createdAt: Date | string }>
+  cashOnHand: Array<{ id: string; amount: number; reason: string; createdAt: Date | string }>
+}
+
+interface MonthlyGroup {
+  monthName: string
+  month: number
+  year: number
+  transactions: Array<{ [key: string]: unknown }>
+  deposits: Array<{ [key: string]: unknown }>
+  endBalance: number
+  startBalance: number
+}
+
+interface SemesterData {
+  [key: string]: {
+    groups: MonthlyGroup[]
+    startingBalance: number
+  }
+}
+
 interface PokladnaClientProps {
   initialBalance: number
   unpaidCount: number
-  currentUsers: any[]
-  registerData: any // Context (debtErrors, cashOnHand, etc.)
+  currentUsers: PokladnaUser[]
+  registerData: RegisterData
   semesterKeys: string[]
-  initialSemesterData: any
+  initialSemesterData: SemesterData
 }
 
 const MONTH_NAMES = [
@@ -30,7 +58,7 @@ const MONTH_NAMES = [
   "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec"
 ]
 
-function MonthlyPokladnaCard({ group, onTicketClick }: { group: any, onTicketClick?: (ticket: any) => void }) {
+function MonthlyPokladnaCard({ group, onTicketClick }: { group: MonthlyGroup, onTicketClick?: (ticket: unknown) => void }) {
   const [pageSize, setPageSize] = useState<number | "all">(10)
   const [currentPage, setCurrentPage] = useState(1)
 

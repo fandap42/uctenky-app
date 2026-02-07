@@ -56,15 +56,15 @@ describe('Cash Register Server Actions', () => {
             // Mock data
             vi.mocked(prisma.deposit.findMany).mockResolvedValue([
                 { id: '1', amount: 1000, date: new Date(), createdAt: new Date(), description: 'Init' }
-            ] as any)
+            ] as unknown as Awaited<ReturnType<typeof prisma.deposit.findMany>>)
 
             vi.mocked(prisma.debtError.findMany).mockResolvedValue([
                 { id: '1', amount: 50, reason: 'Lost', createdAt: new Date() }
-            ] as any)
+            ] as unknown as Awaited<ReturnType<typeof prisma.debtError.findMany>>)
 
             vi.mocked(prisma.cashOnHand.findMany).mockResolvedValue([
                 { id: '1', amount: 100, reason: 'Pocket', createdAt: new Date() }
-            ] as any)
+            ] as unknown as Awaited<ReturnType<typeof prisma.cashOnHand.findMany>>)
 
             vi.mocked(prisma.transaction.findMany).mockResolvedValue([
                 {
@@ -78,7 +78,7 @@ describe('Cash Register Server Actions', () => {
                     section: { name: 'Finance' },
                     requester: { fullName: 'Test User' }
                 }
-            ] as any)
+            ] as unknown as Awaited<ReturnType<typeof prisma.transaction.findMany>>)
 
             const { getAllCashRegisterData } = await import('@/lib/actions/cash-register')
             const data = await getAllCashRegisterData()

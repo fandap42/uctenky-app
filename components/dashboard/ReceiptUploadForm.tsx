@@ -98,8 +98,9 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
         window.dispatchEvent(new CustomEvent("app-data-refresh"))
         router.refresh()
       }
-    } catch (error: any) {
-      toast.error(error.message || "Nastala chyba při nahrávání")
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Nastala chyba při nahrávání"
+      toast.error(errorMessage)
     } finally {
       setUploading(false)
     }

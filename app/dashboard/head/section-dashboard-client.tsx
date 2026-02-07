@@ -15,7 +15,7 @@ interface Ticket {
   requester: { fullName: string }
   sectionId: string
   section: { name: string }
-  receipts: any[]
+  receipts: Array<{ amount: number; [key: string]: unknown }>
   createdAt: string
   targetDate: string
   isFiled?: boolean

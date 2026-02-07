@@ -85,12 +85,28 @@ export default async function PokladnaPage() {
   // Normalize data for client props
   const initialSemesterData = {
     openingBalance: Number(initialSemesterDataRaw.openingBalance || 0),
-    deposits: (initialSemesterDataRaw.deposits || []).map((d: any) => ({
+    deposits: (initialSemesterDataRaw.deposits || []).map((d: { amount: number | { toNumber: () => number }; date: Date | string; [key: string]: unknown }) => ({
       ...d,
       amount: Number(d.amount),
       date: typeof d.date === 'object' && d.date.toISOString ? d.date.toISOString() : d.date
     })),
-    transactions: (initialSemesterDataRaw.receipts || []).map((r: any) => ({
+    transactions: (initialSemesterDataRaw.receipts || []).map((r: { 
+      amount: number | { toNumber: () => number }; 
+      date: Date | string;
+      ticket?: {
+        budgetAmount: number | { toNumber: () => number };
+        createdAt: Date | string;
+        updatedAt: Date | string;
+        targetDate: Date | string;
+        receipts?: Array<{
+          amount: number | { toNumber: () => number };
+          date: Date | string;
+          [key: string]: unknown;
+        }>;
+        [key: string]: unknown;
+      };
+      [key: string]: unknown;
+    }) => ({
       ...r,
       amount: Number(r.amount),
       date: typeof r.date === 'object' && r.date.toISOString ? r.date.toISOString() : r.date,
@@ -101,7 +117,7 @@ export default async function PokladnaPage() {
           createdAt: typeof r.ticket.createdAt === 'object' ? r.ticket.createdAt.toISOString() : r.ticket.createdAt,
           updatedAt: typeof r.ticket.updatedAt === 'object' ? r.ticket.updatedAt.toISOString() : r.ticket.updatedAt,
           targetDate: typeof r.ticket.targetDate === 'object' ? r.ticket.targetDate.toISOString() : r.ticket.targetDate,
-          receipts: (r.ticket.receipts || []).map((tr: any) => ({
+          receipts: (r.ticket.receipts || []).map((tr: { amount: number | { toNumber: () => number }; date: Date | string; [key: string]: unknown }) => ({
             ...tr,
             amount: Number(tr.amount),
             date: typeof tr.date === 'object' ? tr.date.toISOString() : tr.date,
@@ -129,14 +145,22 @@ export default async function PokladnaPage() {
     totalDebtErrors: Number(registerData.totalDebtErrors),
     totalCashOnHand: Number(registerData.totalCashOnHand),
     realCash: Number(registerData.realCash),
-    deposits: registerData.deposits?.map((d: any) => ({ 
+    deposits: registerData.deposits?.map((d: { amount: number | { toNumber: () => number }; date: Date | string; [key: string]: unknown }) => ({ 
       ...d, 
       amount: Number(d.amount),
       date: d.date 
     })),
-    debtErrors: registerData.debtErrors?.map((d: any) => ({ ...d, amount: Number(d.amount) })),
-    cashOnHand: registerData.cashOnHand?.map((c: any) => ({ ...c, amount: Number(c.amount) })),
-    receipts: registerData.receipts?.map((r: any) => ({ 
+    debtErrors: registerData.debtErrors?.map((d: { amount: number | { toNumber: () => number }; [key: string]: unknown }) => ({ ...d, amount: Number(d.amount) })),
+    cashOnHand: registerData.cashOnHand?.map((c: { amount: number | { toNumber: () => number }; [key: string]: unknown }) => ({ ...c, amount: Number(c.amount) })),
+    receipts: registerData.receipts?.map((r: { 
+      amount: number | { toNumber: () => number }; 
+      date: Date | string;
+      ticket?: {
+        budgetAmount: number | { toNumber: () => number };
+        [key: string]: unknown;
+      };
+      [key: string]: unknown;
+    }) => ({
       ...r, 
       amount: Number(r.amount),
       date: r.date,

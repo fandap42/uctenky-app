@@ -15,10 +15,11 @@ export default async function UsersPage() {
   const users = await getUsers()
   
   // Serialize dates for client component
-  const serializedUsers = users.map(user => ({
+  type SerializedUser = Omit<typeof users[number], 'createdAt'> & { createdAt: string }
+  const serializedUsers: SerializedUser[] = users.map(user => ({
     ...user,
     createdAt: user.createdAt.toISOString()
-  })) as any
+  }))
 
   return (
     <div className="space-y-8">

@@ -39,8 +39,8 @@ interface Transaction {
   isFiled?: boolean
   expenseType?: ExpenseType
   budgetAmount?: number
-  targetDate?: any
-  amount?: any
+  targetDate?: Date | string
+  amount?: number
   fileUrl?: string | null
   receiptUrl?: string | null
   note?: string | null
@@ -61,7 +61,7 @@ interface StructuredListProps {
   filters?: {
     requesterId?: string
     sectionId?: string
-    status?: any
+    status?: TicketStatus | TicketStatus[]
   }
   showNotes?: boolean
 }
