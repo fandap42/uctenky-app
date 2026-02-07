@@ -23,8 +23,8 @@ interface EditTransactionDialogProps {
   transaction: {
     id: string
     purpose: string
-    budgetAmount: any
-    targetDate?: any
+    budgetAmount: number
+    targetDate?: Date | string
     status: string
     note?: string | null
   }

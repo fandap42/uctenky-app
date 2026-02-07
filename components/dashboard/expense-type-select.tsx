@@ -31,7 +31,7 @@ export function ExpenseTypeSelect({
 
     async function handleChange(value: string) {
         setIsLoading(true)
-        const result = await updateReceiptExpenseType(transactionId, value as any)
+        const result = await updateReceiptExpenseType(transactionId, value as "MATERIAL" | "SERVICE")
 
         if (result.error) {
             toast.error(result.error)

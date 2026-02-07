@@ -7,9 +7,9 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 
 interface CollapsibleSemesterProps {
   semesterKey: string
-  fetchData: () => Promise<any>
-  renderContent: (data: any) => React.ReactNode
-  initialData?: any
+  fetchData: () => Promise<unknown>
+  renderContent: (data: unknown) => React.ReactNode
+  initialData?: unknown
   defaultExpanded?: boolean
   headerExtra?: React.ReactNode
 }
@@ -23,7 +23,7 @@ export function CollapsibleSemester({
   headerExtra,
 }: CollapsibleSemesterProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded)
-  const [data, setData] = useState<any>(initialData)
+  const [data, setData] = useState<unknown>(initialData)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -57,7 +57,7 @@ export function CollapsibleSemester({
       } else {
         setData(result)
       }
-    } catch (err) {
+    } catch {
       if (!silent) setError("Nepodařilo se načíst data")
     } finally {
       if (!silent) setIsLoading(false)

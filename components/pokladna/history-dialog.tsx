@@ -23,7 +23,7 @@ import { History } from "lucide-react"
 
 interface HistoryDialogProps {
   title: string
-  transactions: any[]
+  transactions: Array<{ amount: number; reason: string; createdAt: Date | string; [key: string]: unknown }>
   type: "debt" | "cash"
   open?: boolean
   onOpenChange?: (open: boolean) => void

@@ -171,7 +171,7 @@ export default async function PokladnaPage() {
         createdAt: typeof r.ticket.createdAt === 'object' ? r.ticket.createdAt.toISOString() : r.ticket.createdAt,
         updatedAt: typeof r.ticket.updatedAt === 'object' ? r.ticket.updatedAt.toISOString() : r.ticket.updatedAt,
         targetDate: typeof r.ticket.targetDate === 'object' ? r.ticket.targetDate.toISOString() : r.ticket.targetDate,
-        receipts: (r.ticket.receipts || []).map((tr: any) => ({
+        receipts: (r.ticket.receipts || []).map((tr: { amount: number | { toNumber: () => number }; date: Date | string; [key: string]: unknown }) => ({
           ...tr,
           amount: Number(tr.amount),
           date: typeof tr.date === 'object' ? tr.date.toISOString() : tr.date,

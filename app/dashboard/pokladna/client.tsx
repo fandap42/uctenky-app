@@ -128,10 +128,11 @@ export function PokladnaClient({
 
   const selectedTicket = useMemo(() => {
     if (!selectedTicketId) return null
-    return registerData.receipts.find((r: any) => r.ticket?.id === selectedTicketId)?.ticket || null
+    const receipt = registerData.receipts.find((r: { ticket?: { id?: string } }) => r.ticket?.id === selectedTicketId)
+    return receipt && 'ticket' in receipt ? receipt.ticket : null
   }, [selectedTicketId, registerData.receipts])
 
-  const renderSemesterContent = (data: any) => {
+  const renderSemesterContent = (data: { openingBalance: number; deposits: Array<{ date: Date | string; amount: number; [key: string]: unknown }>; transactions?: Array<Record<string, unknown>>; receipts?: Array<Record<string, unknown>> }) => {
     // data contains openingBalance, deposits, and either transactions or receipts
     const { openingBalance, deposits } = data
     // Handle both naming conventions (server returns receipts, client prop expects transactions)
@@ -142,22 +143,22 @@ export function PokladnaClient({
       monthName: string,
       month: number,
       year: number,
-      transactions: any[],
-      deposits: any[],
+      transactions: Array<Record<string, unknown>>,
+      deposits: Array<Record<string, unknown>>,
       sortKey: number,
       endBalance: number,
       startBalance: number
     }> = {}
 
     const allData = [
-      ...transactions.map((t: any) => ({ 
+      ...transactions.map((t: Record<string, unknown>) => ({ 
         ...t, 
-        displayDate: new Date(t.date || t.dueDate || t.createdAt), 
+        displayDate: new Date((t.date || t.dueDate || t.createdAt) as string | Date), 
         type: 'TR', 
         // Handle both Receipt (amount) and older Ticket (finalAmount/estimatedAmount) structures
         amount: -Number(t.amount || t.finalAmount || t.estimatedAmount || 0) 
       })),
-      ...deposits.map((d: any) => ({ 
+      ...deposits.map((d: { date: Date | string; amount: number; [key: string]: unknown }) => ({
         ...d, 
         displayDate: new Date(d.date), 
         type: 'DEP', 

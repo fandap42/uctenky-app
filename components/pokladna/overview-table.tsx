@@ -30,11 +30,11 @@ const dateFormatter = new Intl.DateTimeFormat("cs-CZ", {
 })
 
 interface OverviewTableProps {
-  transactions: any[]
-  deposits: any[]
+  transactions: Array<{ [key: string]: unknown }>
+  deposits: Array<{ [key: string]: unknown }>
   pageSize?: number | "all"
   currentPage?: number
-  onTicketClick?: (ticket: any) => void
+  onTicketClick?: (ticket: unknown) => void
 }
 
 export function OverviewTable({ 

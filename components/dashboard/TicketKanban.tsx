@@ -11,7 +11,7 @@ interface Ticket {
   status: TicketStatus
   requester: { fullName: string }
   section: { name: string }
-  receipts: any[]
+  receipts: Array<{ [key: string]: unknown }>
   targetDate: string
 }
 

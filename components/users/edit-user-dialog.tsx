@@ -50,7 +50,7 @@ export function EditUserDialog({ user }: EditUserDialogProps) {
     setIsLoading(true)
 
     const result = await updateUser(user.id, {
-      role: role as any,
+      role: role as "MEMBER" | "ADMIN" | "HEAD_VEDENI" | "HEAD_FINANCE" | "HEAD_HR" | "HEAD_PR" | "HEAD_MEDIA" | "HEAD_VCC",
     })
 
     if (result.error) {

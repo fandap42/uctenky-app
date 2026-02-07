@@ -55,7 +55,7 @@ export function TicketDashboardClient({
       </div>
 
       <TicketDetailDialog 
-        ticket={selectedTicket as any} 
+        ticket={selectedTicket as unknown as NonNullable<typeof selectedTicket>} 
         open={isDialogOpen} 
         onOpenChange={setIsDialogOpen}
         currentUserId={currentUserId}

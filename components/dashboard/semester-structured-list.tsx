@@ -179,7 +179,7 @@ function MonthlyTransactionCard({
                     <div className="flex items-center justify-end gap-1">
                       {isAdmin && (
                         <>
-                          <EditTransactionDialog transaction={tx as any} />
+                          <EditTransactionDialog transaction={tx as unknown as { id: string; purpose: string; budgetAmount: number; targetDate?: Date | string; status: string; note?: string | null }} />
                           <DeleteButton 
                             onDelete={() => tx.fileUrl ? deleteReceipt(tx.id) : deleteTicket(tx.id)} 
                             iconOnly 
