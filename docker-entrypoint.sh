@@ -2,7 +2,8 @@
 set -e
 
 echo "Running Prisma migrations..."
-npx prisma migrate deploy
+# Voláme přímo binárku, npx by ji nemuselo najít
+./node_modules/.bin/prisma migrate deploy
 
 echo "Starting Next.js server..."
 exec node server.js
