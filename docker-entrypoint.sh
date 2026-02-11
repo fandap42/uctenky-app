@@ -1,9 +1,12 @@
 #!/bin/sh
 set -e
 
+# Přejdeme do složky /app (pro jistotu)
+cd /app
+
 echo "Running Prisma migrations..."
-# Voláme přímo binárku, npx by ji nemuselo najít
 ./node_modules/.bin/prisma migrate deploy
 
 echo "Starting Next.js server..."
-exec node server.js
+# Použijeme exec, aby aplikace správně přijímala signály (třeba pro vypnutí)
+exec ./node_modules/.bin/next start
