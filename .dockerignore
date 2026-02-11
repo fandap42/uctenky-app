@@ -49,3 +49,9 @@ __tests__
 
 # Build cache
 .turbo
+
+# CI/CD & production configs
+.github
+docker-compose.prod.yml
+.env.example
+build_output.txt
