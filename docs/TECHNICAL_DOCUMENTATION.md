@@ -629,43 +629,6 @@ EXPOSE 3000
 CMD ["npm", "start"]
 ```
 
----
-
-## Testing
-
-### Testing Strategy Overview
-
-```mermaid
-graph TD
-    subgraph Tests["Testing Pyramid"]
-        E2E["E2E Tests<br/>(Playwright)"]
-        INT["Integration Tests<br/>(Vitest + Test DB)"]
-        UNIT["Unit Tests<br/>(Vitest)"]
-    end
-    
-    E2E --> INT
-    INT --> UNIT
-    
-    style UNIT fill:#4ade80
-    style INT fill:#60a5fa
-    style E2E fill:#f472b6
-```
-
-### Running Tests
-
-```bash
-# Unit and Integration tests
-npm run test
-
-# E2E tests
-npm run test:e2e
-
-# Coverage report
-npm run test:coverage
-
-# Watch mode during development
-npm run test:watch
-```
 
 ---
 

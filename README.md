@@ -176,28 +176,6 @@ npm run start    # Production server
 npm run lint     # ESLint check
 ```
 
-## 🧪 Testing (Local)
-
-The application uses Vitest for unit/integration tests and Playwright for E2E tests. It's recommended to run these tests **manually before each deployment** to production.
-
-```bash
-npm run test           # Unit and integration tests
-npm run test:e2e       # E2E tests (Playwright)
-npm run test:coverage  # Coverage report
-npm run test:watch     # Watch mode
-```
-
-### What to Test
-
-| Priority | Area | Examples |
-|----------|------|----------|
-| 🔴 High | Utility functions | `lib/utils/semesters.ts`, `lib/utils/roles.ts` |
-| 🔴 High | Server actions | `lib/actions/tickets.ts`, permissions |
-| 🟡 Medium | E2E workflow | Login, request approval, receipt upload |
-| 🟢 Low | Components | Interactive UI components |
-
-See [Technical Documentation](docs/TECHNICAL_DOCUMENTATION.md#testing) for details.
-
 ## 🔐 Security
 
 ### Authentication & Authorization
