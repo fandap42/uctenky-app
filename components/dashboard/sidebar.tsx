@@ -146,7 +146,7 @@ export function Sidebar({ isOpen, onClose, onNavClick }: SidebarProps) {
             <Button
               variant="outline"
               size="sm"
-              className="w-full justify-start gap-2 text-muted-foreground hover:text-destructive hover:border-destructive hover:bg-destructive/5 rounded-xl border-border"
+              className="w-full justify-start gap-2 text-destructive/70 hover:text-destructive hover:border-destructive hover:bg-destructive/10 rounded-xl border-destructive/30 bg-destructive/5 transition-all duration-200"
               onClick={() => signOut({ callbackUrl: "/login" })}
             >
               <LogOut className="w-4 h-4" />
