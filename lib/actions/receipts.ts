@@ -37,7 +37,7 @@ export async function uploadReceipt(formData: FormData) {
     const note = formData.get("note") as string | null
 
     if (!ticketId || isNaN(amount) || !formData.get("date") || !file) {
-      return { error: "Všechna povinná pole musí být vyplněna (soubor, částka, datum)" }
+      return { error: MESSAGES.UPLOAD.REQUIRED_FIELDS }
     }
 
 
@@ -142,7 +142,7 @@ export async function uploadReceipt(formData: FormData) {
     return { success: true }
   } catch (error) {
     console.error("Upload receipt error:", error)
-    return { error: "Nepodařilo se nahrát účtenku" }
+    return { error: MESSAGES.UPLOAD.UPLOAD_FAILED }
   }
 }
 

@@ -22,9 +22,9 @@ export interface FunctionalCheckboxProps
 }
 
 const variantStyles = {
-  paid: "data-[state=checked]:bg-paid data-[state=checked]:border-paid",
-  filed: "data-[state=checked]:bg-filed data-[state=checked]:border-filed",
-  default: "data-[state=checked]:bg-primary data-[state=checked]:border-primary",
+  paid: "data-[state=checked]:bg-paid data-[state=checked]:border-paid data-[state=checked]:text-white",
+  filed: "data-[state=checked]:bg-filed data-[state=checked]:border-filed data-[state=checked]:text-white",
+  default: "data-[state=checked]:bg-primary data-[state=checked]:border-primary data-[state=checked]:text-primary-foreground",
 }
 
 export function FunctionalCheckbox({

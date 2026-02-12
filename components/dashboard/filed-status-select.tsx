@@ -55,7 +55,7 @@ export function FiledStatusSelect({
       onValueChange={handleToggle}
       disabled={isLoading}
     >
-      <SelectTrigger className={`w-[130px] h-8 bg-background border-border text-xs ${isFiled ? "text-status-success" : "text-status-pending"}`}>
+      <SelectTrigger className={`w-[130px] h-8 rounded-md bg-background border-border text-xs font-semibold ${isFiled ? "text-status-success" : "text-status-pending"} ${isLoading ? "opacity-70" : ""}`}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent position="popper" className="bg-card border-border max-h-[none]">

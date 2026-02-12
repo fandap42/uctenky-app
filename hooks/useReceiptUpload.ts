@@ -78,6 +78,17 @@ export function useReceiptUpload({ ticketId, onSuccess }: UseReceiptUploadOption
       return
     }
 
+    const parsedAmount = Number.parseFloat(state.amount)
+    if (!state.amount || Number.isNaN(parsedAmount) || parsedAmount <= 0) {
+      toast.error(MESSAGES.UPLOAD.INVALID_AMOUNT)
+      return
+    }
+
+    if (!state.date) {
+      toast.error(MESSAGES.UPLOAD.REQUIRED_FIELDS)
+      return
+    }
+
     updateState({ uploading: true, progress: 10 })
 
     try {
