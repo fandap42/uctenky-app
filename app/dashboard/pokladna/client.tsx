@@ -125,10 +125,9 @@ export function PokladnaClient({
     const allData = [
       ...transactions.map((t: any) => ({ 
         ...t, 
-        displayDate: new Date(t.date || t.dueDate || t.createdAt), 
+        displayDate: new Date(t.date || t.createdAt), 
         type: 'TR', 
-        // Handle both Receipt (amount) and older Ticket (finalAmount/estimatedAmount) structures
-        amount: -Number(t.amount || t.finalAmount || t.estimatedAmount || 0) 
+        amount: -Number(t.amount || 0) 
       })),
       ...deposits.map((d: any) => ({ 
         ...d, 

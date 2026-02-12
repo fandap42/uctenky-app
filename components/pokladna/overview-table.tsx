@@ -48,7 +48,7 @@ export function OverviewTable({
   const combinedData = [
     ...transactions.map(t => ({
       ...t,
-      displayDate: new Date(t.dueDate || t.createdAt),
+      displayDate: new Date(t.date || t.createdAt),
       displayType: "TRANSACTION"
     })),
     ...deposits.map(d => ({
@@ -162,7 +162,7 @@ export function OverviewTable({
                     <div className="flex items-center justify-end gap-1.5">
                       {!currentIsPaid && <AlertCircle className="w-3.5 h-3.5 text-status-pending" />}
                       <span className="font-semibold text-red-600 text-sm tracking-tight">
-                        {Math.abs(Number(item.amount || item.finalAmount || item.estimatedAmount)).toLocaleString("cs-CZ")} Kč
+                        {Math.abs(Number(item.amount)).toLocaleString("cs-CZ")} Kč
                       </span>
                     </div>
                   ) : (

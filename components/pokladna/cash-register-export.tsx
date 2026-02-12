@@ -12,12 +12,9 @@ interface Transaction {
   isPaid?: boolean
   expenseType?: string
   date?: string | null
-  dueDate?: string | null
+  note?: string | null
   sectionName?: string // Flattened from ticket.section.name
   section?: { name: string } | null // Fallback for old format
-  // Legacy fields for backward compatibility
-  estimatedAmount?: number
-  finalAmount?: number | null
 }
 
 interface Deposit {
@@ -67,16 +64,12 @@ export function CashRegisterExport({
     transactions.forEach((t) => {
       // Get section name - prioritize flattened sectionName, then section.name
       const sectionName = t.sectionName || t.section?.name || "-"
-      // Get amount - if already negative (from client.tsx transformation), use as is
-      // Otherwise fall back to legacy fields
-      const rawAmount = t.amount !== undefined 
-        ? t.amount  // Already processed (might be negative)
-        : -(t.finalAmount || t.estimatedAmount || 0) // Legacy: negate for expenses
-      // If amount is positive but this is a transaction, it should be negative
+      // Amount is already negative from client.tsx transformation
+      const rawAmount = t.amount || 0
       const amount = rawAmount > 0 ? -rawAmount : rawAmount
       
       rows.push({
-        date: new Date(t.date || t.dueDate || new Date()),
+        date: new Date(t.date || new Date()),
         type: "transaction",
         section: sectionName,
         purpose: t.purpose || "-",
