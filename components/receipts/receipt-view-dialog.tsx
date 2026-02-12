@@ -14,14 +14,22 @@ import { ImageIcon, Download, ExternalLink, Loader2, AlertCircle, FileText } fro
 interface ReceiptViewDialogProps {
   transactionId: string
   purpose: string
+  date?: string | Date | null
+  amount?: number | null
+  currency?: string
 }
 
-export function ReceiptViewDialog({ transactionId: receiptId, purpose }: ReceiptViewDialogProps) {
+export function ReceiptViewDialog({ transactionId: receiptId, purpose, date, amount, currency = "Kč" }: ReceiptViewDialogProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [isPdf, setIsPdf] = useState(false)
   const imageUrl = `/api/receipts/view?id=${receiptId}`
+  const formattedDate = date ? new Date(date).toLocaleDateString("cs-CZ") : null
+  const formattedAmount = typeof amount === "number" && !Number.isNaN(amount)
+    ? `${Math.abs(amount).toLocaleString("cs-CZ")} ${currency}`
+    : null
+  const titleParts = [purpose, formattedDate, formattedAmount].filter(Boolean)
 
   // Check if the file is PDF by fetching headers
   const checkFileType = async () => {
@@ -61,7 +69,7 @@ export function ReceiptViewDialog({ transactionId: receiptId, purpose }: Receipt
         <DialogHeader className="flex flex-row items-center justify-between gap-2 pr-8 border-b border-border pb-2 shrink-0">
           <DialogTitle className="text-foreground flex items-center gap-2 text-sm sm:text-base truncate">
             {isPdf ? <FileText className="w-4 h-4 text-primary/70 shrink-0" /> : <ImageIcon className="w-4 h-4 text-primary/70 shrink-0" />}
-            <span className="truncate">{purpose}</span>
+            <span className="truncate">{titleParts.join(" | ")}</span>
           </DialogTitle>
           <div className="flex items-center gap-1 shrink-0">
             <Button

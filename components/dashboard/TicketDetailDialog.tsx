@@ -429,7 +429,12 @@ export function TicketDetailDialog({
                             <TableCell className="py-3 px-4 text-center">
                               <div className="flex items-center justify-center gap-3">
                                 {isAdmin && <EditNoteDialog receiptId={receipt.id} initialNote={receipt.note} />}
-                                <ReceiptViewDialog transactionId={receipt.id} purpose={receipt.store} />
+                                <ReceiptViewDialog
+                                  transactionId={receipt.id}
+                                  purpose={receipt.store}
+                                  date={receipt.date}
+                                  amount={receipt.amount}
+                                />
                               </div>
                             </TableCell>
                             <TableCell className="py-3 px-4 text-center">
@@ -584,7 +589,12 @@ export function TicketDetailDialog({
                             <TableCell className="py-3 px-3 text-center">
                               <div className="flex items-center justify-center gap-2">
                                 {isAdmin && <EditNoteDialog receiptId={receipt.id} initialNote={receipt.note} />}
-                                <ReceiptViewDialog transactionId={receipt.id} purpose={receipt.store} />
+                                <ReceiptViewDialog
+                                  transactionId={receipt.id}
+                                  purpose={receipt.store}
+                                  date={receipt.date}
+                                  amount={receipt.amount}
+                                />
                               </div>
                             </TableCell>
                             <TableCell className="py-3 px-3 text-center">

@@ -167,7 +167,9 @@ function MonthlyTransactionCard({
                     {(tx.fileUrl || tx.receiptUrl) ? (
                       <ReceiptViewDialog 
                         transactionId={tx.id} 
-                        purpose={tx.purpose} 
+                        purpose={tx.purpose}
+                        date={tx.targetDate || tx.createdAt}
+                        amount={tx.amount || tx.budgetAmount || 0}
                       />
                     ) : (
                       <div className="w-4" />

@@ -190,7 +190,9 @@ export function OverviewTable({
                     {isTr && (item.receiptUrl || item.fileUrl) ? (
                       <ReceiptViewDialog 
                         transactionId={item.id} 
-                        purpose={item.purpose} 
+                        purpose={item.purpose}
+                        date={item.targetDate || item.createdAt}
+                        amount={Math.abs(Number(item.amount))}
                       />
                     ) : (
                       <span className="text-muted-foreground/30">—</span>
