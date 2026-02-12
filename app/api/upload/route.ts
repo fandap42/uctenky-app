@@ -4,6 +4,7 @@ import { uploadFile } from "@/lib/s3"
 import { prisma } from "@/lib/prisma"
 import { fileTypeFromBuffer } from "file-type"
 import { MESSAGES } from "@/lib/constants/messages"
+import { convertHeicBufferToJpeg } from "@/lib/utils/heic-conversion"
 
 // Allowed file extensions and MIME types for receipts
 const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif', 'pdf']
@@ -98,14 +99,36 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    let outputBuffer = buffer
+    let outputFileType = fileType
+
+    const isHeic =
+      fileType.mime === "image/heic" ||
+      fileType.mime === "image/heif" ||
+      fileType.ext === "heic" ||
+      fileType.ext === "heif"
+
+    if (isHeic) {
+      try {
+        outputBuffer = await convertHeicBufferToJpeg(buffer)
+        outputFileType = { ext: "jpg", mime: "image/jpeg" }
+      } catch (error) {
+        console.error("HEIC conversion error:", error)
+        return NextResponse.json(
+          { error: MESSAGES.UPLOAD.HEIC_ERROR },
+          { status: 400 }
+        )
+      }
+    }
+
     // Generate unique filename with year/month folder structure
     const now = new Date()
     const year = now.getFullYear()
     const month = String(now.getMonth() + 1).padStart(2, "0")
-    const key = `receipts/${year}/${month}/${ticketId}-${Date.now()}.${fileType.ext}`
+    const key = `receipts/${year}/${month}/${ticketId}-${Date.now()}.${outputFileType.ext}`
 
     // Upload to MinIO
-    const url = await uploadFile(buffer, key, fileType.mime)
+    const url = await uploadFile(outputBuffer, key, outputFileType.mime)
 
     return NextResponse.json({ url })
   } catch (error) {

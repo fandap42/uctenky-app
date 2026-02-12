@@ -4,7 +4,7 @@ import { useState, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { uploadReceipt } from "@/lib/actions/receipts"
-import { validateReceiptFile, isHeicFile, convertHeicToJpeg } from "@/lib/utils/file-validator"
+import { validateReceiptFile } from "@/lib/utils/file-validator"
 import { MESSAGES } from "@/lib/constants/messages"
 
 export interface UseReceiptUploadOptions {
@@ -16,7 +16,6 @@ export interface ReceiptUploadState {
   file: File | null
   preview: string | null
   uploading: boolean
-  converting: boolean
   progress: number
   amount: string
   store: string
@@ -31,7 +30,6 @@ export function useReceiptUpload({ ticketId, onSuccess }: UseReceiptUploadOption
     file: null,
     preview: null,
     uploading: false,
-    converting: false,
     progress: 0,
     amount: "",
     store: "",
@@ -50,7 +48,6 @@ export function useReceiptUpload({ ticketId, onSuccess }: UseReceiptUploadOption
       file: null,
       preview: null,
       uploading: false,
-      converting: false,
       progress: 0,
       amount: "",
       store: "",
@@ -69,29 +66,9 @@ export function useReceiptUpload({ ticketId, onSuccess }: UseReceiptUploadOption
       return
     }
 
-    let processedFile = selectedFile
-
-    // Convert HEIC if needed
-    if (isHeicFile(selectedFile)) {
-      try {
-        updateState({ converting: true })
-        toast.info(MESSAGES.UPLOAD.HEIC_CONVERTING)
-        
-        processedFile = await convertHeicToJpeg(selectedFile)
-        toast.success(MESSAGES.UPLOAD.HEIC_SUCCESS)
-      } catch (error) {
-        console.error("HEIC conversion error:", error)
-        toast.error(MESSAGES.UPLOAD.HEIC_ERROR)
-        updateState({ converting: false })
-        return
-      } finally {
-        updateState({ converting: false })
-      }
-    }
-
     updateState({
-      file: processedFile,
-      preview: URL.createObjectURL(processedFile),
+      file: selectedFile,
+      preview: URL.createObjectURL(selectedFile),
     })
   }, [updateState])
 

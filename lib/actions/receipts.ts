@@ -7,6 +7,7 @@ import { ReceiptStatus, ExpenseType } from "@prisma/client"
 import { MESSAGES } from "@/lib/constants/messages"
 import { uploadFile } from "@/lib/s3"
 import { fileTypeFromBuffer } from "file-type"
+import { convertHeicBufferToJpeg } from "@/lib/utils/heic-conversion"
 
 const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif', 'pdf']
 const ALLOWED_MIME_TYPES = [
@@ -82,6 +83,25 @@ export async function uploadReceipt(formData: FormData) {
       return { error: MESSAGES.UPLOAD.INVALID_CONTENT }
     }
 
+    let outputBuffer = buffer
+    let outputFileType = fileType
+
+    const isHeic =
+      fileType.mime === "image/heic" ||
+      fileType.mime === "image/heif" ||
+      fileType.ext === "heic" ||
+      fileType.ext === "heif"
+
+    if (isHeic) {
+      try {
+        outputBuffer = await convertHeicBufferToJpeg(buffer)
+        outputFileType = { ext: "jpg", mime: "image/jpeg" }
+      } catch (error) {
+        console.error("HEIC conversion error:", error)
+        return { error: MESSAGES.UPLOAD.HEIC_ERROR }
+      }
+    }
+
     // Validation: Date (skip for admins)
     const ticketCreatedAt = new Date(ticket.createdAt)
     const ticketDate = new Date(ticketCreatedAt < ticket.targetDate ? ticketCreatedAt : ticket.targetDate)
@@ -100,10 +120,10 @@ export async function uploadReceipt(formData: FormData) {
     const now = new Date()
     const year = now.getFullYear()
     const month = String(now.getMonth() + 1).padStart(2, "0")
-    const key = `receipts/${year}/${month}/${ticketId}-${Date.now()}.${fileType.ext}`
+    const key = `receipts/${year}/${month}/${ticketId}-${Date.now()}.${outputFileType.ext}`
 
     // Upload to MinIO
-    const url = await uploadFile(buffer, key, fileType.mime)
+    const url = await uploadFile(outputBuffer, key, outputFileType.mime)
 
     await prisma.receipt.create({
       data: {

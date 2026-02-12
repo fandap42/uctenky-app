@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { uploadReceipt } from "@/lib/actions/receipts"
-import { validateReceiptFile, isHeicFile, convertHeicToJpeg } from "@/lib/utils/file-validator"
+import { validateReceiptFile } from "@/lib/utils/file-validator"
 import { Upload, X, Loader2, Camera } from "lucide-react"
 import { ExpenseType } from "@prisma/client"
 import { Textarea } from "@/components/ui/textarea"
@@ -24,7 +24,6 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
-  const [converting, setConverting] = useState(false)
   
   const [store, setStore] = useState("")
   const [amount, setAmount] = useState("")
@@ -42,22 +41,8 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
       return
     }
 
-    let processedFile = selectedFile
-    if (isHeicFile(selectedFile)) {
-      try {
-        setConverting(true)
-        toast.info("Převádím HEIC na JPEG...")
-        processedFile = await convertHeicToJpeg(selectedFile)
-      } catch (error) {
-        toast.error("Chyba při převodu HEIC souboru")
-        return
-      } finally {
-        setConverting(false)
-      }
-    }
-
-    setFile(processedFile)
-    setPreview(URL.createObjectURL(processedFile))
+    setFile(selectedFile)
+    setPreview(URL.createObjectURL(selectedFile))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -190,17 +175,12 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
       <Button 
         type="submit" 
         className="w-full rounded-2xl h-12 font-black uppercase tracking-widest bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20"
-        disabled={uploading || converting}
+        disabled={uploading}
       >
         {uploading ? (
           <>
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
             Nahrávám...
-          </>
-        ) : converting ? (
-           <>
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Převádím HEIC...
           </>
         ) : (
           "Nahrát účtenku"
