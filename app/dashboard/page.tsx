@@ -1,8 +1,8 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
-import { RequestForm } from "@/components/requests/request-form"
 import { getTickets } from "@/lib/actions/tickets"
 import { TicketDashboardClient } from "./ticket-dashboard-client"
+import { RequestFormClient } from "@/components/requests/request-form-client"
 
 export const dynamic = "force-dynamic"
 
@@ -46,7 +46,7 @@ export default async function DashboardPage() {
             Přehled
           </h1>
         </div>
-        <RequestForm sections={sections} />
+        <RequestFormClient sections={sections} />
       </div>
 
       <TicketDashboardClient 

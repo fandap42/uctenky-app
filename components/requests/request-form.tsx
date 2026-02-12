@@ -38,6 +38,7 @@ export function RequestForm({ trigger, sections }: RequestFormProps) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [selectedSection, setSelectedSection] = useState("")
+  const [targetDate, setTargetDate] = useState(() => new Date().toISOString().split("T")[0])
   const router = useRouter()
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -149,7 +150,8 @@ export function RequestForm({ trigger, sections }: RequestFormProps) {
                 name="targetDate"
                 type="date"
                 required
-                defaultValue={new Date().toISOString().split('T')[0]}
+                value={targetDate}
+                onChange={(e) => setTargetDate(e.target.value)}
                 className="bg-muted/50 border-none h-12 rounded-xl text-foreground font-bold"
               />
             </div>
