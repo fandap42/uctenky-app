@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import {
   Dialog,
   DialogContent,
@@ -114,16 +115,21 @@ export function ReceiptViewDialog({ transactionId: receiptId, purpose, date, amo
               <p className="text-xs text-muted-foreground">Klikněte na ikonu {'\u2197'} pro otevření v novém okně</p>
             </div>
           ) : (
-            <img
-              src={imageUrl}
-              alt={`Účtenka k transakci ${purpose}`}
-              className={`max-w-full max-h-full w-auto h-auto object-contain transition-opacity duration-300 ${loading ? 'opacity-0' : 'opacity-100'}`}
-              onLoad={() => setLoading(false)}
-              onError={() => {
-                setLoading(false);
-                setError(true);
-              }}
-            />
+            <div className="relative w-full h-full">
+              <Image
+                src={imageUrl}
+                alt={`Účtenka k transakci ${purpose}`}
+                fill
+                className={`object-contain transition-opacity duration-300 ${loading ? "opacity-0" : "opacity-100"}`}
+                sizes="100vw"
+                unoptimized
+                onLoadingComplete={() => setLoading(false)}
+                onError={() => {
+                  setLoading(false)
+                  setError(true)
+                }}
+              />
+            </div>
           )}
         </div>
       </DialogContent>

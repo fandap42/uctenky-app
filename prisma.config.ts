@@ -8,7 +8,7 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
 export default defineConfig({
   migrations: {
-    seed: 'node ./prisma/seed.js',
+    seed: 'node ./prisma/seed.mjs',
   },
   datasource: {
     url: process.env.DATABASE_URL as string

@@ -4,18 +4,31 @@ import { useState, useCallback } from "react"
 import { TicketKanban } from "@/components/dashboard/TicketKanban"
 import { TicketMobileList } from "@/components/dashboard/TicketMobileList"
 import { TicketDetailDialog } from "@/components/dashboard/TicketDetailDialog"
-import { TicketStatus } from "@prisma/client"
+import { TicketStatus, ReceiptStatus, ExpenseType } from "@prisma/client"
+
+interface Receipt {
+  id: string
+  store: string
+  date: string
+  amount: number
+  fileUrl: string
+  isPaid: boolean
+  expenseType: ExpenseType
+  status: ReceiptStatus
+  isFiled: boolean
+  note?: string | null
+}
 
 interface Ticket {
   id: string
   purpose: string
   budgetAmount: number
   status: TicketStatus
-  requesterId: string
-  requester: { fullName: string }
+  requesterId: string | null
+  requester?: { fullName: string | null } | null
   sectionId: string
   section: { name: string }
-  receipts: any[]
+  receipts: Receipt[]
   createdAt: string
   targetDate: string
   isFiled?: boolean
@@ -55,7 +68,7 @@ export function TicketDashboardClient({
       </div>
 
       <TicketDetailDialog 
-        ticket={selectedTicket as any} 
+        ticket={selectedTicket} 
         open={isDialogOpen} 
         onOpenChange={setIsDialogOpen}
         currentUserId={currentUserId}

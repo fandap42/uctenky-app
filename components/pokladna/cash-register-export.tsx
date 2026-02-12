@@ -8,7 +8,7 @@ interface Transaction {
   id: string
   purpose?: string
   store?: string | null
-  amount: number // Already processed (negative for expenses)
+  amount: number | string // Already processed (negative for expenses)
   isPaid?: boolean
   expenseType?: string
   date?: string | null
@@ -19,8 +19,8 @@ interface Transaction {
 
 interface Deposit {
   id: string
-  amount: number
-  description: string | null
+  amount: number | string
+  description?: string | null
   date: string
 }
 
@@ -65,7 +65,7 @@ export function CashRegisterExport({
       // Get section name - prioritize flattened sectionName, then section.name
       const sectionName = t.sectionName || t.section?.name || "-"
       // Amount is already negative from client.tsx transformation
-      const rawAmount = t.amount || 0
+      const rawAmount = Number(t.amount || 0)
       const amount = rawAmount > 0 ? -rawAmount : rawAmount
       
       rows.push({
@@ -87,7 +87,7 @@ export function CashRegisterExport({
         section: "-",
         purpose: d.description || "Vklad",
         store: "-",
-        amount: d.amount, // Positive for deposits
+        amount: Number(d.amount), // Positive for deposits
         expenseType: "-",
       })
     })

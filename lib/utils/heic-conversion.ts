@@ -1,6 +1,4 @@
-import type { Buffer } from "buffer"
-
-export async function convertHeicBufferToJpeg(input: Buffer): Promise<Buffer> {
+export async function convertHeicBufferToJpeg(input: Uint8Array): Promise<Buffer> {
   const heicConvert = (await import("heic-convert")).default
 
   const output = await heicConvert({
@@ -9,5 +7,10 @@ export async function convertHeicBufferToJpeg(input: Buffer): Promise<Buffer> {
     quality: 0.95,
   })
 
-  return Buffer.isBuffer(output) ? output : Buffer.from(output)
+  if (Buffer.isBuffer(output)) {
+    return output
+  }
+
+  const arrayBuffer = output instanceof ArrayBuffer ? output : output.buffer
+  return Buffer.from(new Uint8Array(arrayBuffer))
 }

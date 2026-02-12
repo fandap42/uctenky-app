@@ -10,15 +10,14 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { StatusBadge, mapTicketStatusToBadge } from "@/components/ui/status-badge"
 import { ExpenseTypeBadge, mapExpenseTypeToVariant } from "@/components/ui/expense-type-badge"
 import { FunctionalCheckbox } from "@/components/ui/functional-checkbox"
 import { Checkbox } from "@/components/ui/checkbox"
-import { AlertCircle, StickyNote } from "lucide-react"
+import { AlertCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { EditNoteDialog } from "@/components/dashboard/edit-note-dialog"
 import { ReceiptViewDialog } from "@/components/receipts/receipt-view-dialog"
-import { FolderCheck, FolderX, CheckIcon } from "lucide-react"
+import { CheckIcon } from "lucide-react"
 import { toggleReceiptPaid, toggleReceiptFiled } from "@/lib/actions/receipts"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
@@ -30,11 +29,42 @@ const dateFormatter = new Intl.DateTimeFormat("cs-CZ", {
 })
 
 interface OverviewTableProps {
-  transactions: any[]
-  deposits: any[]
+  transactions: TransactionRow[]
+  deposits: DepositRow[]
   pageSize?: number | "all"
   currentPage?: number
-  onTicketClick?: (ticket: any) => void
+  onTicketClick?: (ticket: TicketClickPayload) => void
+}
+
+export interface TicketClickPayload {
+  id: string
+}
+
+interface TransactionRow {
+  id: string
+  amount: number | string
+  date?: string
+  createdAt?: string
+  purpose?: string
+  description?: string
+  store?: string | null
+  section?: { name: string }
+  sectionName?: string
+  expenseType?: string
+  isPaid?: boolean
+  isFiled?: boolean
+  receiptUrl?: string | null
+  fileUrl?: string | null
+  note?: string | null
+  ticket?: TicketClickPayload
+  targetDate?: string
+}
+
+interface DepositRow {
+  id: string
+  amount: number | string
+  date: string
+  description?: string | null
 }
 
 export function OverviewTable({ 
@@ -45,17 +75,20 @@ export function OverviewTable({
   onTicketClick
 }: OverviewTableProps) {
   // Combine and sort by date
-  const combinedData = [
-    ...transactions.map(t => ({
+  type CombinedTransaction = TransactionRow & { displayDate: Date; displayType: "TRANSACTION" }
+  type CombinedDeposit = DepositRow & { displayDate: Date; displayType: "DEPOSIT" }
+
+  const combinedData: Array<CombinedTransaction | CombinedDeposit> = [
+    ...transactions.map((t) => ({
       ...t,
-      displayDate: new Date(t.date || t.createdAt),
-      displayType: "TRANSACTION"
+      displayDate: new Date(t.date || t.createdAt || new Date().toISOString()),
+      displayType: "TRANSACTION" as const,
     })),
-    ...deposits.map(d => ({
+    ...deposits.map((d) => ({
       ...d,
       displayDate: new Date(d.date),
-      displayType: "DEPOSIT"
-    }))
+      displayType: "DEPOSIT" as const,
+    })),
   ].sort((a, b) => b.displayDate.getTime() - a.displayDate.getTime())
 
   // Ephemeral state for checkboxes
@@ -127,8 +160,12 @@ export function OverviewTable({
         <TableBody>
           {paginatedData.map((item) => {
             const isTr = item.displayType === "TRANSACTION"
-            const currentIsPaid = optimisticStatuses[item.id]?.isPaid ?? item.isPaid
-            const currentIsFiled = optimisticStatuses[item.id]?.isFiled ?? item.isFiled
+            const currentIsPaid = isTr
+              ? optimisticStatuses[item.id]?.isPaid ?? item.isPaid
+              : undefined
+            const currentIsFiled = isTr
+              ? optimisticStatuses[item.id]?.isFiled ?? item.isFiled
+              : undefined
 
             return (
               <TableRow 
@@ -137,7 +174,11 @@ export function OverviewTable({
                   "border-border transition-all duration-200 group",
                   isTr && onTicketClick ? "hover:bg-primary/5 cursor-pointer" : "hover:bg-muted/10"
                 )}
-                onClick={() => isTr && onTicketClick && onTicketClick(item.ticket)}
+                onClick={() => {
+                  if (isTr && onTicketClick && item.ticket) {
+                    onTicketClick(item.ticket)
+                  }
+                }}
               >
                 <TableCell className="py-3 px-4 text-muted-foreground text-xs whitespace-nowrap tabular-nums font-medium">
                   {dateFormatter.format(item.displayDate)}
@@ -174,7 +215,7 @@ export function OverviewTable({
                 <TableCell className="py-3 px-4 text-center">
                   {isTr ? (
                     <div className="flex justify-center">
-                      <ExpenseTypeBadge type={mapExpenseTypeToVariant(item.expenseType)} />
+                      <ExpenseTypeBadge type={mapExpenseTypeToVariant(item.expenseType || "MATERIAL")} />
                     </div>
                   ) : (
                     <span className="text-muted-foreground/30">—</span>
@@ -190,7 +231,7 @@ export function OverviewTable({
                     {isTr && (item.receiptUrl || item.fileUrl) ? (
                       <ReceiptViewDialog 
                         transactionId={item.id} 
-                        purpose={item.purpose}
+                        purpose={item.purpose || "-"}
                         date={item.targetDate || item.createdAt}
                         amount={Math.abs(Number(item.amount))}
                       />

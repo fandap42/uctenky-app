@@ -1,37 +1,56 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { ChevronDown, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 
-interface CollapsibleSemesterProps {
+type LoadResult<T> = T | { error?: string }
+
+interface CollapsibleSemesterProps<T> {
   semesterKey: string
-  fetchData: () => Promise<any>
-  renderContent: (data: any) => React.ReactNode
-  initialData?: any
+  fetchData: () => Promise<LoadResult<T>>
+  renderContent: (data: T) => React.ReactNode
+  initialData?: T | null
   defaultExpanded?: boolean
   headerExtra?: React.ReactNode
 }
 
-export function CollapsibleSemester({
+export function CollapsibleSemester<T>({
   semesterKey,
   fetchData,
   renderContent,
   initialData,
   defaultExpanded = false,
   headerExtra,
-}: CollapsibleSemesterProps) {
+}: CollapsibleSemesterProps<T>) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded)
-  const [data, setData] = useState<any>(initialData)
+  const [data, setData] = useState<T | null>(initialData ?? null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const loadData = useCallback(async (silent = false) => {
+    if (!silent) setIsLoading(true)
+    setError(null)
+    try {
+      const result = await fetchData()
+      if (isErrorResult(result)) {
+        setError(result.error)
+      } else {
+        setData(result as T)
+      }
+    } catch (loadError) {
+      console.error("Semester load error:", loadError)
+      if (!silent) setError("Nepodařilo se načíst data")
+    } finally {
+      if (!silent) setIsLoading(false)
+    }
+  }, [fetchData])
 
   useEffect(() => {
     if (isExpanded && !data && !isLoading) {
       loadData()
     }
-  }, [isExpanded])
+  }, [data, isExpanded, isLoading, loadData])
 
   useEffect(() => {
     const handleRefresh = () => {
@@ -45,24 +64,7 @@ export function CollapsibleSemester({
 
     window.addEventListener("app-data-refresh", handleRefresh)
     return () => window.removeEventListener("app-data-refresh", handleRefresh)
-  }, [isExpanded])
-
-  const loadData = async (silent = false) => {
-    if (!silent) setIsLoading(true)
-    setError(null)
-    try {
-      const result = await fetchData()
-      if (result.error) {
-        setError(result.error)
-      } else {
-        setData(result)
-      }
-    } catch (err) {
-      if (!silent) setError("Nepodařilo se načíst data")
-    } finally {
-      if (!silent) setIsLoading(false)
-    }
-  }
+  }, [isExpanded, loadData])
 
   return (
     <div className="space-y-6">
@@ -107,5 +109,14 @@ export function CollapsibleSemester({
         </div>
       )}
     </div>
+  )
+}
+
+function isErrorResult<T>(value: LoadResult<T>): value is { error: string } {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "error" in value &&
+    typeof (value as { error?: unknown }).error === "string"
   )
 }

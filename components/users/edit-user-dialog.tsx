@@ -24,12 +24,13 @@ import { updateUser, changeUserPassword, deleteUser } from "@/actions/users"
 import { toast } from "sonner"
 import { UserCog, Trash2, KeyRound } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { AppRole } from "@prisma/client"
 
 interface User {
   id: string
   fullName: string | null
   email: string | null
-  role: string
+  role: AppRole
 }
 
 interface EditUserDialogProps {
@@ -38,19 +39,25 @@ interface EditUserDialogProps {
 
 export function EditUserDialog({ user }: EditUserDialogProps) {
   const [open, setOpen] = useState(false)
-  const [role, setRole] = useState(user.role)
+  const [role, setRole] = useState<AppRole>(user.role)
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const router = useRouter()
 
+  const handleRoleChange = (value: string) => {
+    if (isAppRole(value)) {
+      setRole(value)
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setIsLoading(true)
 
     const result = await updateUser(user.id, {
-      role: role as any,
+      role,
     })
 
     if (result.error) {
@@ -124,7 +131,7 @@ export function EditUserDialog({ user }: EditUserDialogProps) {
           <div className="space-y-4">
             <Label htmlFor="role" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Uživatelská role</Label>
             <div className="flex gap-2">
-              <Select value={role} onValueChange={setRole}>
+              <Select value={role} onValueChange={handleRoleChange}>
                 <SelectTrigger className="bg-background border-border rounded-xl font-bold h-12 flex-1">
                   <SelectValue placeholder="Vyberte roli" />
                 </SelectTrigger>
@@ -219,5 +226,21 @@ export function EditUserDialog({ user }: EditUserDialogProps) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function isAppRole(value: string): value is AppRole {
+  return (
+    value === "MEMBER" ||
+    value === "ADMIN" ||
+    value === "HEAD_VEDENI" ||
+    value === "HEAD_FINANCE" ||
+    value === "HEAD_HR" ||
+    value === "HEAD_PR" ||
+    value === "HEAD_NEVZDELAVACI" ||
+    value === "HEAD_VZDELAVACI" ||
+    value === "HEAD_SPORTOVNI" ||
+    value === "HEAD_GAMING" ||
+    value === "HEAD_KRUHOVE"
   )
 }

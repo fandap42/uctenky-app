@@ -1,15 +1,15 @@
 "use client"
 
 import { useState, useRef } from "react"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { uploadReceipt } from "@/lib/actions/receipts"
 import { validateReceiptFile } from "@/lib/utils/file-validator"
-import { Upload, X, Loader2, Camera } from "lucide-react"
+import { Loader2, Camera } from "lucide-react"
 import { ExpenseType } from "@prisma/client"
 import { Textarea } from "@/components/ui/textarea"
 
@@ -28,7 +28,7 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
   const [store, setStore] = useState("")
   const [amount, setAmount] = useState("")
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
-  const [expenseType, setExpenseType] = useState<ExpenseType>("MATERIAL")
+  const [expenseType] = useState<ExpenseType>("MATERIAL")
   const [note, setNote] = useState("")
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -84,8 +84,9 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
         window.dispatchEvent(new CustomEvent("app-data-refresh"))
         router.refresh()
       }
-    } catch (error: any) {
-      toast.error(error.message || "Nastala chyba při nahrávání")
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Nastala chyba při nahrávání"
+      toast.error(message)
     } finally {
       setUploading(false)
     }
@@ -97,7 +98,14 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
         <div className="flex flex-col items-center justify-center border-2 border-dashed border-border/50 rounded-[1.5rem] p-4 transition-colors hover:border-primary/50 relative min-h-[120px]">
           {preview ? (
             <div className="relative w-full aspect-video rounded-xl overflow-hidden group">
-              <img src={preview} alt="Preview" className="w-full h-full object-contain" />
+              <Image
+                src={preview}
+                alt="Preview"
+                fill
+                className="object-contain"
+                sizes="100vw"
+                unoptimized
+              />
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                  <Button type="button" variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()} className="rounded-full">
                     Změnit

@@ -50,7 +50,7 @@ export default async function DashboardPage() {
       </div>
 
       <TicketDashboardClient 
-        initialTickets={tickets as any} 
+        initialTickets={tickets} 
         currentUserId={userId}
         currentUserRole={userRole}
       />

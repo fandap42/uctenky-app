@@ -9,9 +9,9 @@ interface Ticket {
   purpose: string
   budgetAmount: number
   status: TicketStatus
-  requester: { fullName: string }
+  requester?: { fullName: string | null } | null
   section: { name: string }
-  receipts: any[]
+  receipts: { isPaid: boolean }[]
   targetDate: string
 }
 

@@ -1,14 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import {
   Table,
@@ -19,17 +17,22 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { History } from "lucide-react"
 
 interface HistoryDialogProps {
   title: string
-  transactions: any[]
-  type: "debt" | "cash"
+  transactions: HistoryEntry[]
   open?: boolean
   onOpenChange?: (open: boolean) => void
 }
 
-export function HistoryDialog({ title, transactions, type, open: propOpen, onOpenChange: propOnOpenChange }: HistoryDialogProps) {
+interface HistoryEntry {
+  id: string
+  amount: number | string
+  createdAt: string
+  reason: string
+}
+
+export function HistoryDialog({ title, transactions, open: propOpen, onOpenChange: propOnOpenChange }: HistoryDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false)
   const open = propOpen !== undefined ? propOpen : internalOpen
   const setOpen = propOnOpenChange !== undefined ? propOnOpenChange : setInternalOpen
@@ -69,17 +72,22 @@ export function HistoryDialog({ title, transactions, type, open: propOpen, onOpe
                       {item.reason}
                     </TableCell>
                     <TableCell className="py-3 px-4 text-right">
-                      <Badge
-                        className={`${
-                          item.amount >= 0 
-                            ? "bg-destructive/10 text-destructive border-destructive/20" 
-                            : "bg-success/10 text-success border-success/20"
-                        } text-xs font-black tabular-nums border`}
-                        variant="outline"
-                      >
-                        {item.amount >= 0 ? "+" : ""}
-                        {item.amount.toLocaleString("cs-CZ")} Kč
-                      </Badge>
+                      {(() => {
+                        const amountValue = Number(item.amount)
+                        return (
+                          <Badge
+                            className={`${
+                              amountValue >= 0
+                                ? "bg-destructive/10 text-destructive border-destructive/20"
+                                : "bg-success/10 text-success border-success/20"
+                            } text-xs font-black tabular-nums border`}
+                            variant="outline"
+                          >
+                            {amountValue >= 0 ? "+" : ""}
+                            {amountValue.toLocaleString("cs-CZ")} Kč
+                          </Badge>
+                        )
+                      })()}
                     </TableCell>
                   </TableRow>
                 ))}

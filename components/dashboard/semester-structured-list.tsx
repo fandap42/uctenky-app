@@ -9,10 +9,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
 import { StatusBadge, mapTicketStatusToBadge } from "@/components/ui/status-badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { getSemester, sortSemesterKeys, monthNames } from "@/lib/utils/semesters"
+import { sortSemesterKeys, monthNames } from "@/lib/utils/semesters"
 import { PaidStatusSelect } from "./paid-status-select"
 import { FiledStatusSelect } from "./filed-status-select"
 import { ExpenseTypeSelect } from "./expense-type-select"
@@ -22,36 +21,34 @@ import { DeleteButton } from "./delete-button"
 import { EditTransactionDialog } from "./edit-transaction-dialog"
 import { EditNoteDialog } from "./edit-note-dialog"
 import { ApprovalActions } from "@/components/requests/approval-actions"
-import { deleteTicket, updateTicketStatus } from "@/lib/actions/tickets"
-import { deleteReceipt, updateReceiptStatus, toggleReceiptPaid, updateReceiptExpenseType, toggleReceiptFiled } from "@/lib/actions/receipts"
+import { deleteTicket } from "@/lib/actions/tickets"
+import { deleteReceipt, toggleReceiptFiled } from "@/lib/actions/receipts"
 import { CollapsibleSemester } from "./collapsible-semester"
 import { TablePagination } from "@/components/ui/table-pagination"
 import { getTicketsBySemester } from "@/lib/actions/tickets"
 
 import { TicketStatus, ExpenseType } from "@prisma/client"
 
-interface Transaction {
-  id: string
-  purpose: string
+type TicketsBySemesterResult = Awaited<ReturnType<typeof getTicketsBySemester>>
+type TicketsBySemesterData = Extract<TicketsBySemesterResult, { transactions: unknown }>
+type Transaction = TicketsBySemesterData["transactions"][number]
+type TransactionRow = Transaction & {
   store?: string | null
-  status: TicketStatus
-  isPaid?: boolean
-  isFiled?: boolean
-  expenseType?: ExpenseType
-  budgetAmount?: number
-  targetDate?: any
-  amount?: any
+  amount?: number | string | null
   fileUrl?: string | null
   receiptUrl?: string | null
   note?: string | null
-  createdAt: Date | string
-  updatedAt: Date | string
-  requester?: { id: string; fullName: string } | null
-  section?: { id: string; name: string } | null
+  expenseType?: ExpenseType
+  isPaid?: boolean
+  isFiled?: boolean
+}
+
+type SemesterTransactions = {
+  transactions: TransactionRow[]
 }
 
 interface StructuredListProps {
-  initialTransactions?: Transaction[] // For the first expanded semester
+  initialTransactions?: TransactionRow[] // For the first expanded semester
   semesterKeys: string[]
   semesterTotals?: Record<string, number>
   isAdmin?: boolean
@@ -61,7 +58,7 @@ interface StructuredListProps {
   filters?: {
     requesterId?: string
     sectionId?: string
-    status?: any
+    status?: TicketStatus
   }
   showNotes?: boolean
 }
@@ -77,7 +74,7 @@ function MonthlyTransactionCard({
   showActions,
   showNotes
 }: { 
-  monthTxs: Transaction[], 
+  monthTxs: TransactionRow[], 
   month: number,
   showRequester: boolean,
   showSection: boolean,
@@ -169,7 +166,7 @@ function MonthlyTransactionCard({
                         transactionId={tx.id} 
                         purpose={tx.purpose}
                         date={tx.targetDate || tx.createdAt}
-                        amount={tx.amount || tx.budgetAmount || 0}
+                        amount={Number(tx.amount || tx.budgetAmount || 0)}
                       />
                     ) : (
                       <div className="w-4" />
@@ -181,7 +178,7 @@ function MonthlyTransactionCard({
                     <div className="flex items-center justify-end gap-1">
                       {isAdmin && (
                         <>
-                          <EditTransactionDialog transaction={tx as any} />
+                          <EditTransactionDialog transaction={tx} />
                           <DeleteButton 
                             onDelete={() => tx.fileUrl ? deleteReceipt(tx.id) : deleteTicket(tx.id)} 
                             iconOnly 
@@ -202,7 +199,7 @@ function MonthlyTransactionCard({
                           currentStatus={tx.status} 
                           purpose={tx.purpose}
                           budgetAmount={tx.budgetAmount || 0}
-                          targetDate={tx.targetDate}
+                          targetDate={new Date(tx.targetDate || tx.createdAt).toISOString()}
                         />
                       )}
                     </div>
@@ -242,7 +239,7 @@ export function SemesterStructuredList({
 }: StructuredListProps) {
   const sortedKeys = sortSemesterKeys(semesterKeys)
 
-  const renderSemesterContent = (data: { transactions: Transaction[] }, semesterKey: string) => {
+  const renderSemesterContent = (data: SemesterTransactions, semesterKey: string) => {
     const { transactions } = data
     // Sort transactions by date (newest first) before grouping
     const sortedTxs = [...transactions].sort((a, b) => {
@@ -251,7 +248,7 @@ export function SemesterStructuredList({
       return dateB - dateA
     })
 
-    const monthGroups: Record<number, Transaction[]> = {}
+    const monthGroups: Record<number, TransactionRow[]> = {}
     const semesterTotal = semesterTotals[semesterKey] || 0
 
     sortedTxs.forEach((tx) => {
@@ -304,7 +301,7 @@ export function SemesterStructuredList({
     <div className="space-y-12">
       {sortedKeys.map((key, index) => {
         return (
-          <CollapsibleSemester
+          <CollapsibleSemester<SemesterTransactions>
             key={key}
             semesterKey={key}
             defaultExpanded={index === 0}

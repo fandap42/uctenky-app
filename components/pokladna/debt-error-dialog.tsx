@@ -5,28 +5,24 @@ import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { createDebtError } from "@/lib/actions/cash-register"
 import { toast } from "sonner"
-import { AlertCircle, Plus, Minus } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { Plus, Minus } from "lucide-react"
 
 interface DebtErrorDialogProps {
-  currentTotal: number
   onSuccess?: () => void
   open?: boolean
   onOpenChange?: (open: boolean) => void
 }
 
-export function DebtErrorDialog({ currentTotal, onSuccess, open: propOpen, onOpenChange: propOnOpenChange }: DebtErrorDialogProps) {
+export function DebtErrorDialog({ onSuccess, open: propOpen, onOpenChange: propOnOpenChange }: DebtErrorDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false)
   const open = propOpen !== undefined ? propOpen : internalOpen
   const setOpen = propOnOpenChange !== undefined ? propOnOpenChange : setInternalOpen

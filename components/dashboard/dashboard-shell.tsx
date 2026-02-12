@@ -12,18 +12,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [headerVisible, setHeaderVisible] = useState(true)
   const lastScrollTop = useRef(0)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
-  const scrollTimeout = useRef<NodeJS.Timeout | null>(null)
   const isNavigatingRef = useRef(false)
   const navTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-
-  // Auto-scroll to top when pathname changes
-  useEffect(() => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = 0
-      lastScrollTop.current = 0
-    }
-    handleNavClick()
-  }, [pathname])
 
   const handleNavClick = () => {
     if (navTimeoutRef.current) {
@@ -45,6 +35,16 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       }
     }, 1200)
   }
+
+  // Auto-scroll to top when pathname changes
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0
+      lastScrollTop.current = 0
+    }
+    const frame = requestAnimationFrame(() => handleNavClick())
+    return () => cancelAnimationFrame(frame)
+  }, [pathname])
 
   useEffect(() => {
     const container = scrollContainerRef.current
@@ -79,7 +79,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     container.addEventListener("scroll", handleScroll)
     return () => {
       container.removeEventListener("scroll", handleScroll)
-      if (scrollTimeout.current) clearTimeout(scrollTimeout.current)
       if (navTimeoutRef.current) clearTimeout(navTimeoutRef.current)
     }
   }, [])

@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -23,9 +22,9 @@ interface EditTransactionDialogProps {
   transaction: {
     id: string
     purpose: string
-    budgetAmount: any
-    targetDate?: any
-    status: string
+    budgetAmount?: number | string
+    targetDate?: Date | string | null
+    status: TicketStatus
     note?: string | null
   }
 }
@@ -33,7 +32,6 @@ interface EditTransactionDialogProps {
 export function EditTransactionDialog({ transaction }: EditTransactionDialogProps) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()

@@ -4,6 +4,7 @@ import { useState, useMemo } from "react"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { OverviewTable } from "@/components/pokladna/overview-table"
+import type { TicketClickPayload } from "@/components/pokladna/overview-table"
 import { AlertCircle, History, Pencil } from "lucide-react"
 import { DepositDialog } from "@/components/pokladna/deposit-dialog"
 import { DebtErrorDialog } from "@/components/pokladna/debt-error-dialog"
@@ -15,14 +16,105 @@ import { getPokladnaSemesterData } from "@/lib/actions/cash-register"
 import { CollapsibleSemester } from "@/components/dashboard/collapsible-semester"
 import { TicketDetailDialog } from "@/components/dashboard/TicketDetailDialog"
 import { useSession } from "next-auth/react"
+import { ExpenseType, ReceiptStatus, TicketStatus } from "@prisma/client"
 
 interface PokladnaClientProps {
-  initialBalance: number
   unpaidCount: number
-  currentUsers: any[]
-  registerData: any // Context (debtErrors, cashOnHand, etc.)
+  registerData: RegisterData
   semesterKeys: string[]
-  initialSemesterData: any
+  initialSemesterData: SemesterData
+}
+
+interface TicketReceipt {
+  id: string
+  store: string
+  date: string
+  amount: number
+  fileUrl: string
+  isPaid: boolean
+  expenseType: ExpenseType
+  status: ReceiptStatus
+  isFiled: boolean
+  note?: string | null
+}
+
+interface TicketDetailRef {
+  id: string
+  purpose: string
+  budgetAmount: number
+  status: TicketStatus
+  requesterId: string | null
+  sectionId: string
+  createdAt: string
+  updatedAt?: string
+  targetDate: string
+  section: { name: string }
+  requester?: { fullName: string | null } | null
+  receipts: TicketReceipt[]
+  isFiled?: boolean
+}
+
+interface TransactionRow {
+  id: string
+  amount: number | string
+  date?: string
+  createdAt?: string
+  store?: string | null
+  purpose?: string
+  description?: string
+  section?: { name: string }
+  sectionName?: string
+  expenseType?: string
+  isPaid?: boolean
+  isFiled?: boolean
+  receiptUrl?: string | null
+  fileUrl?: string | null
+  note?: string | null
+  ticket?: TicketDetailRef
+  targetDate?: string
+}
+
+interface DepositRow {
+  id: string
+  amount: number | string
+  date: string
+  description?: string | null
+}
+
+interface HistoryEntry {
+  id: string
+  amount: number | string
+  createdAt: string
+  reason: string
+}
+
+interface RegisterData {
+  realCash: number
+  currentBalance: number
+  totalDebtErrors: number
+  totalCashOnHand: number
+  receipts: TransactionRow[]
+  deposits: DepositRow[]
+  debtErrors: HistoryEntry[]
+  cashOnHand: HistoryEntry[]
+}
+
+interface SemesterData {
+  openingBalance: number
+  deposits: DepositRow[]
+  transactions?: TransactionRow[]
+  receipts?: TransactionRow[]
+}
+
+interface MonthlyGroup {
+  monthName: string
+  month: number
+  year: number
+  transactions: TransactionRow[]
+  deposits: DepositRow[]
+  sortKey: number
+  endBalance: number
+  startBalance: number
 }
 
 const MONTH_NAMES = [
@@ -30,12 +122,17 @@ const MONTH_NAMES = [
   "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec"
 ]
 
-function MonthlyPokladnaCard({ group, onTicketClick }: { group: any, onTicketClick?: (ticket: any) => void }) {
+function MonthlyPokladnaCard({
+  group,
+  onTicketClick,
+}: {
+  group: MonthlyGroup
+  onTicketClick?: (ticket: TicketClickPayload) => void
+}) {
   const [pageSize, setPageSize] = useState<number | "all">(10)
   const [currentPage, setCurrentPage] = useState(1)
 
   const totalItems = group.transactions.length + group.deposits.length
-  const effectivePageSize = pageSize === "all" ? Math.max(totalItems, 1) : pageSize
   const totalPages = pageSize === "all" ? 1 : Math.ceil(totalItems / (pageSize as number))
 
   return (
@@ -85,9 +182,7 @@ function MonthlyPokladnaCard({ group, onTicketClick }: { group: any, onTicketCli
 }
 
 export function PokladnaClient({ 
-  initialBalance, 
   unpaidCount, 
-  currentUsers,
   registerData,
   semesterKeys,
   initialSemesterData
@@ -101,41 +196,38 @@ export function PokladnaClient({
 
   const selectedTicket = useMemo(() => {
     if (!selectedTicketId) return null
-    return registerData.receipts.find((r: any) => r.ticket?.id === selectedTicketId)?.ticket || null
+    return registerData.receipts.find((r) => r.ticket?.id === selectedTicketId)?.ticket || null
   }, [selectedTicketId, registerData.receipts])
 
-  const renderSemesterContent = (data: any) => {
+  const renderSemesterContent = (data: SemesterData) => {
     // data contains openingBalance, deposits, and either transactions or receipts
     const { openingBalance, deposits } = data
     // Handle both naming conventions (server returns receipts, client prop expects transactions)
     const transactions = data.transactions || data.receipts || []
     
     // Monthly grouping within the semester
-    const monthlyGroups: Record<string, {
-      monthName: string,
-      month: number,
-      year: number,
-      transactions: any[],
-      deposits: any[],
-      sortKey: number,
-      endBalance: number,
-      startBalance: number
-    }> = {}
+    const monthlyGroups: Record<string, MonthlyGroup> = {}
 
-    const allData = [
-      ...transactions.map((t: any) => ({ 
-        ...t, 
-        displayDate: new Date(t.date || t.createdAt), 
-        type: 'TR', 
-        amount: -Number(t.amount || 0) 
-      })),
-      ...deposits.map((d: any) => ({ 
-        ...d, 
-        displayDate: new Date(d.date), 
-        type: 'DEP', 
-        amount: Number(d.amount) 
-      }))
-    ].sort((a, b) => a.displayDate.getTime() - b.displayDate.getTime())
+    type TransactionItem = TransactionRow & { displayDate: Date; type: "TR"; amount: number }
+    type DepositItem = DepositRow & { displayDate: Date; type: "DEP"; amount: number }
+
+    const transactionItems: TransactionItem[] = transactions.map((t) => ({
+      ...t,
+      displayDate: new Date(t.date || t.createdAt || new Date().toISOString()),
+      type: "TR",
+      amount: -Number(t.amount || 0),
+    }))
+
+    const depositItems: DepositItem[] = deposits.map((d) => ({
+      ...d,
+      displayDate: new Date(d.date),
+      type: "DEP",
+      amount: Number(d.amount),
+    }))
+
+    const allData = [...transactionItems, ...depositItems].sort(
+      (a, b) => a.displayDate.getTime() - b.displayDate.getTime()
+    )
 
     let runningBalance = Number(openingBalance)
     
@@ -319,12 +411,10 @@ export function PokladnaClient({
       <DebtErrorDialog 
         open={showDebtError} 
         onOpenChange={setShowDebtError} 
-        currentTotal={initialBalance} 
       />
       <CashOnHandDialog 
         open={showCashOnHand} 
         onOpenChange={setShowCashOnHand} 
-        currentTotal={initialBalance}
       />
       
       <HistoryDialog
@@ -332,7 +422,6 @@ export function PokladnaClient({
         onOpenChange={setShowDebtHistory}
         title="Historie dluhu z chyb"
         transactions={registerData.debtErrors}
-        type="debt"
       />
       
       <HistoryDialog
@@ -340,7 +429,6 @@ export function PokladnaClient({
         onOpenChange={setShowCashHistory}
         title="Historie hotovosti u pokladníka"
         transactions={registerData.cashOnHand}
-        type="cash"
       />
 
       <TicketDetailDialog 

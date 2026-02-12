@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
 
     // Convert file to buffer early for magic byte validation
     const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
+    const buffer: Buffer = Buffer.from(bytes)
 
     // Validate file content (magic bytes) to prevent MIME spoofing
     const fileType = await fileTypeFromBuffer(buffer)
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    let outputBuffer = buffer
+    let outputBuffer: Buffer = buffer
     let outputFileType = fileType
 
     const isHeic =

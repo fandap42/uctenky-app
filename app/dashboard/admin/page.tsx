@@ -1,9 +1,9 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { SemesterStructuredList } from "@/components/dashboard/semester-structured-list"
-import { getSemester, sortSemesterKeys, getSemesterRange } from "@/lib/utils/semesters"
+import { getSemester, sortSemesterKeys } from "@/lib/utils/semesters"
 
 import { getTicketsBySemester, getTicketSemesterTotals } from "@/lib/actions/tickets"
 
@@ -91,7 +91,7 @@ export default async function FinanceDashboardPage() {
       {/* Structured List */}
       <div className="space-y-4">
         <SemesterStructuredList
-          initialTransactions={initialTransactions as any}
+          initialTransactions={initialTransactions}
           semesterKeys={sortedKeys}
           semesterTotals={semesterTotals}
           isAdmin={true}
