@@ -20,7 +20,7 @@ export function generateSPDString(params: SPDParams): string {
   const formattedAmount = params.amount.toFixed(2)
 
   const message = params.message
-    ? params.message.slice(0, 60).replace(/\*/g, "")
+    ? params.message.replace(/[^A-Za-z0-9\s.,\-]/g, "").slice(0, 60)
     : undefined
 
   let spd = `SPD*1.0*ACC:${iban}*AM:${formattedAmount}*CC:CZK`
