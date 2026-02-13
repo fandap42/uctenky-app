@@ -4,13 +4,6 @@ import { useState, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { CZECH_BANKS } from "@/lib/constants/czech-banks"
 import { saveBankAccount, getBankAccount } from "@/lib/actions/bank-account"
 import { toast } from "sonner"
@@ -118,18 +111,20 @@ export function BankAccountForm({
 
       <div className="space-y-2">
         <Label htmlFor="bankCode">Kód banky *</Label>
-        <Select value={bankCode} onValueChange={setBankCode} required>
-          <SelectTrigger className="bg-background border-border text-foreground">
-            <SelectValue placeholder="Vyberte banku" />
-          </SelectTrigger>
-          <SelectContent>
-            {CZECH_BANKS.map((bank) => (
-              <SelectItem key={bank.code} value={bank.code} className="text-sm">
-                {bank.code} – {bank.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <select
+          id="bankCode"
+          value={bankCode}
+          onChange={(e) => setBankCode(e.target.value)}
+          required
+          className="w-full px-3 py-2 bg-background border border-border text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+        >
+          <option value="">Vyberte banku</option>
+          {CZECH_BANKS.map((bank) => (
+            <option key={bank.code} value={bank.code}>
+              {bank.code} – {bank.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="flex gap-2 pt-2">
