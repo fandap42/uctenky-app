@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { CZECH_BANKS } from "@/lib/constants/czech-banks"
 import { saveBankAccount, getBankAccount } from "@/lib/actions/bank-account"
+import { validateCzechAccountNumber } from "@/lib/utils/iban"
 import { toast } from "sonner"
 import { AlertCircle } from "lucide-react"
 
@@ -27,6 +28,12 @@ export function BankAccountForm({
   const [prefix, setPrefix] = useState("")
   const [accountNumber, setAccountNumber] = useState("")
   const [bankCode, setBankCode] = useState("")
+
+  const validationError = useMemo(() => {
+    if (!accountNumber || !bankCode) return null
+    const result = validateCzechAccountNumber(accountNumber, bankCode, prefix || undefined)
+    return result.valid ? null : result.error
+  }, [prefix, accountNumber, bankCode])
 
   useEffect(() => {
     if (!loadExisting) return
@@ -109,6 +116,10 @@ export function BankAccountForm({
         </div>
       </div>
 
+      {validationError && (
+        <p className="text-xs text-destructive font-medium">{validationError}</p>
+      )}
+
       <div className="space-y-2">
         <Label htmlFor="bankCode">Kód banky *</Label>
         <select
@@ -135,7 +146,7 @@ export function BankAccountForm({
         )}
         <Button
           type="submit"
-          disabled={isLoading || !accountNumber || !bankCode}
+          disabled={isLoading || !accountNumber || !bankCode || !!validationError}
           className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
         >
           {isLoading ? "Ukládám..." : "Uložit"}
