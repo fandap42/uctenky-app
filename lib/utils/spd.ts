@@ -17,7 +17,7 @@ interface SPDParams {
 export function generateSPDString(params: SPDParams): string {
   const iban = computeCzechIBAN(params.bankCode, params.accountNumber, params.prefix)
 
-  const formattedAmount = params.amount.toFixed(2).replace(/\.?0+$/, "")
+  const formattedAmount = params.amount.toFixed(2)
 
   const message = params.message
     ? params.message.slice(0, 60).replace(/\*/g, "")
