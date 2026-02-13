@@ -69,15 +69,5 @@ export function canViewSection(role: string, sectionName: string): boolean {
  * Get all HEAD roles
  */
 export function getHeadRoles(): AppRole[] {
-  return [
-    "HEAD_VEDENI",
-    "HEAD_FINANCE",
-    "HEAD_HR",
-    "HEAD_PR",
-    "HEAD_NEVZDELAVACI",
-    "HEAD_VZDELAVACI",
-    "HEAD_SPORTOVNI",
-    "HEAD_GAMING",
-    "HEAD_KRUHOVE",
-  ] as AppRole[]
+  return Object.values(AppRole).filter((role) => role.startsWith("HEAD_"))
 }

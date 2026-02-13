@@ -229,18 +229,8 @@ export function EditUserDialog({ user }: EditUserDialogProps) {
   )
 }
 
+const APP_ROLES = new Set<AppRole>(Object.values(AppRole))
+
 function isAppRole(value: string): value is AppRole {
-  return (
-    value === "MEMBER" ||
-    value === "ADMIN" ||
-    value === "HEAD_VEDENI" ||
-    value === "HEAD_FINANCE" ||
-    value === "HEAD_HR" ||
-    value === "HEAD_PR" ||
-    value === "HEAD_NEVZDELAVACI" ||
-    value === "HEAD_VZDELAVACI" ||
-    value === "HEAD_SPORTOVNI" ||
-    value === "HEAD_GAMING" ||
-    value === "HEAD_KRUHOVE"
-  )
+  return APP_ROLES.has(value as AppRole)
 }
