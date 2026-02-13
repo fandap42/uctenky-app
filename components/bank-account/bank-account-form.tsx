@@ -36,21 +36,21 @@ export function BankAccountForm({
   const [bankCode, setBankCode] = useState("")
 
   useEffect(() => {
-    if (loadExisting) {
-      loadBankAccount()
-    }
-  }, [loadExisting])
+    if (!loadExisting) return
 
-  async function loadBankAccount() {
-    setIsLoadingData(true)
-    const result = await getBankAccount()
-    if (result.bankAccount) {
-      setPrefix(result.bankAccount.prefix || "")
-      setAccountNumber(result.bankAccount.accountNumber)
-      setBankCode(result.bankAccount.bankCode || "")
+    async function loadData() {
+      setIsLoadingData(true)
+      const result = await getBankAccount()
+      if (result.bankAccount) {
+        setPrefix(result.bankAccount.prefix || "")
+        setAccountNumber(result.bankAccount.accountNumber)
+        setBankCode(result.bankAccount.bankCode || "")
+      }
+      setIsLoadingData(false)
     }
-    setIsLoadingData(false)
-  }
+
+    loadData()
+  }, [loadExisting])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

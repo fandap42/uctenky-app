@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { QRCodeSVG } from "qrcode.react"
 import {
   Dialog,
@@ -42,51 +42,49 @@ export function QRPaymentDialog({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [overrideAmount, setOverrideAmount] = useState<string>("")
-  const [spdString, setSpdString] = useState<string>("")
 
   useEffect(() => {
-    if (open && requesterId) {
-      loadBankAccount()
-    }
-    if (open && !requesterId) {
-      setLoading(false)
-      setError("Žádost nemá přiřazeného žadatele")
-    }
-  }, [open, requesterId])
+    if (!open) return
 
-  useEffect(() => {
-    if (bankAccount && bankAccount.bankCode) {
-      const amount = overrideAmount ? parseFloat(overrideAmount) : totalReceiptsAmount
-      if (!isNaN(amount) && amount > 0) {
-        const spd = generateSPDString({
-          bankCode: bankAccount.bankCode,
-          accountNumber: bankAccount.accountNumber,
-          prefix: bankAccount.prefix || undefined,
-          amount,
-          message: purpose,
-        })
-        setSpdString(spd)
-      } else {
-        setSpdString("")
+    async function loadData() {
+      if (!requesterId) {
+        setLoading(false)
+        setError("Žádost nemá přiřazeného žadatele")
+        return
       }
-    }
-  }, [bankAccount, overrideAmount, totalReceiptsAmount, purpose])
 
-  async function loadBankAccount() {
-    setLoading(true)
-    setError(null)
-    setBankAccount(null)
-    const result = await getUserBankAccountForQR(requesterId!)
-    if (result.error) {
-      setError(result.error)
-    } else if (!result.hasBankAccount) {
-      setError("Žadatel nemá zadané bankovní údaje")
-    } else {
-      setBankAccount(result.bankAccount!)
-      setOverrideAmount(totalReceiptsAmount.toString())
+      setLoading(true)
+      setError(null)
+      setBankAccount(null)
+      const result = await getUserBankAccountForQR(requesterId)
+      if (result.error) {
+        setError(result.error)
+      } else if (!result.hasBankAccount) {
+        setError("Žadatel nemá zadané bankovní údaje")
+      } else {
+        setBankAccount(result.bankAccount!)
+        setOverrideAmount(totalReceiptsAmount.toString())
+      }
+      setLoading(false)
     }
-    setLoading(false)
-  }
+
+    loadData()
+  }, [open, requesterId, totalReceiptsAmount])
+
+  const spdString = useMemo(() => {
+    if (!bankAccount?.bankCode) return ""
+
+    const amount = overrideAmount ? parseFloat(overrideAmount) : totalReceiptsAmount
+    if (isNaN(amount) || amount <= 0) return ""
+
+    return generateSPDString({
+      bankCode: bankAccount.bankCode,
+      accountNumber: bankAccount.accountNumber,
+      prefix: bankAccount.prefix || undefined,
+      amount,
+      message: purpose,
+    })
+  }, [bankAccount, overrideAmount, totalReceiptsAmount, purpose])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
