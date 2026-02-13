@@ -13,14 +13,14 @@ import { toast } from "sonner"
 
 interface ExpenseTypeSelectProps {
     transactionId: string
-    initialType: string
+    initialType: ExpenseType
 }
 
 export function ExpenseTypeSelect({
     transactionId,
     initialType,
 }: ExpenseTypeSelectProps) {
-    const [expenseType, setExpenseType] = useState(initialType)
+    const [expenseType, setExpenseType] = useState<ExpenseType>(initialType)
     const [isLoading, setIsLoading] = useState(false)
     const router = useRouter()
 
@@ -30,8 +30,9 @@ export function ExpenseTypeSelect({
     }, [initialType])
 
     async function handleChange(value: string) {
+        if (value !== "MATERIAL" && value !== "SERVICE") return
         setIsLoading(true)
-        const result = await updateReceiptExpenseType(transactionId, value as any)
+        const result = await updateReceiptExpenseType(transactionId, value)
 
         if (result.error) {
             toast.error(result.error)

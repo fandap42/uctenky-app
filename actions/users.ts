@@ -113,6 +113,7 @@ export async function deleteUser(userId: string) {
     revalidatePath("/dashboard/users")
     return { success: true }
   } catch (error) {
+    console.error("Delete user error:", error)
     return { error: "Nepodařilo se smazat uživatele" }
   }
 }

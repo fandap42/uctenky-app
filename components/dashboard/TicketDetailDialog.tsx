@@ -14,7 +14,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Separator } from "@/components/ui/separator"
 import { StatusBadge, mapTicketStatusToBadge } from "@/components/ui/status-badge"
 import { FunctionalCheckbox } from "@/components/ui/functional-checkbox"
 import { PaymentStatusIndicator } from "@/components/ui/payment-status-indicator"
@@ -33,14 +32,6 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select"
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription,
-  CardFooter
-} from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ReceiptUploadForm } from "./ReceiptUploadForm"
 import { EditNoteDialog } from "./edit-note-dialog"
@@ -48,7 +39,6 @@ import { EditTransactionDialog } from "./edit-transaction-dialog"
 import { EditReceiptDialog } from "./edit-receipt-dialog"
 import { ReceiptViewDialog } from "@/components/receipts/receipt-view-dialog"
 import { 
-  updateReceiptStatus, 
   toggleReceiptPaid, 
   updateReceiptExpenseType,
   payAllReceiptsInTicket,
@@ -58,23 +48,15 @@ import {
 import { 
   updateTicketStatus, 
   submitForVerification,
-  deleteTicket,
-  toggleTicketFiled 
+  deleteTicket
 } from "@/lib/actions/tickets"
 import { 
   CheckCircle2, 
-  XCircle, 
   AlertCircle, 
-  FileText, 
-  ImageIcon,
-  StickyNote,
-  ExternalLink, 
   Trash2, 
   Plus,
   User,
-  Calendar,
-  FolderCheck,
-  FolderX
+  Calendar
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -96,8 +78,8 @@ interface Ticket {
   purpose: string
   budgetAmount: number
   status: TicketStatus
-  requesterId: string
-  requester: { fullName: string }
+  requesterId: string | null
+  requester?: { fullName: string | null } | null
   sectionId: string
   section: { name: string }
   receipts: Receipt[]
@@ -174,19 +156,6 @@ export function TicketDetailDialog({
     } else {
       toast.error(result.error)
     }
-  }
-
-  const handleTicketFiledToggle = async (isFiled: boolean) => {
-    setLoading(true)
-    const result = await toggleTicketFiled(ticket.id, isFiled)
-    if (result.success) {
-      toast.success(isFiled ? "Označeno jako založeno" : "Označeno jako nezaloženo")
-      window.dispatchEvent(new CustomEvent("app-data-refresh"))
-      router.refresh()
-    } else {
-      toast.error(result.error)
-    }
-    setLoading(false)
   }
 
   const handleDeleteReceipt = async (receiptId: string) => {
@@ -269,7 +238,7 @@ export function TicketDetailDialog({
                     <DialogTitle className="text-lg sm:text-xl md:text-2xl font-black text-foreground tracking-tight leading-none uppercase mt-2">
                       {ticket.purpose}
                     </DialogTitle>
-                    {isAdmin && <EditTransactionDialog transaction={ticket as any} />}
+                    {isAdmin && <EditTransactionDialog transaction={ticket} />}
                   </div>
                   <DialogDescription asChild className="text-muted-foreground font-medium text-xs md:text-sm mt-1 flex items-center gap-x-3 gap-y-1.5 flex-wrap leading-none">
                     <div>
@@ -429,7 +398,12 @@ export function TicketDetailDialog({
                             <TableCell className="py-3 px-4 text-center">
                               <div className="flex items-center justify-center gap-3">
                                 {isAdmin && <EditNoteDialog receiptId={receipt.id} initialNote={receipt.note} />}
-                                <ReceiptViewDialog transactionId={receipt.id} purpose={receipt.store} />
+                                <ReceiptViewDialog
+                                  transactionId={receipt.id}
+                                  purpose={receipt.store}
+                                  date={receipt.date}
+                                  amount={receipt.amount}
+                                />
                               </div>
                             </TableCell>
                             <TableCell className="py-3 px-4 text-center">
@@ -584,7 +558,12 @@ export function TicketDetailDialog({
                             <TableCell className="py-3 px-3 text-center">
                               <div className="flex items-center justify-center gap-2">
                                 {isAdmin && <EditNoteDialog receiptId={receipt.id} initialNote={receipt.note} />}
-                                <ReceiptViewDialog transactionId={receipt.id} purpose={receipt.store} />
+                                <ReceiptViewDialog
+                                  transactionId={receipt.id}
+                                  purpose={receipt.store}
+                                  date={receipt.date}
+                                  amount={receipt.amount}
+                                />
                               </div>
                             </TableCell>
                             <TableCell className="py-3 px-3 text-center">
@@ -764,15 +743,4 @@ export function TicketDetailDialog({
       </Dialog>
     </>
   )
-}
-
-function ReceiptStatusBadge({ status }: { status: ReceiptStatus }) {
-  switch (status) {
-    case "APPROVED":
-      return <CheckCircle2 className="w-3.5 h-3.5 text-status-success" />
-    case "REJECTED":
-      return <XCircle className="w-3.5 h-3.5 text-destructive" />
-    default:
-      return <div className="w-3.5 h-3.5 rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" />
-  }
 }

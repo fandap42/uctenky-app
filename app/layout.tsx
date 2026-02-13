@@ -15,6 +15,21 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "4FISuctenky | Správa financí studentské organizace",
   description: "Systém pro správu účtenek a finančních náhrad pro studentské organizace",
+  icons: {
+    icon: [
+      {
+        url: "/favicon-dark.svg",
+        type: "image/svg+xml",
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        url: "/favicon-light.svg",
+        type: "image/svg+xml",
+        media: "(prefers-color-scheme: dark)",
+      },
+    ],
+    apple: "/favicon-dark.svg",
+  },
 };
 
 export const viewport = {

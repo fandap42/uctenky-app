@@ -1,13 +1,17 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import { Card } from "@/components/ui/card"
 import { isHeadRole, isAdmin, getSectionForRole } from "@/lib/utils/roles"
 import { getTickets } from "@/lib/actions/tickets"
 import { SectionFilter } from "@/components/dashboard/section-filter"
 import { SectionDashboardClient } from "./section-dashboard-client"
 
 export const dynamic = "force-dynamic"
+
+type SectionSummary = {
+  id: string
+  name: string
+}
 
 interface PageProps {
   searchParams: Promise<{ sectionId?: string }>
@@ -33,8 +37,8 @@ export default async function SectionHeadDashboardPage({ searchParams }: PagePro
   }
 
   // Handle section selection
-  let section = null
-  let allSections: any[] = []
+  let section: SectionSummary | null = null
+  let allSections: SectionSummary[] = []
   const userIsAdmin = isAdmin(user.role)
 
   if (userIsAdmin) {
@@ -106,7 +110,7 @@ export default async function SectionHeadDashboardPage({ searchParams }: PagePro
 
       {/* Kanban Board */}
       <SectionDashboardClient 
-        initialTickets={tickets as any}
+        initialTickets={tickets}
         currentUserId={session.user.id}
         currentUserRole={user.role}
       />

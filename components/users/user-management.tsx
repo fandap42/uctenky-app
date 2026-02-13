@@ -10,17 +10,18 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Search, UserCog, UserPlus } from "lucide-react"
+import { Search } from "lucide-react"
 import { EditUserDialog } from "./edit-user-dialog"
 import { cn } from "@/lib/utils"
+import { AppRole } from "@prisma/client"
 
 interface User {
   id: string
   fullName: string | null
   email: string | null
-  role: string
+  role: AppRole
   createdAt: string
 }
 

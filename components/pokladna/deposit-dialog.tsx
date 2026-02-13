@@ -13,17 +13,9 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { createDeposit } from "@/lib/actions/cash-register"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
-import { Plus } from "lucide-react"
 
 export function DepositDialog() {
   const [open, setOpen] = useState(false)

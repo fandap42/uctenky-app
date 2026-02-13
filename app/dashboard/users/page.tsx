@@ -18,7 +18,7 @@ export default async function UsersPage() {
   const serializedUsers = users.map(user => ({
     ...user,
     createdAt: user.createdAt.toISOString()
-  })) as any
+  }))
 
   return (
     <div className="space-y-8">
