@@ -13,6 +13,8 @@ export const MESSAGES = {
   
   UPLOAD: {
     NO_FILE: "Nebyl nahrán žádný soubor",
+    REQUIRED_FIELDS: "Vyplňte všechna povinná pole (soubor, částka, datum)",
+    INVALID_AMOUNT: "Částka musí být platné kladné číslo",
     FILE_TOO_LARGE: "Soubor je příliš velký. Maximum je 20 MB.",
     INVALID_TYPE: "Nahrajte prosím obrázek",
     INVALID_EXTENSION: "Neplatný typ souboru. Povolené formáty: JPG, PNG, GIF, WebP, HEIC, PDF",
@@ -57,6 +59,17 @@ export const MESSAGES = {
   
   SECURITY: {
     BOT_DETECTED: "Detekována podezřelá aktivita botů.",
+  },
+
+  ONBOARDING: {
+    COMPLETE_FAILED: "Nepodařilo se dokončit onboarding",
+  },
+
+  BANK_ACCOUNT: {
+    SAVE_FAILED: "Nepodařilo se uložit bankovní údaje",
+    LOAD_FAILED: "Nepodařilo se načíst bankovní údaje",
+    NO_ACCOUNT: "Uživatel nemá zadané bankovní údaje",
+    SAVED: "Bankovní údaje byly uloženy",
   },
 } as const
 

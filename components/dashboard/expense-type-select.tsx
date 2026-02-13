@@ -13,14 +13,14 @@ import { toast } from "sonner"
 
 interface ExpenseTypeSelectProps {
     transactionId: string
-    initialType: string
+    initialType: ExpenseType
 }
 
 export function ExpenseTypeSelect({
     transactionId,
     initialType,
 }: ExpenseTypeSelectProps) {
-    const [expenseType, setExpenseType] = useState(initialType)
+    const [expenseType, setExpenseType] = useState<ExpenseType>(initialType)
     const [isLoading, setIsLoading] = useState(false)
     const router = useRouter()
 
@@ -30,8 +30,9 @@ export function ExpenseTypeSelect({
     }, [initialType])
 
     async function handleChange(value: string) {
+        if (value !== "MATERIAL" && value !== "SERVICE") return
         setIsLoading(true)
-        const result = await updateReceiptExpenseType(transactionId, value as any)
+        const result = await updateReceiptExpenseType(transactionId, value)
 
         if (result.error) {
             toast.error(result.error)
@@ -50,7 +51,7 @@ export function ExpenseTypeSelect({
             onValueChange={handleChange}
             disabled={isLoading}
         >
-            <SelectTrigger className={`w-[110px] h-8 bg-background border-border text-xs ${expenseType === "MATERIAL" ? "text-expense-material" : "text-expense-service"}`}>
+            <SelectTrigger className={`w-[110px] h-8 rounded-md bg-background border-border text-xs font-semibold ${expenseType === "MATERIAL" ? "text-expense-material" : "text-expense-service"} ${isLoading ? "opacity-70" : ""}`}>
                 <SelectValue />
             </SelectTrigger>
             <SelectContent position="popper" className="bg-card border-border max-h-[none]">

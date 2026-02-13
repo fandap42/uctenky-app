@@ -13,17 +13,9 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { createDeposit } from "@/lib/actions/cash-register"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
-import { Plus } from "lucide-react"
 
 export function DepositDialog() {
   const [open, setOpen] = useState(false)
@@ -66,7 +58,7 @@ export function DepositDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-tight h-11 px-6 rounded-2xl shadow-lg shadow-primary/20">
+        <Button className="bg-primary hover:bg-primary/90 hover:scale-105 text-primary-foreground font-black uppercase tracking-tight h-11 px-6 rounded-2xl shadow-lg shadow-primary/20 transition-all duration-200">
           Nový vklad
         </Button>
       </DialogTrigger>

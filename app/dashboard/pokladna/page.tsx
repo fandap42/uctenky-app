@@ -25,35 +25,6 @@ export default async function PokladnaPage() {
     redirect("/dashboard")
   }
 
-  // Get all users for balance overview
-  const users = await prisma.user.findMany({
-    select: {
-      id: true,
-      fullName: true,
-      tickets: {
-        select: {
-          receipts: {
-            where: { isPaid: false, status: "APPROVED" },
-            select: { amount: true }
-          }
-        }
-      }
-    },
-  })
-
-  const usersWithBalance = users.map(u => {
-    const balance = u.tickets.reduce((sum, ticket) => {
-      const ticketSum = ticket.receipts.reduce((s, r) => s + Number(r.amount), 0)
-      return sum + ticketSum
-    }, 0)
-    
-    return {
-      id: u.id,
-      fullName: u.fullName,
-      pokladnaBalance: balance
-    }
-  })
-
   // Fetch unique semester keys
   const receiptDates = await prisma.receipt.findMany({
     select: { date: true, createdAt: true }
@@ -85,26 +56,26 @@ export default async function PokladnaPage() {
   // Normalize data for client props
   const initialSemesterData = {
     openingBalance: Number(initialSemesterDataRaw.openingBalance || 0),
-    deposits: (initialSemesterDataRaw.deposits || []).map((d: any) => ({
+    deposits: (initialSemesterDataRaw.deposits || []).map((d) => ({
       ...d,
       amount: Number(d.amount),
-      date: typeof d.date === 'object' && d.date.toISOString ? d.date.toISOString() : d.date
+      date: new Date(d.date).toISOString(),
     })),
-    transactions: (initialSemesterDataRaw.receipts || []).map((r: any) => ({
+    transactions: (initialSemesterDataRaw.receipts || []).map((r) => ({
       ...r,
       amount: Number(r.amount),
-      date: typeof r.date === 'object' && r.date.toISOString ? r.date.toISOString() : r.date,
+      date: new Date(r.date).toISOString(),
       // Deep serialize nested ticket if present
       ticket: r.ticket ? {
           ...r.ticket,
           budgetAmount: Number(r.ticket.budgetAmount),
-          createdAt: typeof r.ticket.createdAt === 'object' ? r.ticket.createdAt.toISOString() : r.ticket.createdAt,
-          updatedAt: typeof r.ticket.updatedAt === 'object' ? r.ticket.updatedAt.toISOString() : r.ticket.updatedAt,
-          targetDate: typeof r.ticket.targetDate === 'object' ? r.ticket.targetDate.toISOString() : r.ticket.targetDate,
-          receipts: (r.ticket.receipts || []).map((tr: any) => ({
+          createdAt: new Date(r.ticket.createdAt).toISOString(),
+          updatedAt: new Date(r.ticket.updatedAt).toISOString(),
+          targetDate: new Date(r.ticket.targetDate).toISOString(),
+          receipts: (r.ticket.receipts || []).map((tr) => ({
             ...tr,
             amount: Number(tr.amount),
-            date: typeof tr.date === 'object' ? tr.date.toISOString() : tr.date,
+            date: new Date(tr.date).toISOString(),
           }))
       } : undefined
     })) 
@@ -129,14 +100,14 @@ export default async function PokladnaPage() {
     totalDebtErrors: Number(registerData.totalDebtErrors),
     totalCashOnHand: Number(registerData.totalCashOnHand),
     realCash: Number(registerData.realCash),
-    deposits: registerData.deposits?.map((d: any) => ({ 
+    deposits: registerData.deposits?.map((d) => ({ 
       ...d, 
       amount: Number(d.amount),
       date: d.date 
     })),
-    debtErrors: registerData.debtErrors?.map((d: any) => ({ ...d, amount: Number(d.amount) })),
-    cashOnHand: registerData.cashOnHand?.map((c: any) => ({ ...c, amount: Number(c.amount) })),
-    receipts: registerData.receipts?.map((r: any) => ({ 
+    debtErrors: registerData.debtErrors?.map((d) => ({ ...d, amount: Number(d.amount) })),
+    cashOnHand: registerData.cashOnHand?.map((c) => ({ ...c, amount: Number(c.amount) })),
+    receipts: registerData.receipts?.map((r) => ({ 
       ...r, 
       amount: Number(r.amount),
       date: r.date,
@@ -144,13 +115,13 @@ export default async function PokladnaPage() {
       ticket: r.ticket ? {
         ...r.ticket,
         budgetAmount: Number(r.ticket.budgetAmount),
-        createdAt: typeof r.ticket.createdAt === 'object' ? r.ticket.createdAt.toISOString() : r.ticket.createdAt,
-        updatedAt: typeof r.ticket.updatedAt === 'object' ? r.ticket.updatedAt.toISOString() : r.ticket.updatedAt,
-        targetDate: typeof r.ticket.targetDate === 'object' ? r.ticket.targetDate.toISOString() : r.ticket.targetDate,
-        receipts: (r.ticket.receipts || []).map((tr: any) => ({
+        createdAt: new Date(r.ticket.createdAt).toISOString(),
+        updatedAt: new Date(r.ticket.updatedAt).toISOString(),
+        targetDate: new Date(r.ticket.targetDate).toISOString(),
+        receipts: (r.ticket.receipts || []).map((tr) => ({
           ...tr,
           amount: Number(tr.amount),
-          date: typeof tr.date === 'object' ? tr.date.toISOString() : tr.date,
+          date: new Date(tr.date).toISOString(),
         }))
       } : undefined
     })),
@@ -158,9 +129,7 @@ export default async function PokladnaPage() {
 
   return (
     <PokladnaClient 
-      initialBalance={serializedRegisterData.currentBalance || 0}
       unpaidCount={unpaidCount}
-      currentUsers={usersWithBalance}
       registerData={serializedRegisterData}
       semesterKeys={sortedKeys}
       initialSemesterData={initialSemesterData}

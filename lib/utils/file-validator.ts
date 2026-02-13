@@ -31,7 +31,7 @@ export function validateReceiptFile(file: File | null): ValidationResult {
   const fileName = file.name.toLowerCase()
   const extension = fileName.split('.').pop()
   
-  // HEIC/HEIF files are allowed (will be converted on client)
+  // HEIC/HEIF files are allowed (may be converted on server)
   if (fileName.endsWith('.heic') || fileName.endsWith('.heif')) {
     return { valid: true }
   }
@@ -53,35 +53,3 @@ export function validateReceiptFile(file: File | null): ValidationResult {
   return { valid: true }
 }
 
-/**
- * Check if a file is HEIC/HEIF format
- */
-export function isHeicFile(file: File): boolean {
-  const fileName = file.name.toLowerCase()
-  return fileName.endsWith('.heic') || fileName.endsWith('.heif')
-}
-
-/**
- * Convert HEIC file to JPEG
- * @param file - HEIC file to convert
- * @returns Converted JPEG file
- * @throws Error if conversion fails
- */
-export async function convertHeicToJpeg(file: File): Promise<File> {
-  const heic2any = (await import('heic2any')).default
-  
-  const blob = await heic2any({
-    blob: file,
-    toType: 'image/jpeg',
-    quality: 0.95
-  })
-
-  // heic2any can return array or single blob
-  const resultBlob = Array.isArray(blob) ? blob[0] : blob
-
-  return new File(
-    [resultBlob],
-    file.name.replace(/\.heic$/i, '.jpg').replace(/\.heif$/i, '.jpg'),
-    { type: 'image/jpeg' }
-  )
-}

@@ -50,7 +50,7 @@ export function PaidStatusSelect({
       onValueChange={handleToggle}
       disabled={isLoading}
     >
-      <SelectTrigger className={`w-[140px] h-8 bg-background border-border text-xs ${isPaid ? "text-status-success" : "text-status-pending"}`}>
+      <SelectTrigger className={`w-[140px] h-8 rounded-md bg-background border-border text-xs font-semibold ${isPaid ? "text-status-success" : "text-status-pending"} ${isLoading ? "opacity-70" : ""}`}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent position="popper" className="bg-card border-border max-h-[none]">

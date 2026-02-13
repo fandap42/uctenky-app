@@ -8,22 +8,19 @@ interface Transaction {
   id: string
   purpose?: string
   store?: string | null
-  amount: number // Already processed (negative for expenses)
+  amount: number | string // Already processed (negative for expenses)
   isPaid?: boolean
   expenseType?: string
   date?: string | null
-  dueDate?: string | null
+  note?: string | null
   sectionName?: string // Flattened from ticket.section.name
   section?: { name: string } | null // Fallback for old format
-  // Legacy fields for backward compatibility
-  estimatedAmount?: number
-  finalAmount?: number | null
 }
 
 interface Deposit {
   id: string
-  amount: number
-  description: string | null
+  amount: number | string
+  description?: string | null
   date: string
 }
 
@@ -67,16 +64,12 @@ export function CashRegisterExport({
     transactions.forEach((t) => {
       // Get section name - prioritize flattened sectionName, then section.name
       const sectionName = t.sectionName || t.section?.name || "-"
-      // Get amount - if already negative (from client.tsx transformation), use as is
-      // Otherwise fall back to legacy fields
-      const rawAmount = t.amount !== undefined 
-        ? t.amount  // Already processed (might be negative)
-        : -(t.finalAmount || t.estimatedAmount || 0) // Legacy: negate for expenses
-      // If amount is positive but this is a transaction, it should be negative
+      // Amount is already negative from client.tsx transformation
+      const rawAmount = Number(t.amount || 0)
       const amount = rawAmount > 0 ? -rawAmount : rawAmount
       
       rows.push({
-        date: new Date(t.date || t.dueDate || new Date()),
+        date: new Date(t.date || new Date()),
         type: "transaction",
         section: sectionName,
         purpose: t.purpose || "-",
@@ -94,7 +87,7 @@ export function CashRegisterExport({
         section: "-",
         purpose: d.description || "Vklad",
         store: "-",
-        amount: d.amount, // Positive for deposits
+        amount: Number(d.amount), // Positive for deposits
         expenseType: "-",
       })
     })

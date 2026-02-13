@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import {
@@ -34,7 +33,6 @@ export function DeleteButton({
   variant = "trash",
 }: DeleteButtonProps) {
   const [isDeleting, setIsDeleting] = useState(false)
-  const router = useRouter()
 
   async function handleDelete() {
     setIsDeleting(true)

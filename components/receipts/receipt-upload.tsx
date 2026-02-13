@@ -16,6 +16,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { uploadReceipt } from "@/lib/actions/receipts"
+import { validateReceiptFile } from "@/lib/utils/file-validator"
+import { MESSAGES } from "@/lib/constants/messages"
 import { toast } from "sonner"
 import { Upload, FileUp, Check, Calendar } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -37,17 +39,27 @@ export function ReceiptUpload({ ticketId }: ReceiptUploadProps) {
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const selectedFile = e.target.files?.[0]
     if (!selectedFile) return
+
+    const validation = validateReceiptFile(selectedFile)
+    if (!validation.valid) {
+      toast.error(validation.error)
+      return
+    }
+
     setFile(selectedFile)
     setPreview(URL.createObjectURL(selectedFile))
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!file || !amount || !date) return
+    if (!file || !amount || !date) {
+      toast.error(MESSAGES.UPLOAD.REQUIRED_FIELDS)
+      return
+    }
 
     const amountNum = parseFloat(amount)
-    if (isNaN(amountNum) || amountNum < 0) {
-      toast.error("Částka nemůže být záporné číslo")
+    if (isNaN(amountNum) || amountNum <= 0) {
+      toast.error(MESSAGES.UPLOAD.INVALID_AMOUNT)
       return
     }
 
@@ -64,7 +76,7 @@ export function ReceiptUpload({ ticketId }: ReceiptUploadProps) {
     if (result.error) {
       toast.error(result.error)
     } else {
-      toast.success("HOTOVO: Účtenka byla uložena")
+      toast.success(MESSAGES.UPLOAD.SUCCESS)
       setOpen(false)
       window.dispatchEvent(new CustomEvent("app-data-refresh"))
       router.refresh()
@@ -80,7 +92,7 @@ export function ReceiptUpload({ ticketId }: ReceiptUploadProps) {
           Nahrát účtenku
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-card border-border sm:max-w-[425px] rounded-[2.5rem]">
+      <DialogContent showCloseButton={false} className="bg-card border-border sm:max-w-[425px] rounded-[2.5rem]">
         <DialogHeader>
           <DialogTitle className="text-2xl font-black text-foreground">Doplňte účtenku</DialogTitle>
           <DialogDescription className="text-muted-foreground font-medium">

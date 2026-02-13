@@ -1,15 +1,16 @@
 "use client"
 
 import { useState, useRef } from "react"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { uploadReceipt } from "@/lib/actions/receipts"
-import { validateReceiptFile, isHeicFile, convertHeicToJpeg } from "@/lib/utils/file-validator"
-import { Upload, X, Loader2, Camera } from "lucide-react"
+import { validateReceiptFile } from "@/lib/utils/file-validator"
+import { MESSAGES } from "@/lib/constants/messages"
+import { Loader2, Camera } from "lucide-react"
 import { ExpenseType } from "@prisma/client"
 import { Textarea } from "@/components/ui/textarea"
 
@@ -24,12 +25,11 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
-  const [converting, setConverting] = useState(false)
   
   const [store, setStore] = useState("")
   const [amount, setAmount] = useState("")
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
-  const [expenseType, setExpenseType] = useState<ExpenseType>("MATERIAL")
+  const [expenseType] = useState<ExpenseType>("MATERIAL")
   const [note, setNote] = useState("")
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -42,34 +42,20 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
       return
     }
 
-    let processedFile = selectedFile
-    if (isHeicFile(selectedFile)) {
-      try {
-        setConverting(true)
-        toast.info("Převádím HEIC na JPEG...")
-        processedFile = await convertHeicToJpeg(selectedFile)
-      } catch (error) {
-        toast.error("Chyba při převodu HEIC souboru")
-        return
-      } finally {
-        setConverting(false)
-      }
-    }
-
-    setFile(processedFile)
-    setPreview(URL.createObjectURL(processedFile))
+    setFile(selectedFile)
+    setPreview(URL.createObjectURL(selectedFile))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!file || !store || !amount || !date) {
-      toast.error("Prosím vyplňte všechna pole a vyberte soubor")
+      toast.error(MESSAGES.UPLOAD.REQUIRED_FIELDS)
       return
     }
 
     const amountNum = parseFloat(amount)
-    if (isNaN(amountNum) || amountNum < 0) {
-      toast.error("Částka nemůže být záporná čísla")
+    if (isNaN(amountNum) || amountNum <= 0) {
+      toast.error(MESSAGES.UPLOAD.INVALID_AMOUNT)
       return
     }
 
@@ -89,7 +75,7 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
       if (result.error) {
         toast.error(result.error)
       } else {
-        toast.success("Účtenka byla úspěšně nahrána")
+        toast.success(MESSAGES.UPLOAD.SUCCESS)
         setFile(null)
         setPreview(null)
         setStore("")
@@ -99,8 +85,9 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
         window.dispatchEvent(new CustomEvent("app-data-refresh"))
         router.refresh()
       }
-    } catch (error: any) {
-      toast.error(error.message || "Nastala chyba při nahrávání")
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : MESSAGES.UPLOAD.UPLOAD_FAILED
+      toast.error(message)
     } finally {
       setUploading(false)
     }
@@ -112,7 +99,14 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
         <div className="flex flex-col items-center justify-center border-2 border-dashed border-border/50 rounded-[1.5rem] p-4 transition-colors hover:border-primary/50 relative min-h-[120px]">
           {preview ? (
             <div className="relative w-full aspect-video rounded-xl overflow-hidden group">
-              <img src={preview} alt="Preview" className="w-full h-full object-contain" />
+              <Image
+                src={preview}
+                alt="Preview"
+                fill
+                className="object-contain"
+                sizes="100vw"
+                unoptimized
+              />
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                  <Button type="button" variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()} className="rounded-full">
                     Změnit
@@ -190,17 +184,12 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
       <Button 
         type="submit" 
         className="w-full rounded-2xl h-12 font-black uppercase tracking-widest bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20"
-        disabled={uploading || converting}
+        disabled={uploading}
       >
         {uploading ? (
           <>
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
             Nahrávám...
-          </>
-        ) : converting ? (
-           <>
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Převádím HEIC...
           </>
         ) : (
           "Nahrát účtenku"

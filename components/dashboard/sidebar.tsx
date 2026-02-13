@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -13,8 +12,8 @@ import {
   PieChart,
   Users,
   LogOut,
-  ChevronRight,
   Menu,
+  Settings,
 } from "lucide-react"
 import { signOut, useSession } from "next-auth/react"
 import { isHeadRole, isAdmin } from "@/lib/utils/roles"
@@ -143,10 +142,23 @@ export function Sidebar({ isOpen, onClose, onNavClick }: SidebarProps) {
                 </Badge>
               </div>
             </div>
+            <Link
+              href="/dashboard/settings"
+              onClick={handleNavClick}
+              className={cn(
+                "w-full flex items-center justify-start gap-2 px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200",
+                pathname === "/dashboard/settings"
+                  ? "bg-primary/10 text-foreground font-bold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              )}
+            >
+              <Settings className="w-4 h-4" />
+              <span>Nastavení</span>
+            </Link>
             <Button
               variant="outline"
               size="sm"
-              className="w-full justify-start gap-2 text-muted-foreground hover:text-destructive hover:border-destructive hover:bg-destructive/5 rounded-xl border-border"
+              className="w-full justify-start gap-2 text-destructive/70 hover:text-destructive hover:border-destructive hover:bg-destructive/10 rounded-xl border-destructive/30 bg-destructive/5 transition-all duration-200"
               onClick={() => signOut({ callbackUrl: "/login" })}
             >
               <LogOut className="w-4 h-4" />

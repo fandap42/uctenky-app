@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { createTicket } from "@/lib/actions/tickets"
+import { MESSAGES } from "@/lib/constants/messages"
 import { toast } from "sonner"
 
 interface Section {
@@ -38,13 +39,25 @@ export function RequestForm({ trigger, sections }: RequestFormProps) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [selectedSection, setSelectedSection] = useState("")
+  const [targetDate, setTargetDate] = useState(() => new Date().toISOString().split("T")[0])
   const router = useRouter()
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    setIsLoading(true)
-
     const formData = new FormData(e.currentTarget)
+
+    if (!selectedSection) {
+      toast.error(MESSAGES.TRANSACTION.MISSING_SECTION)
+      return
+    }
+
+    const budgetAmount = Number.parseFloat(String(formData.get("budgetAmount") ?? ""))
+    if (Number.isNaN(budgetAmount) || budgetAmount <= 0) {
+      toast.error("Rozpočet musí být kladné číslo")
+      return
+    }
+
+    setIsLoading(true)
     formData.set("sectionId", selectedSection)
 
     const result = await createTicket(formData)
@@ -65,7 +78,7 @@ export function RequestForm({ trigger, sections }: RequestFormProps) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-tight h-11 px-6 rounded-2xl shadow-lg shadow-primary/20">
+          <Button className="bg-primary hover:bg-primary/90 hover:scale-105 text-primary-foreground font-black uppercase tracking-tight h-11 px-6 rounded-2xl shadow-lg shadow-primary/20 transition-all duration-200">
             Nová žádost
           </Button>
         )}
@@ -149,7 +162,8 @@ export function RequestForm({ trigger, sections }: RequestFormProps) {
                 name="targetDate"
                 type="date"
                 required
-                defaultValue={new Date().toISOString().split('T')[0]}
+                value={targetDate}
+                onChange={(e) => setTargetDate(e.target.value)}
                 className="bg-muted/50 border-none h-12 rounded-xl text-foreground font-bold"
               />
             </div>

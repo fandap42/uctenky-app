@@ -25,7 +25,11 @@ export function SectionFilter({ sections, currentSectionId }: SectionFilterProps
 
   const handleValueChange = (value: string) => {
     const params = new URLSearchParams(searchParams.toString())
-    params.set("sectionId", value)
+    if (value === "all") {
+      params.delete("sectionId")
+    } else {
+      params.set("sectionId", value)
+    }
     router.push(`?${params.toString()}`)
   }
 
@@ -37,6 +41,9 @@ export function SectionFilter({ sections, currentSectionId }: SectionFilterProps
           <SelectValue placeholder="Vyberte sekci" />
         </SelectTrigger>
         <SelectContent position="popper" className="bg-card border-border max-h-[none]">
+          <SelectItem value="all" className="font-medium">
+            Všechny sekce
+          </SelectItem>
           {sections.map((section) => (
             <SelectItem key={section.id} value={section.id} className="font-medium">
               {section.name}

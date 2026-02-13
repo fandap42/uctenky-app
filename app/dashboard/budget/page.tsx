@@ -1,11 +1,10 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { getSemester } from "@/lib/utils/semesters"
 import { BudgetSemesterExport } from "@/components/dashboard/budget-semester-export"
-import { cn } from "@/lib/utils"
 
 export const dynamic = "force-dynamic"
 
@@ -40,12 +39,6 @@ export default async function BudgetPage() {
   if (!user || user.role !== "ADMIN") {
     redirect("/dashboard")
   }
-
-  // Fetch all sections
-  const sections = await prisma.section.findMany({
-    where: { isActive: true },
-    orderBy: { name: "asc" },
-  })
 
   // Fetch all tickets with section info (for pending budgets)
   const tickets = await prisma.ticket.findMany({

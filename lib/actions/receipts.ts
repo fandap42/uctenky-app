@@ -7,6 +7,7 @@ import { ReceiptStatus, ExpenseType } from "@prisma/client"
 import { MESSAGES } from "@/lib/constants/messages"
 import { uploadFile } from "@/lib/s3"
 import { fileTypeFromBuffer } from "file-type"
+import { convertHeicBufferToJpeg } from "@/lib/utils/heic-conversion"
 
 const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif', 'pdf']
 const ALLOWED_MIME_TYPES = [
@@ -36,7 +37,7 @@ export async function uploadReceipt(formData: FormData) {
     const note = formData.get("note") as string | null
 
     if (!ticketId || isNaN(amount) || !formData.get("date") || !file) {
-      return { error: "Všechna povinná pole musí být vyplněna (soubor, částka, datum)" }
+      return { error: MESSAGES.UPLOAD.REQUIRED_FIELDS }
     }
 
 
@@ -74,12 +75,31 @@ export async function uploadReceipt(formData: FormData) {
 
     // Convert file to buffer for magic byte validation
     const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
+    const buffer: Buffer = Buffer.from(bytes)
 
     // Validate file content (magic bytes) to prevent MIME spoofing
     const fileType = await fileTypeFromBuffer(buffer)
     if (!fileType || !ALLOWED_MIME_TYPES.includes(fileType.mime)) {
       return { error: MESSAGES.UPLOAD.INVALID_CONTENT }
+    }
+
+    let outputBuffer: Buffer = buffer
+    let outputFileType = fileType
+
+    const isHeic =
+      fileType.mime === "image/heic" ||
+      fileType.mime === "image/heif" ||
+      fileType.ext === "heic" ||
+      fileType.ext === "heif"
+
+    if (isHeic) {
+      try {
+        outputBuffer = await convertHeicBufferToJpeg(buffer)
+        outputFileType = { ext: "jpg", mime: "image/jpeg" }
+      } catch (error) {
+        console.error("HEIC conversion error:", error)
+        return { error: MESSAGES.UPLOAD.HEIC_ERROR }
+      }
     }
 
     // Validation: Date (skip for admins)
@@ -100,10 +120,10 @@ export async function uploadReceipt(formData: FormData) {
     const now = new Date()
     const year = now.getFullYear()
     const month = String(now.getMonth() + 1).padStart(2, "0")
-    const key = `receipts/${year}/${month}/${ticketId}-${Date.now()}.${fileType.ext}`
+    const key = `receipts/${year}/${month}/${ticketId}-${Date.now()}.${outputFileType.ext}`
 
     // Upload to MinIO
-    const url = await uploadFile(buffer, key, fileType.mime)
+    const url = await uploadFile(outputBuffer, key, outputFileType.mime)
 
     await prisma.receipt.create({
       data: {
@@ -122,7 +142,7 @@ export async function uploadReceipt(formData: FormData) {
     return { success: true }
   } catch (error) {
     console.error("Upload receipt error:", error)
-    return { error: "Nepodařilo se nahrát účtenku" }
+    return { error: MESSAGES.UPLOAD.UPLOAD_FAILED }
   }
 }
 

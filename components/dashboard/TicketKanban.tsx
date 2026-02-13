@@ -9,9 +9,9 @@ interface Ticket {
   purpose: string
   budgetAmount: number
   status: TicketStatus
-  requester: { fullName: string }
+  requester?: { fullName: string | null } | null
   section: { name: string }
-  receipts: any[]
+  receipts: { isPaid: boolean }[]
   targetDate: string
 }
 
@@ -21,10 +21,10 @@ interface TicketKanbanProps {
 }
 
 const COLUMNS: { label: string; status: TicketStatus; color: string }[] = [
-  { label: "Čeká na schválení", status: "PENDING_APPROVAL", color: "bg-status-pending/10 border-status-pending/20" },
-  { label: "Schváleno", status: "APPROVED", color: "bg-status-approved/10 border-status-approved/20" },
-  { label: "Ověřování", status: "VERIFICATION", color: "bg-status-verification/10 border-status-verification/20" },
-  { label: "Hotovo", status: "DONE", color: "bg-status-success/10 border-status-success/20" },
+  { label: "Čeká na schválení", status: "PENDING_APPROVAL", color: "bg-status-pending/20 border-status-pending/30 dark:bg-status-pending/15 dark:border-status-pending/35" },
+  { label: "Schváleno", status: "APPROVED", color: "bg-status-approved/20 border-status-approved/30 dark:bg-status-approved/15 dark:border-status-approved/35" },
+  { label: "Ověřování", status: "VERIFICATION", color: "bg-status-verification/20 border-status-verification/30 dark:bg-status-verification/15 dark:border-status-verification/35" },
+  { label: "Hotovo", status: "DONE", color: "bg-status-success/20 border-status-success/30 dark:bg-status-success/15 dark:border-status-success/35" },
 ]
 
 export const TicketKanban = memo(function TicketKanban({ tickets, onTicketClick }: TicketKanbanProps) {
@@ -60,7 +60,7 @@ export const TicketKanban = memo(function TicketKanban({ tickets, onTicketClick 
           </div>
           
           <div className={cn(
-            "flex-1 rounded-[2rem] border p-4 space-y-4 bg-muted/30",
+            "flex-1 rounded-[2rem] border p-4 space-y-4 bg-muted/35 dark:bg-muted/20",
             col.color
           )}>
             {col.tickets.map((ticket) => (

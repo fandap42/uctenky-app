@@ -14,7 +14,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Separator } from "@/components/ui/separator"
 import { StatusBadge, mapTicketStatusToBadge } from "@/components/ui/status-badge"
 import { FunctionalCheckbox } from "@/components/ui/functional-checkbox"
 import { PaymentStatusIndicator } from "@/components/ui/payment-status-indicator"
@@ -33,22 +32,14 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select"
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription,
-  CardFooter
-} from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ReceiptUploadForm } from "./ReceiptUploadForm"
 import { EditNoteDialog } from "./edit-note-dialog"
 import { EditTransactionDialog } from "./edit-transaction-dialog"
 import { EditReceiptDialog } from "./edit-receipt-dialog"
 import { ReceiptViewDialog } from "@/components/receipts/receipt-view-dialog"
+import { QRPaymentDialog } from "./qr-payment-dialog"
 import { 
-  updateReceiptStatus, 
   toggleReceiptPaid, 
   updateReceiptExpenseType,
   payAllReceiptsInTicket,
@@ -58,23 +49,16 @@ import {
 import { 
   updateTicketStatus, 
   submitForVerification,
-  deleteTicket,
-  toggleTicketFiled 
+  deleteTicket
 } from "@/lib/actions/tickets"
-import { 
-  CheckCircle2, 
-  XCircle, 
-  AlertCircle, 
-  FileText, 
-  ImageIcon,
-  StickyNote,
-  ExternalLink, 
-  Trash2, 
+import {
+  CheckCircle2,
+  AlertCircle,
+  Trash2,
   Plus,
   User,
   Calendar,
-  FolderCheck,
-  FolderX
+  QrCode
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -96,8 +80,8 @@ interface Ticket {
   purpose: string
   budgetAmount: number
   status: TicketStatus
-  requesterId: string
-  requester: { fullName: string }
+  requesterId: string | null
+  requester?: { fullName: string | null } | null
   sectionId: string
   section: { name: string }
   receipts: Receipt[]
@@ -124,6 +108,7 @@ export function TicketDetailDialog({
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [isUploadOpen, setIsUploadOpen] = useState(false)
+  const [isQROpen, setIsQROpen] = useState(false)
   
   const isAdmin = currentUserRole === "ADMIN"
   const isOwner = ticket?.requesterId === currentUserId
@@ -136,6 +121,9 @@ export function TicketDetailDialog({
   const totalSpent = receipts.reduce((sum, r) => sum + r.amount, 0)
   const budgetProgress = Math.min((totalSpent / ticket.budgetAmount) * 100, 100)
   const isOverBudget = totalSpent > ticket.budgetAmount
+  const hasUnpaidReceipts = receipts.some((receipt) => !receipt.isPaid && receipt.status !== "REJECTED")
+  const headerStatus =
+    ticket.status === "APPROVED" ? "success" : mapTicketStatusToBadge(ticket.status)
 
   const handleStatusUpdate = async (status: TicketStatus) => {
     setLoading(true)
@@ -174,19 +162,6 @@ export function TicketDetailDialog({
     } else {
       toast.error(result.error)
     }
-  }
-
-  const handleTicketFiledToggle = async (isFiled: boolean) => {
-    setLoading(true)
-    const result = await toggleTicketFiled(ticket.id, isFiled)
-    if (result.success) {
-      toast.success(isFiled ? "Označeno jako založeno" : "Označeno jako nezaloženo")
-      window.dispatchEvent(new CustomEvent("app-data-refresh"))
-      router.refresh()
-    } else {
-      toast.error(result.error)
-    }
-    setLoading(false)
   }
 
   const handleDeleteReceipt = async (receiptId: string) => {
@@ -252,24 +227,24 @@ export function TicketDetailDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="!max-w-[calc(100vw-24px)] sm:!max-w-[1400px] !w-full h-[calc(100dvh-32px)] sm:h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden bg-background rounded-2xl sm:rounded-[2rem] border border-border/50 sm:border-none shadow-2xl">
+        <DialogContent showCloseButton={false} className="!max-w-[calc(100vw-24px)] sm:!max-w-[1400px] !w-full h-[calc(100dvh-32px)] sm:h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden bg-background rounded-2xl sm:rounded-[2rem] border border-border/50 sm:border-none shadow-2xl">
           
           {/* --- FIXED HEADER --- */}
           <div className="bg-card p-3 sm:p-6 border-b border-border/60 shrink-0 space-y-3 sm:space-y-4">
             <div className="flex justify-between items-start">
               <div className="space-y-0.5 sm:space-y-1">
                 <div className="flex items-center gap-2 sm:gap-2 flex-wrap">
-                  <Badge variant="outline" className="rounded-md bg-muted/50 font-bold px-1.5 py-0.5 text-[10px] sm:text-[10px] uppercase tracking-wider">
+                  <Badge variant="outline" className="inline-flex items-center justify-center h-6 rounded-full bg-muted/50 font-bold px-3 text-[10px] uppercase tracking-wider">
                     {ticket.section.name}
                   </Badge>
-                  <StatusBadge status={mapTicketStatusToBadge(ticket.status)} />
+                  <StatusBadge status={headerStatus} className="max-w-none" />
                 </div>
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2">
                     <DialogTitle className="text-lg sm:text-xl md:text-2xl font-black text-foreground tracking-tight leading-none uppercase mt-2">
                       {ticket.purpose}
                     </DialogTitle>
-                    {isAdmin && <EditTransactionDialog transaction={ticket as any} />}
+                    {isAdmin && <EditTransactionDialog transaction={ticket} />}
                   </div>
                   <DialogDescription asChild className="text-muted-foreground font-medium text-xs md:text-sm mt-1 flex items-center gap-x-3 gap-y-1.5 flex-wrap leading-none">
                     <div>
@@ -429,7 +404,12 @@ export function TicketDetailDialog({
                             <TableCell className="py-3 px-4 text-center">
                               <div className="flex items-center justify-center gap-3">
                                 {isAdmin && <EditNoteDialog receiptId={receipt.id} initialNote={receipt.note} />}
-                                <ReceiptViewDialog transactionId={receipt.id} purpose={receipt.store} />
+                                <ReceiptViewDialog
+                                  transactionId={receipt.id}
+                                  purpose={receipt.store}
+                                  date={receipt.date}
+                                  amount={receipt.amount}
+                                />
                               </div>
                             </TableCell>
                             <TableCell className="py-3 px-4 text-center">
@@ -584,7 +564,12 @@ export function TicketDetailDialog({
                             <TableCell className="py-3 px-3 text-center">
                               <div className="flex items-center justify-center gap-2">
                                 {isAdmin && <EditNoteDialog receiptId={receipt.id} initialNote={receipt.note} />}
-                                <ReceiptViewDialog transactionId={receipt.id} purpose={receipt.store} />
+                                <ReceiptViewDialog
+                                  transactionId={receipt.id}
+                                  purpose={receipt.store}
+                                  date={receipt.date}
+                                  amount={receipt.amount}
+                                />
                               </div>
                             </TableCell>
                             <TableCell className="py-3 px-3 text-center">
@@ -669,6 +654,17 @@ export function TicketDetailDialog({
              </div>
 
              <div className="flex items-center gap-1.5 sm:gap-2">
+                {isAdmin && ticket.status === "DONE" && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsQROpen(true)}
+                    className="h-8 sm:h-9 px-2.5 sm:px-3 text-[10px] sm:text-xs font-bold"
+                  >
+                    <QrCode className="w-3.5 h-3.5 mr-1" />
+                    QR platba
+                  </Button>
+                )}
+
                 {isAdmin && (
                   <>
                     {ticket.status === "PENDING_APPROVAL" && (
@@ -713,9 +709,9 @@ export function TicketDetailDialog({
                         variant="outline" 
                         className="h-8 sm:h-9 px-3.5 sm:px-4 text-[10px] sm:text-xs font-bold text-status-success border-status-success/30 hover:bg-status-success-muted"
                         onClick={handlePayAll}
-                        disabled={loading}
+                        disabled={loading || !hasUnpaidReceipts}
                       >
-                        Proplatit vše
+                        {hasUnpaidReceipts ? "Proplatit vše" : "Vše proplaceno"}
                       </Button>
                     )}
                   </>
@@ -762,17 +758,16 @@ export function TicketDetailDialog({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* --- NESTED QR PAYMENT DIALOG --- */}
+      <QRPaymentDialog
+        open={isQROpen}
+        onOpenChange={setIsQROpen}
+        ticketId={ticket.id}
+        requesterId={ticket.requesterId}
+        purpose={ticket.purpose}
+        totalReceiptsAmount={totalSpent}
+      />
     </>
   )
-}
-
-function ReceiptStatusBadge({ status }: { status: ReceiptStatus }) {
-  switch (status) {
-    case "APPROVED":
-      return <CheckCircle2 className="w-3.5 h-3.5 text-status-success" />
-    case "REJECTED":
-      return <XCircle className="w-3.5 h-3.5 text-destructive" />
-    default:
-      return <div className="w-3.5 h-3.5 rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" />
-  }
 }

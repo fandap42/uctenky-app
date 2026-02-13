@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import {
   Dialog,
   DialogContent,
@@ -9,19 +10,27 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { ImageIcon, Download, ExternalLink, Loader2, AlertCircle, FileText } from "lucide-react"
+import { ImageIcon, Download, ExternalLink, Loader2, AlertCircle, FileText, XIcon } from "lucide-react"
 
 interface ReceiptViewDialogProps {
   transactionId: string
   purpose: string
+  date?: string | Date | null
+  amount?: number | null
+  currency?: string
 }
 
-export function ReceiptViewDialog({ transactionId: receiptId, purpose }: ReceiptViewDialogProps) {
+export function ReceiptViewDialog({ transactionId: receiptId, purpose, date, amount, currency = "Kč" }: ReceiptViewDialogProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [isPdf, setIsPdf] = useState(false)
   const imageUrl = `/api/receipts/view?id=${receiptId}`
+  const formattedDate = date ? new Date(date).toLocaleDateString("cs-CZ") : null
+  const formattedAmount = typeof amount === "number" && !Number.isNaN(amount)
+    ? `${Math.abs(amount).toLocaleString("cs-CZ")} ${currency}`
+    : null
+  const titleParts = [purpose, formattedDate, formattedAmount].filter(Boolean)
 
   // Check if the file is PDF by fetching headers
   const checkFileType = async () => {
@@ -57,11 +66,11 @@ export function ReceiptViewDialog({ transactionId: receiptId, purpose }: Receipt
           {isPdf ? <FileText className="w-4 h-4" /> : <ImageIcon className="w-4 h-4" />}
         </Button>
       </DialogTrigger>
-      <DialogContent className="!w-[calc(100vw-24px)] !max-w-[900px] !h-[calc(100vh-48px)] !max-h-[calc(100vh-48px)] flex flex-col p-3 sm:p-4 bg-card border-border">
-        <DialogHeader className="flex flex-row items-center justify-between gap-2 pr-8 border-b border-border pb-2 shrink-0">
+      <DialogContent showCloseButton={false} className="!w-[calc(100vw-24px)] !max-w-[900px] !h-[calc(100vh-48px)] !max-h-[calc(100vh-48px)] flex flex-col p-3 sm:p-4 bg-card border-border">
+        <DialogHeader className="flex flex-row items-center justify-between gap-2 border-b border-border pb-2 shrink-0">
           <DialogTitle className="text-foreground flex items-center gap-2 text-sm sm:text-base truncate">
             {isPdf ? <FileText className="w-4 h-4 text-primary/70 shrink-0" /> : <ImageIcon className="w-4 h-4 text-primary/70 shrink-0" />}
-            <span className="truncate">{purpose}</span>
+            <span className="truncate">{titleParts.join(" | ")}</span>
           </DialogTitle>
           <div className="flex items-center gap-1 shrink-0">
             <Button
@@ -83,6 +92,15 @@ export function ReceiptViewDialog({ transactionId: receiptId, purpose }: Receipt
               <a href={imageUrl} target="_blank" rel="noopener">
                 <ExternalLink className="w-4 h-4" />
               </a>
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setIsOpen(false)}
+            >
+              <XIcon className="w-4 h-4" />
+              <span className="sr-only">Zavřít</span>
             </Button>
           </div>
         </DialogHeader>
@@ -106,16 +124,21 @@ export function ReceiptViewDialog({ transactionId: receiptId, purpose }: Receipt
               <p className="text-xs text-muted-foreground">Klikněte na ikonu {'\u2197'} pro otevření v novém okně</p>
             </div>
           ) : (
-            <img
-              src={imageUrl}
-              alt={`Účtenka k transakci ${purpose}`}
-              className={`max-w-full max-h-full w-auto h-auto object-contain transition-opacity duration-300 ${loading ? 'opacity-0' : 'opacity-100'}`}
-              onLoad={() => setLoading(false)}
-              onError={() => {
-                setLoading(false);
-                setError(true);
-              }}
-            />
+            <div className="relative w-full h-full">
+              <Image
+                src={imageUrl}
+                alt={`Účtenka k transakci ${purpose}`}
+                fill
+                className={`object-contain transition-opacity duration-300 ${loading ? "opacity-0" : "opacity-100"}`}
+                sizes="100vw"
+                unoptimized
+                onLoadingComplete={() => setLoading(false)}
+                onError={() => {
+                  setLoading(false)
+                  setError(true)
+                }}
+              />
+            </div>
           )}
         </div>
       </DialogContent>

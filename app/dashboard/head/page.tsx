@@ -1,13 +1,17 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import { Card } from "@/components/ui/card"
 import { isHeadRole, isAdmin, getSectionForRole } from "@/lib/utils/roles"
 import { getTickets } from "@/lib/actions/tickets"
 import { SectionFilter } from "@/components/dashboard/section-filter"
 import { SectionDashboardClient } from "./section-dashboard-client"
 
 export const dynamic = "force-dynamic"
+
+type SectionSummary = {
+  id: string
+  name: string
+}
 
 interface PageProps {
   searchParams: Promise<{ sectionId?: string }>
@@ -16,6 +20,7 @@ interface PageProps {
 export default async function SectionHeadDashboardPage({ searchParams }: PageProps) {
   const session = await auth()
   const { sectionId } = await searchParams
+  const selectedSectionId = sectionId ?? "all"
 
   if (!session?.user?.id) {
     redirect("/login")
@@ -33,8 +38,8 @@ export default async function SectionHeadDashboardPage({ searchParams }: PagePro
   }
 
   // Handle section selection
-  let section = null
-  let allSections: any[] = []
+  let section: SectionSummary | null = null
+  let allSections: SectionSummary[] = []
   const userIsAdmin = isAdmin(user.role)
 
   if (userIsAdmin) {
@@ -44,13 +49,12 @@ export default async function SectionHeadDashboardPage({ searchParams }: PagePro
       orderBy: { name: "asc" },
     })
 
-    if (sectionId) {
+    if (sectionId && sectionId !== "all") {
       section = allSections.find(s => s.id === sectionId) || null
     }
-    
-    // Default to first section if nothing selected
-    if (!section && allSections.length > 0) {
-      section = allSections[0]
+
+    if (!sectionId || sectionId === "all") {
+      section = { id: "all", name: "Všechny sekce" }
     }
   } else {
     const sectionName = getSectionForRole(user.role)
@@ -73,8 +77,10 @@ export default async function SectionHeadDashboardPage({ searchParams }: PagePro
     )
   }
 
-  // Fetch tickets for the section
-  const { tickets: rawTickets = [] } = await getTickets({ sectionId: section.id })
+  // Fetch tickets for the section (or all sections for admins)
+  const { tickets: rawTickets = [] } = await getTickets({
+    sectionId: section.id === "all" ? undefined : section.id,
+  })
 
   // Explicitly serialize to ensure no Decimal objects pass through
   const tickets = rawTickets.map(t => ({
@@ -100,13 +106,13 @@ export default async function SectionHeadDashboardPage({ searchParams }: PagePro
           </h1>
         </div>
         {userIsAdmin && (
-          <SectionFilter sections={allSections} currentSectionId={section.id} />
+          <SectionFilter sections={allSections} currentSectionId={selectedSectionId} />
         )}
       </div>
 
       {/* Kanban Board */}
       <SectionDashboardClient 
-        initialTickets={tickets as any}
+        initialTickets={tickets}
         currentUserId={session.user.id}
         currentUserRole={user.role}
       />

@@ -1,5 +1,5 @@
 import { DefaultSession, DefaultUser } from "next-auth"
-import { JWT, DefaultJWT } from "next-auth/jwt"
+import { DefaultJWT } from "next-auth/jwt"
 
 declare module "next-auth" {
   interface Session {
@@ -7,17 +7,20 @@ declare module "next-auth" {
       id: string
       role: string
       sectionId: string | null
+      hasCompletedOnboarding: boolean
     } & DefaultSession["user"]
   }
 
   interface User extends DefaultUser {
     role?: string
     sectionId?: string | null
+    hasCompletedOnboarding?: boolean
   }
 
   interface AdapterUser extends User {
     role?: string
     sectionId?: string | null
+    hasCompletedOnboarding?: boolean
   }
 
   interface Profile {
@@ -35,5 +38,6 @@ declare module "next-auth/jwt" {
     id: string
     role: string
     sectionId: string | null
+    hasCompletedOnboarding: boolean
   }
 }

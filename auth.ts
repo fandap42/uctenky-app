@@ -70,20 +70,48 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           name: user.fullName,
           role: user.role,
           sectionId: null,
+          hasCompletedOnboarding: user.hasCompletedOnboarding,
         }
       },
     }),
   ],
   callbacks: {
     ...authConfig.callbacks,
+    async jwt(params) {
+      const { token, user, trigger } = params
+
+      // Start from authConfig's jwt callback if it exists to avoid duplicate logic.
+      let nextToken = token
+      if (authConfig.callbacks && typeof authConfig.callbacks.jwt === "function") {
+        nextToken = await authConfig.callbacks.jwt(params)
+      } else if (user) {
+        // Fallback to the original local initialization logic if no base jwt is defined.
+        nextToken.id = user.id ?? ""
+        nextToken.role = (user as { role?: string }).role ?? "MEMBER"
+        nextToken.sectionId = (user as { sectionId?: string | null }).sectionId ?? null
+        nextToken.hasCompletedOnboarding =
+          (user as { hasCompletedOnboarding?: boolean }).hasCompletedOnboarding ?? false
+      }
+
+      if (trigger === "update") {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: nextToken.id as string },
+          select: { hasCompletedOnboarding: true },
+        })
+        if (dbUser) {
+          ;(nextToken as { hasCompletedOnboarding?: boolean }).hasCompletedOnboarding =
+            dbUser.hasCompletedOnboarding
+        }
+      }
+
+      return nextToken
+    },
     async signIn({ account, profile }) {
       try {
         if (account?.provider === "slack") {
           const allowedTeamId = (process.env.SLACK_ALLOWED_TEAM_ID || "").trim()
           // Slack profile structure can vary between OpenID Connect and older OAuth
-          const userTeamId = ((profile as any)?.team_id || 
-                            (profile as any)?.team?.id || 
-                            (profile as any)?.["https://slack.com/team_id"] || "").trim()
+          const userTeamId = getSlackTeamId(profile).trim()
           
           console.log(`[auth] Slack login attempt. Team ID: "${userTeamId}", Allowed: "${allowedTeamId}"`)
 
@@ -117,3 +145,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
   },
 })
+
+function getSlackTeamId(profile: unknown): string {
+  if (!profile || typeof profile !== "object") return ""
+
+  const record = profile as Record<string, unknown>
+  const teamId = record.team_id
+  if (typeof teamId === "string") return teamId
+
+  const team = record.team
+  if (team && typeof team === "object") {
+    const nestedId = (team as Record<string, unknown>).id
+    if (typeof nestedId === "string") return nestedId
+  }
+
+  const openIdTeamId = record["https://slack.com/team_id"]
+  if (typeof openIdTeamId === "string") return openIdTeamId
+
+  return ""
+}

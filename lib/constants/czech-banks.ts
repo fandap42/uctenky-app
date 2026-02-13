@@ -1,0 +1,15 @@
+export const CZECH_BANKS = [
+  { code: "0100", name: "Komerční banka" },
+  { code: "0300", name: "ČSOB" },
+  { code: "0600", name: "MONETA Money Bank" },
+  { code: "0800", name: "Česká spořitelna" },
+  { code: "2010", name: "Fio banka" },
+  { code: "2070", name: "Trinity Bank" },
+  { code: "2250", name: "Banka CREDITAS" },
+  { code: "2600", name: "Citibank" },
+  { code: "2700", name: "UniCredit Bank" },
+  { code: "3030", name: "Air Bank" },
+  { code: "3500", name: "ING Bank" },
+  { code: "5500", name: "Raiffeisenbank" },
+  { code: "6363", name: "Partners Banka" },
+] as const

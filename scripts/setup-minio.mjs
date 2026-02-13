@@ -1,7 +1,12 @@
 // Script to create the receipts bucket in MinIO
-// Run this after MinIO is started: node scripts/setup-minio.js
+// Run this after MinIO is started: node scripts/setup-minio.mjs
 
-const { S3Client, CreateBucketCommand, PutBucketPolicyCommand, HeadBucketCommand } = require("@aws-sdk/client-s3")
+import {
+  S3Client,
+  CreateBucketCommand,
+  PutBucketPolicyCommand,
+  HeadBucketCommand,
+} from "@aws-sdk/client-s3"
 
 const s3Client = new S3Client({
   endpoint: process.env.S3_ENDPOINT || "http://localhost:9000",
@@ -22,7 +27,7 @@ async function main() {
       await s3Client.send(new HeadBucketCommand({ Bucket: BUCKET_NAME }))
       console.log(`Bucket '${BUCKET_NAME}' already exists.`)
     } catch (error) {
-      if (error.name === "NotFound" || error.$metadata?.httpStatusCode === 404) {
+      if (error?.name === "NotFound" || error?.$metadata?.httpStatusCode === 404) {
         // Create bucket
         await s3Client.send(new CreateBucketCommand({ Bucket: BUCKET_NAME }))
         console.log(`Bucket '${BUCKET_NAME}' created.`)
@@ -54,11 +59,11 @@ async function main() {
 
     console.log("\n✅ MinIO setup complete!")
     console.log(`   Bucket: ${BUCKET_NAME}`)
-    console.log(`   Console: http://localhost:9001`)
-    console.log(`   Credentials: minioadmin / minioadmin123`)
+    console.log("   Console: http://localhost:9001")
+    console.log("   Credentials: minioadmin / minioadmin123")
   } catch (error) {
     console.error("Error setting up MinIO:", error)
-    process.exit(1)
+    process.exitCode = 1
   }
 }
 
