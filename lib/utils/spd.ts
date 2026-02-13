@@ -28,5 +28,5 @@ export function generateSPDString(params: SPDParams): string {
     spd += `*MSG:${message}`
   }
 
-  return spd
+  return spd + "*"
 }
