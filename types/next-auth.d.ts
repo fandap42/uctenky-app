@@ -7,17 +7,20 @@ declare module "next-auth" {
       id: string
       role: string
       sectionId: string | null
+      hasCompletedOnboarding: boolean
     } & DefaultSession["user"]
   }
 
   interface User extends DefaultUser {
     role?: string
     sectionId?: string | null
+    hasCompletedOnboarding?: boolean
   }
 
   interface AdapterUser extends User {
     role?: string
     sectionId?: string | null
+    hasCompletedOnboarding?: boolean
   }
 
   interface Profile {
@@ -35,5 +38,6 @@ declare module "next-auth/jwt" {
     id: string
     role: string
     sectionId: string | null
+    hasCompletedOnboarding: boolean
   }
 }
