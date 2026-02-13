@@ -21,14 +21,27 @@ export function OnboardingDialog() {
   }
 
   const handleComplete = async () => {
-    setOpen(false)
-    await update()
+    try {
+      await update()
+      setOpen(false)
+    } catch (error) {
+      console.error(
+        "Failed to update session after onboarding completion",
+        error
+      )
+      setOpen(true)
+    }
   }
 
   const handleSkip = async () => {
-    await completeOnboarding()
-    setOpen(false)
-    await update()
+    try {
+      await completeOnboarding()
+      await update()
+      setOpen(false)
+    } catch (error) {
+      console.error("Failed to skip onboarding", error)
+      setOpen(true)
+    }
   }
 
   return (
