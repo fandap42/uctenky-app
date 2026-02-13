@@ -654,6 +654,17 @@ export function TicketDetailDialog({
              </div>
 
              <div className="flex items-center gap-1.5 sm:gap-2">
+                {isAdmin && ticket.status === "DONE" && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsQROpen(true)}
+                    className="h-8 sm:h-9 px-2.5 sm:px-3 text-[10px] sm:text-xs font-bold"
+                  >
+                    <QrCode className="w-3.5 h-3.5 mr-1" />
+                    QR platba
+                  </Button>
+                )}
+
                 {isAdmin && (
                   <>
                     {ticket.status === "PENDING_APPROVAL" && (
@@ -716,17 +727,6 @@ export function TicketDetailDialog({
                     </Button>
                 )}
 
-
-                {isAdmin && (
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsQROpen(true)}
-                    className="h-8 sm:h-9 px-2.5 sm:px-3 text-[10px] sm:text-xs font-bold"
-                  >
-                    <QrCode className="w-3.5 h-3.5 mr-1" />
-                    QR platba
-                  </Button>
-                )}
 
                 <Button variant="ghost" onClick={() => onOpenChange(false)} className="h-8 sm:h-9 px-2.5 sm:px-3 text-[10px] sm:text-xs font-bold text-muted-foreground">
                   Zavřít
