@@ -10,7 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { ImageIcon, Download, ExternalLink, Loader2, AlertCircle, FileText } from "lucide-react"
+import { ImageIcon, Download, ExternalLink, Loader2, AlertCircle, FileText, XIcon } from "lucide-react"
 
 interface ReceiptViewDialogProps {
   transactionId: string
@@ -66,8 +66,8 @@ export function ReceiptViewDialog({ transactionId: receiptId, purpose, date, amo
           {isPdf ? <FileText className="w-4 h-4" /> : <ImageIcon className="w-4 h-4" />}
         </Button>
       </DialogTrigger>
-      <DialogContent className="!w-[calc(100vw-24px)] !max-w-[900px] !h-[calc(100vh-48px)] !max-h-[calc(100vh-48px)] flex flex-col p-3 sm:p-4 bg-card border-border">
-        <DialogHeader className="flex flex-row items-center justify-between gap-2 pr-8 border-b border-border pb-2 shrink-0">
+      <DialogContent showCloseButton={false} className="!w-[calc(100vw-24px)] !max-w-[900px] !h-[calc(100vh-48px)] !max-h-[calc(100vh-48px)] flex flex-col p-3 sm:p-4 bg-card border-border">
+        <DialogHeader className="flex flex-row items-center justify-between gap-2 border-b border-border pb-2 shrink-0">
           <DialogTitle className="text-foreground flex items-center gap-2 text-sm sm:text-base truncate">
             {isPdf ? <FileText className="w-4 h-4 text-primary/70 shrink-0" /> : <ImageIcon className="w-4 h-4 text-primary/70 shrink-0" />}
             <span className="truncate">{titleParts.join(" | ")}</span>
@@ -92,6 +92,15 @@ export function ReceiptViewDialog({ transactionId: receiptId, purpose, date, amo
               <a href={imageUrl} target="_blank" rel="noopener">
                 <ExternalLink className="w-4 h-4" />
               </a>
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setIsOpen(false)}
+            >
+              <XIcon className="w-4 h-4" />
+              <span className="sr-only">Zavřít</span>
             </Button>
           </div>
         </DialogHeader>

@@ -51,7 +51,7 @@ export function ExpenseTypeSelect({
             onValueChange={handleChange}
             disabled={isLoading}
         >
-            <SelectTrigger className={`w-[110px] h-8 bg-background border-border text-xs ${expenseType === "MATERIAL" ? "text-expense-material" : "text-expense-service"}`}>
+            <SelectTrigger className={`w-[110px] h-8 rounded-md bg-background border-border text-xs font-semibold ${expenseType === "MATERIAL" ? "text-expense-material" : "text-expense-service"} ${isLoading ? "opacity-70" : ""}`}>
                 <SelectValue />
             </SelectTrigger>
             <SelectContent position="popper" className="bg-card border-border max-h-[none]">

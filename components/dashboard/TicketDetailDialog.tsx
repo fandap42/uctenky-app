@@ -118,6 +118,9 @@ export function TicketDetailDialog({
   const totalSpent = receipts.reduce((sum, r) => sum + r.amount, 0)
   const budgetProgress = Math.min((totalSpent / ticket.budgetAmount) * 100, 100)
   const isOverBudget = totalSpent > ticket.budgetAmount
+  const hasUnpaidReceipts = receipts.some((receipt) => !receipt.isPaid && receipt.status !== "REJECTED")
+  const headerStatus =
+    ticket.status === "APPROVED" ? "success" : mapTicketStatusToBadge(ticket.status)
 
   const handleStatusUpdate = async (status: TicketStatus) => {
     setLoading(true)
@@ -221,17 +224,17 @@ export function TicketDetailDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="!max-w-[calc(100vw-24px)] sm:!max-w-[1400px] !w-full h-[calc(100dvh-32px)] sm:h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden bg-background rounded-2xl sm:rounded-[2rem] border border-border/50 sm:border-none shadow-2xl">
+        <DialogContent showCloseButton={false} className="!max-w-[calc(100vw-24px)] sm:!max-w-[1400px] !w-full h-[calc(100dvh-32px)] sm:h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden bg-background rounded-2xl sm:rounded-[2rem] border border-border/50 sm:border-none shadow-2xl">
           
           {/* --- FIXED HEADER --- */}
           <div className="bg-card p-3 sm:p-6 border-b border-border/60 shrink-0 space-y-3 sm:space-y-4">
             <div className="flex justify-between items-start">
               <div className="space-y-0.5 sm:space-y-1">
                 <div className="flex items-center gap-2 sm:gap-2 flex-wrap">
-                  <Badge variant="outline" className="rounded-md bg-muted/50 font-bold px-1.5 py-0.5 text-[10px] sm:text-[10px] uppercase tracking-wider">
+                  <Badge variant="outline" className="inline-flex items-center justify-center h-6 rounded-full bg-muted/50 font-bold px-3 text-[10px] uppercase tracking-wider">
                     {ticket.section.name}
                   </Badge>
-                  <StatusBadge status={mapTicketStatusToBadge(ticket.status)} />
+                  <StatusBadge status={headerStatus} className="max-w-none" />
                 </div>
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2">
@@ -692,9 +695,9 @@ export function TicketDetailDialog({
                         variant="outline" 
                         className="h-8 sm:h-9 px-3.5 sm:px-4 text-[10px] sm:text-xs font-bold text-status-success border-status-success/30 hover:bg-status-success-muted"
                         onClick={handlePayAll}
-                        disabled={loading}
+                        disabled={loading || !hasUnpaidReceipts}
                       >
-                        Proplatit vše
+                        {hasUnpaidReceipts ? "Proplatit vše" : "Vše proplaceno"}
                       </Button>
                     )}
                   </>

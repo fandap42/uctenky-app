@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { createTicket } from "@/lib/actions/tickets"
+import { MESSAGES } from "@/lib/constants/messages"
 import { toast } from "sonner"
 
 interface Section {
@@ -43,9 +44,20 @@ export function RequestForm({ trigger, sections }: RequestFormProps) {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    setIsLoading(true)
-
     const formData = new FormData(e.currentTarget)
+
+    if (!selectedSection) {
+      toast.error(MESSAGES.TRANSACTION.MISSING_SECTION)
+      return
+    }
+
+    const budgetAmount = Number.parseFloat(String(formData.get("budgetAmount") ?? ""))
+    if (Number.isNaN(budgetAmount) || budgetAmount <= 0) {
+      toast.error("Rozpočet musí být kladné číslo")
+      return
+    }
+
+    setIsLoading(true)
     formData.set("sectionId", selectedSection)
 
     const result = await createTicket(formData)

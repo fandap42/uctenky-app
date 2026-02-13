@@ -270,7 +270,7 @@ export function OverviewTable({
                       id={`track-${item.id}`} 
                       checked={!!checkedIds[item.id]} 
                       onCheckedChange={() => toggleCheck(item.id)}
-                      className="border-muted-foreground/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary rounded-md w-4 h-4 shadow-sm mx-auto opacity-30 group-hover:opacity-100 transition-all"
+                      className="border-muted-foreground/40 data-[state=checked]:bg-primary data-[state=checked]:border-primary rounded-md w-4 h-4 shadow-sm mx-auto opacity-80 group-hover:opacity-100 transition-all"
                     />
                   </div>
                 </TableCell>

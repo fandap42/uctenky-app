@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { uploadReceipt } from "@/lib/actions/receipts"
 import { validateReceiptFile } from "@/lib/utils/file-validator"
+import { MESSAGES } from "@/lib/constants/messages"
 import { Loader2, Camera } from "lucide-react"
 import { ExpenseType } from "@prisma/client"
 import { Textarea } from "@/components/ui/textarea"
@@ -48,13 +49,13 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!file || !store || !amount || !date) {
-      toast.error("Prosím vyplňte všechna pole a vyberte soubor")
+      toast.error(MESSAGES.UPLOAD.REQUIRED_FIELDS)
       return
     }
 
     const amountNum = parseFloat(amount)
-    if (isNaN(amountNum) || amountNum < 0) {
-      toast.error("Částka nemůže být záporná čísla")
+    if (isNaN(amountNum) || amountNum <= 0) {
+      toast.error(MESSAGES.UPLOAD.INVALID_AMOUNT)
       return
     }
 
@@ -74,7 +75,7 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
       if (result.error) {
         toast.error(result.error)
       } else {
-        toast.success("Účtenka byla úspěšně nahrána")
+        toast.success(MESSAGES.UPLOAD.SUCCESS)
         setFile(null)
         setPreview(null)
         setStore("")
@@ -85,7 +86,7 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
         router.refresh()
       }
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Nastala chyba při nahrávání"
+      const message = error instanceof Error ? error.message : MESSAGES.UPLOAD.UPLOAD_FAILED
       toast.error(message)
     } finally {
       setUploading(false)
