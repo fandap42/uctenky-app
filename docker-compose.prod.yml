@@ -15,6 +15,7 @@ services:
     image: fandap42/uctenky-app:latest
     container_name: uctenky-app
     restart: always
+    command: sh -c "./node_modules/.bin/prisma migrate deploy && node server.js"
     ports:
       - "3001:3000"
     environment:
@@ -30,6 +31,7 @@ services:
       S3_SECRET_KEY: "${S3_SECRET_KEY}"
       S3_BUCKET: "${S3_BUCKET:-receipts}"
       S3_PUBLIC_ENDPOINT: "${S3_PUBLIC_ENDPOINT}"
+      ENCRYPTION_KEY: "${ENCRYPTION_KEY}"
     depends_on:
       postgres:
         condition: service_healthy
@@ -66,6 +68,7 @@ services:
     restart: always
     ports:
       - "9001:9001"   # Web Console only (for admin access)
+      - "9000:9000"   # S3 API (internal and external)
     environment:
       MINIO_ROOT_USER: "${MINIO_ROOT_USER}"
       MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD}"
@@ -116,7 +119,26 @@ services:
       BACKUP_KEEP_WEEKS: "4"
       BACKUP_KEEP_MONTHS: "3"
       HEALTHCHECK_PORT: "8080"
+# --- DATABASE MANAGEMENT (pgAdmin) ---
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: uctenky-pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "${PGADMIN_MAIL}"
+      PGADMIN_DEFAULT_PASSWORD: "${PGADMIN_PASSWORD}"
+      PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION: "False" # NutnĂ©, pokud nepouĹľĂ­vĂˇĹˇ HTTPS hned od zaÄŤĂˇtku
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "1"
 
 volumes:
   postgres_data:
   minio_data:
+
