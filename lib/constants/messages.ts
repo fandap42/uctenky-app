@@ -61,6 +61,10 @@ export const MESSAGES = {
     BOT_DETECTED: "Detekována podezřelá aktivita botů.",
   },
 
+  ONBOARDING: {
+    COMPLETE_FAILED: "Nepodařilo se dokončit onboarding",
+  },
+
   BANK_ACCOUNT: {
     SAVE_FAILED: "Nepodařilo se uložit bankovní údaje",
     LOAD_FAILED: "Nepodařilo se načíst bankovní údaje",

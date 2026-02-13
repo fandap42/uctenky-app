@@ -97,7 +97,7 @@ export async function completeOnboarding() {
     return { success: true }
   } catch (error) {
     console.error("Complete onboarding error:", error)
-    return { error: "Nepodařilo se dokončit onboarding" }
+    return { error: MESSAGES.ONBOARDING.COMPLETE_FAILED }
   }
 }
 
