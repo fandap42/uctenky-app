@@ -1,223 +1,143 @@
-# 4FISuctenky
+# 4FIS Receipts - Expense Management System
 
-> Web application for managing receipts and financial reimbursements for the 4FIS student organization
+A full-stack web application for managing expense requests and receipts within a student organization. Members submit spending requests, upload receipt photos, and administrators approve, verify, and process reimbursements.
 
-[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
-[![Prisma](https://img.shields.io/badge/Prisma-7.x-2D3748?logo=prisma)](https://www.prisma.io/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-336791?logo=postgresql)](https://www.postgresql.org/)
+## Features
 
-## ✨ Features
+- **Expense Request Workflow** - Multi-step approval process (request, approve, verify, complete)
+- **Receipt Management** - Upload, validate, and track receipt photos with automatic HEIC-to-JPEG conversion
+- **Role-Based Access Control** - 11 distinct roles (Member, Admin, 9 department heads)
+- **Cash Register** - Track deposits, expenses, and balances by semester
+- **QR Code Payments** - Generate QR codes with Czech IBAN for reimbursements
+- **Slack OAuth** - Authenticate via organizational Slack workspace
+- **Dark Mode** - Full light/dark theme support
 
-- **Purchase request management** - complete workflow from submission to reimbursement
-- **Slack SSO authentication** - secure login via organization's Slack workspace
-- **Role-based access control** - Member, Section Head, Administrator
-- **Receipt upload** - HEIC (iPhone) support with automatic conversion
-- **Cash register (Pokladna)** - tracking deposits, error debts, and cash on hand
-- **Section budgets** - budget tracking by semester
-- **CSV export** - Czech Excel compatible (semicolon separator)
-- **Design system** - consistent UI with modern 4FIS branding
+## Tech Stack
 
-## 🚀 Quick Start
+| Layer | Technology |
+|-------|-----------|
+| Framework | [Next.js](https://nextjs.org/) 16 (App Router) |
+| Language | TypeScript |
+| UI | React 19, Radix UI, Tailwind CSS 4 |
+| Database | PostgreSQL 16 |
+| ORM | Prisma 7 |
+| Auth | NextAuth.js v5 (Slack OAuth + Credentials) |
+| Storage | MinIO (S3-compatible object storage) |
+| Containerization | Docker, Docker Compose |
+| CI/CD | GitHub Actions, Watchtower |
+| Testing | Vitest, Playwright |
 
-### 🐳 Docker (recommended)
+## Quick Start
 
-The easiest way to run the entire application including database and storage:
+### Prerequisites
 
-```bash
-# Clone repository
-git clone https://github.com/your-org/uctenky-app.git
-cd uctenky-app
+- [Node.js](https://nodejs.org/) 20+
+- [Docker](https://www.docker.com/) and Docker Compose
 
-# Setup environment
-cp .env.docker.example .env.docker
-# Edit .env.docker - especially AUTH_SECRET, Slack credentials and passwords
-
-# Start all services
-docker compose --env-file .env.docker up -d
-
-# Run database migration (first time only)
-docker compose --env-file .env.docker exec app npx prisma db push
-```
-
-Application runs at:
-- **App**: [http://localhost:3000](http://localhost:3000)
-- **MinIO Console**: [http://localhost:9001](http://localhost:9001)
-
-> [!IMPORTANT]
-> Never commit `.env.docker` to Git! It contains sensitive data.
-
-### 💻 Local Development
-
-For development without Docker container for the app:
-
-#### Prerequisites
-
-- Node.js 20+
-- Docker (for PostgreSQL and MinIO)
+### 1. Clone and install
 
 ```bash
-# Clone repository
 git clone https://github.com/your-org/uctenky-app.git
 cd uctenky-app
-
-# Start database and storage only
-docker compose up -d postgres minio
-
-# Install dependencies
 npm install
-
-# Setup environment
-cp .env.local.example .env.local
-# Edit .env.local as needed
-
-# Run database migration
-npx prisma db push
-
-# Start development server
-npm run dev
 ```
 
-Application runs at [http://localhost:3000](http://localhost:3000)
+### 2. Configure environment
 
-## ⚙️ Configuration
-
-### Environment Variables
+Create a `.env` file in the root directory:
 
 ```env
 # Database
-DATABASE_URL="postgresql://uctenky:uctenky123@localhost:5432/uctenky_app"
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=uctenky_db
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/uctenky_db"
 
-# NextAuth
-AUTH_SECRET="your-secret-key-min-32-chars"
+# Auth
+AUTH_SECRET="your-secret-key"    # Generate with: openssl rand -base64 32
 AUTH_URL="http://localhost:3000"
-AUTH_TRUST_HOST=true
 
-# Slack OAuth (primary authentication)
-AUTH_SLACK_ID="your-slack-client-id"
-AUTH_SLACK_SECRET="your-slack-client-secret"
-SLACK_ALLOWED_TEAM_ID="your-slack-workspace-id"
-
-# MinIO / S3 Storage
+# S3 / MinIO
 S3_ENDPOINT="http://localhost:9000"
-S3_ACCESS_KEY="minioadmin"
-S3_SECRET_KEY="minioadmin123"
-S3_BUCKET="receipts"
+S3_ACCESS_KEY=minioadmin
+S3_SECRET_KEY=minioadmin
+S3_BUCKET=receipts
 S3_PUBLIC_ENDPOINT="http://localhost:9000"
+MINIO_ROOT_USER=minioadmin
+MINIO_ROOT_PASSWORD=minioadmin
+
+# Encryption (for bank account data)
+ENCRYPTION_KEY="your-64-char-hex-string"    # Generate with: openssl rand -hex 32
 ```
 
-### MinIO Bucket Setup
+### 3. Start infrastructure
 
-After starting, create a bucket named "receipts" in the MinIO console at [http://localhost:9001](http://localhost:9001)
+```bash
+docker compose up -d postgres minio
+```
 
-### Slack OAuth Setup
+### 4. Initialize database and storage
 
-1. Create a Slack App at [api.slack.com/apps](https://api.slack.com/apps)
-2. Add OAuth scopes: `openid`, `email`, `profile`
-3. Set Redirect URL: `https://your-domain.com/api/auth/callback/slack`
-4. Copy Client ID and Client Secret to `.env`
-5. Set `SLACK_ALLOWED_TEAM_ID` to your workspace ID (restricts login to members only)
+```bash
+npx prisma migrate dev
+npx prisma db seed
+node scripts/setup-minio.mjs
+```
 
-## 📁 Project Structure
+### 5. Run development server
+
+```bash
+npm run dev
+```
+
+The application will be available at `http://localhost:3000`.
+
+### Default development accounts
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@test.com | adminpass |
+| Finance Head | head.finance@test.com | headpass |
+| Member | member@test.com | memberpass |
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Build for production |
+| `npm start` | Start production server |
+| `npm run lint` | Run ESLint |
+| `npx prisma studio` | Open Prisma database GUI |
+| `npx prisma migrate dev` | Create and apply migrations |
+
+## Project Structure
 
 ```
 uctenky-app/
-├── app/                    # Next.js App Router
-│   ├── api/                # API routes (auth, upload)
-│   ├── dashboard/          # Protected pages
-│   └── login/              # Login page
-├── components/             # React components
-│   ├── dashboard/          # Dashboard components
-│   ├── pokladna/           # Cash register components
-│   ├── receipts/           # Receipt upload
-│   └── ui/                 # Design system + Shadcn/UI
-├── lib/                    # Utilities and configuration
-│   ├── actions/            # Server actions
-│   ├── s3.ts               # MinIO/S3 client
-│   └── prisma.ts           # Prisma client
-├── prisma/                 # Database schema
-└── docs/                   # Documentation
+├── app/                  # Next.js App Router pages and API routes
+│   ├── api/              # REST API endpoints (auth, upload, receipts)
+│   ├── dashboard/        # Protected dashboard routes
+│   └── login/            # Authentication page
+├── components/           # React components (UI + feature)
+├── lib/
+│   ├── actions/          # Server actions (tickets, receipts, cash register)
+│   ├── constants/        # Messages, bank codes
+│   └── utils/            # Encryption, validation, IBAN, rate limiting
+├── prisma/               # Database schema and migrations
+├── scripts/              # Setup scripts (MinIO, seeding)
+├── docs/                 # Documentation
+│   ├── USER_MANUAL_CZ.md # User manual (Czech)
+│   └── TECHNICAL_GUIDE.md # Technical/deployment guide (English)
+└── docker-compose.yml    # Development Docker Compose
 ```
 
-## 👥 User Roles
+## Documentation
 
-| Role | Permissions |
-|------|-------------|
-| **MEMBER** | Submit purchase requests |
-| **HEAD_*** | View section requests (Kanban board) |
-| **ADMIN** | Full system management, approvals, all sections |
+- **[User Manual (CZ)](docs/USER_MANUAL_CZ.md)** - End-user guide in Czech
+- **[Technical Documentation (EN)](docs\TECHNICAL_DOCUMENTATION.md)** - Architecture, deployment, and infrastructure
+- **[Deploy Guide (EN)](docs/DEPLOY_GUIDE.md)** - Architecture, deployment, and infrastructure
 
-## 📖 Documentation
+## License
 
-- [User Manual (CZ)](docs/USER_MANUAL_CZ.md)
-- [Technical Documentation (EN)](docs/TECHNICAL_DOCUMENTATION.md)
-- [Design System](docs/DESIGN_SYSTEM.md)
-
-## 🛠️ Technology Stack
-
-| Category | Technology |
-|----------|------------|
-| Framework | Next.js 16 (App Router) |
-| Runtime | React 19 |
-| Language | TypeScript 5 |
-| Styling | Tailwind CSS 4 |
-| UI | Shadcn/UI + 4FIS Design System |
-| ORM | Prisma 7 |
-| Database | PostgreSQL |
-| Authentication | NextAuth.js v5 (Slack OAuth + Credentials) |
-| Storage | MinIO (S3-compatible) |
-
-## 📝 Scripts
-
-```bash
-npm run dev      # Development server
-npm run build    # Production build
-npm run start    # Production server
-npm run lint     # ESLint check
-```
-
-## 🔐 Security
-
-### Authentication & Authorization
-- **Primary login**: Slack OAuth with workspace restriction (Team ID)
-- **Fallback login**: Credentials for administrators (passwords hashed with bcryptjs)
-- **HTTP-only session cookies** - protection against XSS
-- **Role-based access control** on all protected actions
-- All API endpoints require authentication
-
-### API Endpoint Protection
-
-| Endpoint | Protection |
-|----------|------------|
-| `/api/upload` | Authentication + ticket ownership verification |
-| `/api/auth/*` | Rate limiting + input validation |
-
-### File Upload Security
-- **Extension whitelist**: jpg, jpeg, png, gif, webp, heic, heif
-- **Magic byte validation** using `file-type` library
-- **Max size**: 5 MB
-- **Presigned URLs** for file access (7-day expiration)
-- Files stored in private MinIO bucket
-
-### Rate Limiting
-- Upload endpoint: max 10 requests/minute per IP
-- Protection against brute-force attacks
-
-### CSP & Security Headers
-- Content Security Policy defined in `next.config.ts`
-- Avoid `'unsafe-inline'` in production
-
-### Production Recommendations
-1. **Never commit** `.env` files to Git
-2. Use **Docker secrets** or vault for sensitive data
-3. Set **MinIO bucket policy** to private
-4. Consider **Redis** for rate limiting with horizontal scaling
-5. Regularly run `npm audit` to check dependencies
-
-## 📄 License
-
-Proprietary software for 4FIS.
-
----
-
-*4FISuctenky © 2026*
+This project is private and proprietary.
