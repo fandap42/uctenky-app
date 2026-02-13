@@ -70,12 +70,31 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           name: user.fullName,
           role: user.role,
           sectionId: null,
+          hasCompletedOnboarding: user.hasCompletedOnboarding,
         }
       },
     }),
   ],
   callbacks: {
     ...authConfig.callbacks,
+    async jwt({ token, user, trigger }) {
+      if (user) {
+        token.id = user.id ?? ""
+        token.role = (user as { role?: string }).role ?? "MEMBER"
+        token.sectionId = (user as { sectionId?: string | null }).sectionId ?? null
+        token.hasCompletedOnboarding = (user as { hasCompletedOnboarding?: boolean }).hasCompletedOnboarding ?? false
+      }
+      if (trigger === "update") {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { hasCompletedOnboarding: true },
+        })
+        if (dbUser) {
+          token.hasCompletedOnboarding = dbUser.hasCompletedOnboarding
+        }
+      }
+      return token
+    },
     async signIn({ account, profile }) {
       try {
         if (account?.provider === "slack") {

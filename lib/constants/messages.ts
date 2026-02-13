@@ -60,6 +60,13 @@ export const MESSAGES = {
   SECURITY: {
     BOT_DETECTED: "Detekována podezřelá aktivita botů.",
   },
+
+  BANK_ACCOUNT: {
+    SAVE_FAILED: "Nepodařilo se uložit bankovní údaje",
+    LOAD_FAILED: "Nepodařilo se načíst bankovní údaje",
+    NO_ACCOUNT: "Uživatel nemá zadané bankovní údaje",
+    SAVED: "Bankovní údaje byly uloženy",
+  },
 } as const
 
 // Type helper for accessing messages

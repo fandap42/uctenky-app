@@ -38,6 +38,7 @@ import { EditNoteDialog } from "./edit-note-dialog"
 import { EditTransactionDialog } from "./edit-transaction-dialog"
 import { EditReceiptDialog } from "./edit-receipt-dialog"
 import { ReceiptViewDialog } from "@/components/receipts/receipt-view-dialog"
+import { QRPaymentDialog } from "./qr-payment-dialog"
 import { 
   toggleReceiptPaid, 
   updateReceiptExpenseType,
@@ -50,13 +51,14 @@ import {
   submitForVerification,
   deleteTicket
 } from "@/lib/actions/tickets"
-import { 
-  CheckCircle2, 
-  AlertCircle, 
-  Trash2, 
+import {
+  CheckCircle2,
+  AlertCircle,
+  Trash2,
   Plus,
   User,
-  Calendar
+  Calendar,
+  QrCode
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -106,6 +108,7 @@ export function TicketDetailDialog({
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [isUploadOpen, setIsUploadOpen] = useState(false)
+  const [isQROpen, setIsQROpen] = useState(false)
   
   const isAdmin = currentUserRole === "ADMIN"
   const isOwner = ticket?.requesterId === currentUserId
@@ -714,6 +717,17 @@ export function TicketDetailDialog({
                 )}
 
 
+                {isAdmin && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsQROpen(true)}
+                    className="h-8 sm:h-9 px-2.5 sm:px-3 text-[10px] sm:text-xs font-bold"
+                  >
+                    <QrCode className="w-3.5 h-3.5 mr-1" />
+                    QR platba
+                  </Button>
+                )}
+
                 <Button variant="ghost" onClick={() => onOpenChange(false)} className="h-8 sm:h-9 px-2.5 sm:px-3 text-[10px] sm:text-xs font-bold text-muted-foreground">
                   Zavřít
                 </Button>
@@ -744,6 +758,16 @@ export function TicketDetailDialog({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* --- NESTED QR PAYMENT DIALOG --- */}
+      <QRPaymentDialog
+        open={isQROpen}
+        onOpenChange={setIsQROpen}
+        ticketId={ticket.id}
+        requesterId={ticket.requesterId}
+        purpose={ticket.purpose}
+        totalReceiptsAmount={totalSpent}
+      />
     </>
   )
 }
