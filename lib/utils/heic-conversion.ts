@@ -11,6 +11,9 @@ export async function convertHeicBufferToJpeg(input: Uint8Array): Promise<Buffer
     return output
   }
 
-  const arrayBuffer = output instanceof ArrayBuffer ? output : output.buffer
-  return Buffer.from(new Uint8Array(arrayBuffer))
+  if (output instanceof ArrayBuffer) {
+    return Buffer.from(new Uint8Array(output))
+  }
+
+  return Buffer.from(output)
 }
