@@ -39,13 +39,18 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8 pb-20">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Header - Hidden on mobile since title is in mobile header */}
+      <div className="hidden md:flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-black text-foreground mb-2">
             Přehled
           </h1>
         </div>
+        <RequestFormClient sections={sections} />
+      </div>
+      
+      {/* Mobile: Show only the button */}
+      <div className="flex md:hidden justify-end">
         <RequestFormClient sections={sections} />
       </div>
 

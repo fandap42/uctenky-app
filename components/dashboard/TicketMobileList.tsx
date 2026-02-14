@@ -133,7 +133,7 @@ const TicketCardItem = memo(function TicketCardItem({ ticket, onClick }: { ticke
         
         {/* Row 2: Metadata */}
         <div className="flex flex-wrap items-center gap-2 pt-1">
-          <Badge variant="secondary" className="text-[10px] font-bold h-6 px-2.5 bg-muted text-muted-foreground uppercase tracking-wider rounded-md max-w-[120px] truncate flex-shrink-0" title={ticket.section.name}>
+          <Badge variant="secondary" className="text-[10px] font-bold h-6 px-2.5 bg-muted text-muted-foreground uppercase tracking-wider rounded-md truncate flex-shrink-0" title={ticket.section.name}>
             {ticket.section.name}
           </Badge>
           <span className="text-xs text-muted-foreground font-medium truncate min-w-0" title={ticket.requester?.fullName || "Smazaný uživatel"}>

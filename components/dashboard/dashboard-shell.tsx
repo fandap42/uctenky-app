@@ -1,13 +1,28 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { cn } from "@/lib/utils"
 
+// Navigation items for page title mapping
+const navigationTitles: Record<string, string> = {
+  "/dashboard": "Přehled",
+  "/dashboard/head": "Žádosti sekce",
+  "/dashboard/pokladna": "Pokladna",
+  "/dashboard/budget": "Rozpočty",
+  "/dashboard/users": "Uživatelé",
+  "/dashboard/settings": "Nastavení",
+}
+
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  
+  // Get current page title based on pathname
+  const pageTitle = useMemo(() => {
+    return navigationTitles[pathname] || "4FISuctenky"
+  }, [pathname])
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [headerVisible, setHeaderVisible] = useState(true)
   const lastScrollTop = useRef(0)
@@ -109,7 +124,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </Button>
-          <span className="font-bold text-lg text-foreground">4FISuctenky</span>
+          <span className="font-bold text-lg text-foreground">{pageTitle}</span>
         </header>
 
         {/* Main content */}
