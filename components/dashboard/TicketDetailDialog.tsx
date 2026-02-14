@@ -122,8 +122,7 @@ export function TicketDetailDialog({
   const budgetProgress = Math.min((totalSpent / ticket.budgetAmount) * 100, 100)
   const isOverBudget = totalSpent > ticket.budgetAmount
   const hasUnpaidReceipts = receipts.some((receipt) => !receipt.isPaid && receipt.status !== "REJECTED")
-  const headerStatus =
-    ticket.status === "APPROVED" ? "success" : mapTicketStatusToBadge(ticket.status)
+  const headerStatus = mapTicketStatusToBadge(ticket.status)
 
   const handleStatusUpdate = async (status: TicketStatus) => {
     setLoading(true)

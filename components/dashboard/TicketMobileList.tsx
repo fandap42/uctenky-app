@@ -22,7 +22,7 @@ interface TicketMobileListProps {
 
 const FILTERS: { label: string; status: TicketStatus; color: string; bg: string }[] = [
   { label: "Čeká", status: "PENDING_APPROVAL", color: "bg-status-pending", bg: "bg-status-pending/10 text-status-pending" },
-  { label: "Schváleno", status: "APPROVED", color: "bg-status-approved", bg: "bg-status-approved/10 text-status-success" },
+  { label: "Schváleno", status: "APPROVED", color: "bg-status-approved", bg: "bg-status-approved/10 text-status-approved" },
   { label: "Ověření", status: "VERIFICATION", color: "bg-status-verification", bg: "bg-status-verification/10 text-status-verification" },
   { label: "Hotovo", status: "DONE", color: "bg-status-success", bg: "bg-status-success/10 text-status-success" },
 ]
