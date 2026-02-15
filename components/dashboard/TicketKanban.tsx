@@ -34,6 +34,14 @@ const COLUMNS: { label: string; status: TicketStatus; color: string }[] = [
   { label: "Hotovo", status: "DONE", color: "bg-status-success/20 border-status-success/30 dark:bg-status-success/15 dark:border-status-success/35" },
 ]
 
+const EMPTY_STATE_BORDER: Record<TicketStatus, string> = {
+  PENDING_APPROVAL: "border-status-pending/45",
+  APPROVED: "border-status-approved/45",
+  VERIFICATION: "border-status-verification/45",
+  DONE: "border-status-success/45",
+  REJECTED: "border-status-pending/45",
+}
+
 export const TicketKanban = memo(function TicketKanban({ tickets, onTicketClick }: TicketKanbanProps) {
   const columnsWithTickets: ColumnWithTickets[] = useMemo(() => {
     return COLUMNS.map((col) => {
@@ -217,7 +225,13 @@ const KanbanScrollableColumn = memo(function KanbanScrollableColumn({
       )}
     >
       <div className="h-full min-h-0 relative px-2 py-0">
-        <div ref={scrollRef} className="h-full min-h-0 overflow-y-auto scrollbar-none">
+        <div
+          ref={scrollRef}
+          className={cn(
+            "h-full min-h-0 scrollbar-none",
+            isScrollable ? "overflow-y-auto" : "overflow-y-hidden"
+          )}
+        >
           <div className="space-y-4 py-4 px-2">
             {col.tickets.map((ticket) => (
               <TicketCard
@@ -228,18 +242,31 @@ const KanbanScrollableColumn = memo(function KanbanScrollableColumn({
             ))}
 
             {col.tickets.length === 0 && (
-              <div className="h-24 w-full flex items-center justify-center text-xs text-muted-foreground border-2 border-dashed border-border/50 rounded-[1.5rem]">
+              <div
+                className={cn(
+                  "h-24 w-full flex items-center justify-center text-xs text-muted-foreground border-2 border-dashed rounded-[1.5rem]",
+                  EMPTY_STATE_BORDER[col.status]
+                )}
+              >
                 Žádné žádosti
               </div>
             )}
           </div>
         </div>
 
-        <div className="pointer-events-none absolute top-6 bottom-6 right-1 w-1">
+        <div
+          className={cn(
+            "pointer-events-none absolute top-6 bottom-6 right-1 w-1 transition-opacity",
+            isScrollable ? "opacity-100" : "opacity-0"
+          )}
+        >
           <div
             ref={trackRef}
             onPointerDown={handleTrackPointerDown}
-            className="pointer-events-auto absolute inset-0 rounded-full bg-border/40"
+            className={cn(
+              "absolute inset-0 rounded-full bg-border/40",
+              isScrollable ? "pointer-events-auto" : "pointer-events-none"
+            )}
           >
             {isScrollable && (
               <div
