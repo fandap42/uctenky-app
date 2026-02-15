@@ -68,7 +68,12 @@ export function DepositDialog({ trigger }: DepositDialogProps) {
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="bg-card border-border sm:max-w-[425px] rounded-[2.5rem]">
+      <DialogContent
+        className="bg-card border-border w-[calc(100%-1rem)] max-w-[calc(100%-1rem)] sm:max-w-[425px] rounded-[2.5rem]"
+        onOpenAutoFocus={(event) => {
+          event.preventDefault()
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="text-foreground text-xl">Vložit vklad</DialogTitle>
           <DialogDescription className="text-muted-foreground">
@@ -96,7 +101,7 @@ export function DepositDialog({ trigger }: DepositDialogProps) {
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 required
-                className="bg-background border-border rounded-xl font-bold h-12"
+                className="bg-background border-border rounded-xl font-bold h-12 w-full max-w-full min-w-0"
               />
             </div>
 
