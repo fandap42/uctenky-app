@@ -5,6 +5,7 @@ import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { SlackSignInButton } from "@/components/ui/slack-sign-in-button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
@@ -81,24 +82,11 @@ export default function LoginPage() {
           </h1>
         </CardHeader>
         <CardContent className="space-y-6">
-          <Button
+          <SlackSignInButton
             onClick={handleSlackLogin}
-            disabled={isSlackLoading}
-            variant="outline"
-            className="w-full flex items-center justify-center gap-2 h-11 border-border bg-background hover:bg-accent transition-colors"
-          >
-            {isSlackLoading ? (
-               <svg className="animate-spin h-5 w-5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-               </svg>
-            ) : (
-              <svg className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52h6.313a2.527 2.527 0 0 1 2.521 2.52 2.527 2.527 0 0 1-2.521 2.523H8.834a2.528 2.528 0 0 1-2.521-2.523zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.527 2.527 0 0 1 2.521 2.521v6.313a2.528 2.528 0 0 1-2.521 2.521 2.528 2.528 0 0 1-2.521-2.521V8.834a2.528 2.528 0 0 1 2.521-2.521zM18.958 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.527 2.527 0 0 1-2.52 2.522h-2.522V8.834zM17.687 8.834a2.527 2.527 0 0 1-2.52 2.522H8.854a2.527 2.527 0 0 1-2.521-2.522 2.527 2.527 0 0 1 2.521-2.521h6.313a2.527 2.527 0 0 1 2.52 2.521zM15.165 18.958a2.528 2.528 0 0 1 2.521 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.52v-2.522h2.52zM15.165 17.687a2.527 2.527 0 0 1-2.52-2.521V8.854a2.527 2.527 0 0 1 2.52-2.521 2.527 2.527 0 0 1 2.522 2.521v6.312a2.527 2.527 0 0 1-2.522 2.521z" fill="currentColor"></path>
-              </svg>
-            )}
-            Sign in with Slack
-          </Button>
+            loading={isSlackLoading}
+            className="w-full"
+          />
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">

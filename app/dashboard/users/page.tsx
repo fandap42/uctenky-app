@@ -22,7 +22,7 @@ export default async function UsersPage() {
 
   return (
     <div className="space-y-8">
-      <div>
+      <div className="hidden md:block">
         <h1 className="text-3xl font-black text-foreground mb-2">Správa uživatelů</h1>
       </div>
 

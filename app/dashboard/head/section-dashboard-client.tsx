@@ -58,7 +58,7 @@ export function SectionDashboardClient({
   return (
     <>
       {/* Desktop Kanban */}
-      <div className="hidden lg:block">
+      <div className="hidden lg:block h-full overflow-hidden">
         <TicketKanban tickets={initialTickets} onTicketClick={handleTicketClick} />
       </div>
 

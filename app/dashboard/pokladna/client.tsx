@@ -282,16 +282,13 @@ export function PokladnaClient({
       {/* Header section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-foreground mb-2">Pokladna</h1>
-        </div>
-        <div className="flex items-center gap-3">
-          <DepositDialog />
+          <h1 className="hidden md:block text-3xl font-black text-foreground mb-2">Pokladna</h1>
         </div>
       </div>
 
       {/* Top Cards Grid - Improved responsiveness */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-        <Card className="bg-card border-border shadow-sm rounded-[2.5rem] p-8 flex flex-col justify-between min-h-[160px]">
+        <Card className="bg-card border-border shadow-sm rounded-[2.5rem] p-6 md:p-8 flex flex-col justify-between min-h-[140px] md:min-h-[160px]">
           <div className="space-y-4">
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Reálná pokladna</h3>
             <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">
@@ -305,24 +302,38 @@ export function PokladnaClient({
             )}
           </div>
           <div className="flex items-baseline gap-2 mt-auto">
-            <span className="text-4xl font-black text-foreground tabular-nums">
+            <span className="text-3xl md:text-4xl font-black text-foreground tabular-nums">
               {registerData.realCash.toLocaleString("cs-CZ")}
             </span>
-            <span className="text-xl font-bold text-muted-foreground">Kč</span>
+            <span className="text-lg md:text-xl font-bold text-muted-foreground">Kč</span>
           </div>
         </Card>
 
-        <Card className="bg-card border-border shadow-sm rounded-[2.5rem] p-8 flex flex-col justify-between min-h-[160px]">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Aktuální zůstatek</h3>
+        <Card className="bg-card border-border shadow-sm rounded-[2.5rem] p-6 md:p-8 flex flex-col justify-between min-h-[140px] md:min-h-[160px]">
+          <div className="flex items-start justify-between gap-x-4 gap-y-2 mb-2 flex-wrap">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground pt-1.5">Aktuální zůstatek</h3>
+            <DepositDialog
+              trigger={
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-foreground font-bold text-[10px] uppercase flex items-center gap-1 h-6 px-2 rounded-full bg-muted/20 transition-all border border-transparent hover:border-current/10"
+                >
+                  <Pencil className="w-3 h-3" />
+                  Nový vklad
+                </Button>
+              }
+            />
+          </div>
           <div className="flex items-baseline gap-2 mt-auto">
-            <span className="text-4xl font-black text-foreground tabular-nums">
+            <span className="text-3xl md:text-4xl font-black text-foreground tabular-nums">
               {registerData.currentBalance.toLocaleString("cs-CZ")}
             </span>
-            <span className="text-xl font-bold text-muted-foreground">Kč</span>
+            <span className="text-lg md:text-xl font-bold text-muted-foreground">Kč</span>
           </div>
         </Card>
 
-        <Card className="bg-card border-border shadow-sm rounded-[2.5rem] p-8 flex flex-col justify-between min-h-[160px]">
+        <Card className="bg-card border-border shadow-sm rounded-[2.5rem] p-6 md:p-8 flex flex-col justify-between min-h-[140px] md:min-h-[160px]">
           <div className="flex items-start justify-between gap-x-4 gap-y-2 mb-2 flex-wrap">
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground pt-1.5">Dluh z chyb</h3>
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -347,14 +358,14 @@ export function PokladnaClient({
             </div>
           </div>
           <div className="flex items-baseline gap-2 mt-auto">
-            <span className="text-4xl font-black text-foreground tabular-nums">
+            <span className="text-3xl md:text-4xl font-black text-foreground tabular-nums">
               {registerData.totalDebtErrors.toLocaleString("cs-CZ")}
             </span>
-            <span className="text-xl font-bold text-muted-foreground">Kč</span>
+            <span className="text-lg md:text-xl font-bold text-muted-foreground">Kč</span>
           </div>
         </Card>
 
-        <Card className="bg-card border-border shadow-sm rounded-[2.5rem] p-8 flex flex-col justify-between min-h-[160px]">
+        <Card className="bg-card border-border shadow-sm rounded-[2.5rem] p-6 md:p-8 flex flex-col justify-between min-h-[140px] md:min-h-[160px]">
           <div className="flex items-start justify-between gap-x-4 gap-y-2 mb-2 flex-wrap">
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground pt-1.5">Hotovost</h3>
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -379,10 +390,10 @@ export function PokladnaClient({
             </div>
           </div>
           <div className="flex items-baseline gap-2 mt-auto">
-            <span className="text-4xl font-black text-foreground tabular-nums">
+            <span className="text-3xl md:text-4xl font-black text-foreground tabular-nums">
               {registerData.totalCashOnHand.toLocaleString("cs-CZ")}
             </span>
-            <span className="text-xl font-bold text-muted-foreground">Kč</span>
+            <span className="text-lg md:text-xl font-bold text-muted-foreground">Kč</span>
           </div>
         </Card>
       </div>
