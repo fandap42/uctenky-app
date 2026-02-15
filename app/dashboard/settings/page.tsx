@@ -13,7 +13,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
+      <div className="hidden md:block">
         <h1 className="text-3xl font-black text-foreground mb-2">Nastavení</h1>
       </div>
 

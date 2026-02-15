@@ -1,13 +1,28 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { cn } from "@/lib/utils"
 
+// Navigation items for page title mapping
+const navigationTitles: Record<string, string> = {
+  "/dashboard": "Přehled",
+  "/dashboard/head": "Žádosti sekce",
+  "/dashboard/pokladna": "Pokladna",
+  "/dashboard/budget": "Rozpočty",
+  "/dashboard/users": "Uživatelé",
+  "/dashboard/settings": "Nastavení",
+}
+
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  
+  // Get current page title based on pathname
+  const pageTitle = useMemo(() => {
+    return navigationTitles[pathname] || "4FISuctenky"
+  }, [pathname])
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [headerVisible, setHeaderVisible] = useState(true)
   const lastScrollTop = useRef(0)
@@ -95,7 +110,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         {/* Mobile header with menu button */}
         <header 
           className={cn(
-            "h-[calc(4rem+env(safe-area-inset-top))] flex items-end pb-3 gap-4 px-6 border-b border-border md:hidden bg-card/80 backdrop-blur-md absolute top-0 inset-x-0 z-30 transition-all duration-300 pt-[env(safe-area-inset-top)]",
+            "h-[calc(4rem+env(safe-area-inset-top))] flex items-center gap-3 px-4 border-b border-border md:hidden bg-card/80 backdrop-blur-md absolute top-0 inset-x-0 z-30 transition-all duration-300 pt-[env(safe-area-inset-top)]",
             headerVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
           )}
         >
@@ -103,13 +118,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             variant="ghost"
             size="icon"
             onClick={() => setSidebarOpen(true)}
-            className="text-muted-foreground hover:text-foreground"
+            className="h-9 w-9 text-muted-foreground hover:text-foreground"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </Button>
-          <span className="font-bold text-lg text-foreground">4FISuctenky</span>
+          <span className="font-bold text-lg leading-none text-foreground">{pageTitle}</span>
         </header>
 
         {/* Main content */}

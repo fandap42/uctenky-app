@@ -17,7 +17,11 @@ import { createDeposit } from "@/lib/actions/cash-register"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 
-export function DepositDialog() {
+interface DepositDialogProps {
+  trigger?: React.ReactNode
+}
+
+export function DepositDialog({ trigger }: DepositDialogProps) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
@@ -58,11 +62,18 @@ export function DepositDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-primary hover:bg-primary/90 hover:scale-105 text-primary-foreground font-black uppercase tracking-tight h-11 px-6 rounded-2xl shadow-lg shadow-primary/20 transition-all duration-200">
-          Nový vklad
-        </Button>
+        {trigger || (
+          <Button className="bg-primary hover:bg-primary/90 hover:scale-105 text-primary-foreground font-black uppercase tracking-tight h-11 px-6 rounded-2xl shadow-lg shadow-primary/20 transition-all duration-200">
+            Nový vklad
+          </Button>
+        )}
       </DialogTrigger>
-      <DialogContent className="bg-card border-border sm:max-w-[425px] rounded-[2.5rem]">
+      <DialogContent
+        className="bg-card border-border w-[calc(100%-1rem)] max-w-[calc(100%-1rem)] sm:max-w-[425px] rounded-[2.5rem]"
+        onOpenAutoFocus={(event) => {
+          event.preventDefault()
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="text-foreground text-xl">Vložit vklad</DialogTitle>
           <DialogDescription className="text-muted-foreground">
@@ -90,7 +101,7 @@ export function DepositDialog() {
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 required
-                className="bg-background border-border rounded-xl font-bold h-12"
+                className="bg-background border-border rounded-xl font-bold h-12 w-full max-w-full min-w-0"
               />
             </div>
 

@@ -133,7 +133,7 @@ export default async function BudgetPage() {
   return (
     <div className="space-y-8 pb-10">
       {/* Header */}
-      <div>
+      <div className="hidden md:block">
         <h1 className="text-3xl font-black text-foreground mb-2">Rozpočty</h1>
       </div>
 
