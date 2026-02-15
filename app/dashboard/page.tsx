@@ -38,9 +38,9 @@ export default async function DashboardPage() {
   }))
 
   return (
-    <div className="space-y-8 pb-20">
+    <div className="pb-20">
       {/* Header - Hidden on mobile since title is in mobile header */}
-      <div className="hidden md:flex items-center justify-between">
+      <div className="hidden md:flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-black text-foreground mb-2">
             Přehled

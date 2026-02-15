@@ -56,7 +56,7 @@ export const TicketMobileList = memo(function TicketMobileList({ tickets, onTick
   return (
     <div className="w-full space-y-4">
       {/* Filter Dots */}
-      <div className="flex flex-wrap gap-2 pb-2 pt-1 w-fit max-w-[280px]">
+      <div className="flex flex-wrap gap-2 pb-2 w-fit max-w-[280px]">
         {FILTERS.map((filter) => {
           const isActive = activeFilters.includes(filter.status)
           return (
