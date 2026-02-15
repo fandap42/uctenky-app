@@ -97,7 +97,7 @@ export default async function SectionHeadDashboardPage({ searchParams }: PagePro
   // const totalCount = tickets.length
 
   return (
-    <div className="space-y-8 pb-20">
+    <div className="space-y-8 pb-20 lg:pb-0">
       {/* Header */}
       <div className={userIsAdmin ? "flex items-center justify-between" : "hidden md:flex items-center justify-between"}>
         <div>
@@ -111,11 +111,13 @@ export default async function SectionHeadDashboardPage({ searchParams }: PagePro
       </div>
 
       {/* Kanban Board */}
-      <SectionDashboardClient 
-        initialTickets={tickets}
-        currentUserId={session.user.id}
-        currentUserRole={user.role}
-      />
+      <div className="lg:h-[calc(100dvh-12rem)]">
+        <SectionDashboardClient 
+          initialTickets={tickets}
+          currentUserId={session.user.id}
+          currentUserRole={user.role}
+        />
+      </div>
     </div>
   )
 }
