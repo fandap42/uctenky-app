@@ -38,7 +38,7 @@ export default async function DashboardPage() {
   }))
 
   return (
-    <div className="pb-20">
+    <div className="pb-20 lg:pb-0">
       {/* Header - Hidden on mobile since title is in mobile header */}
       <div className="hidden md:flex items-center justify-between mb-8">
         <div>
@@ -54,11 +54,13 @@ export default async function DashboardPage() {
         <RequestFormClient sections={sections} />
       </div>
 
-      <TicketDashboardClient 
-        initialTickets={tickets} 
-        currentUserId={userId}
-        currentUserRole={userRole}
-      />
+      <div className="lg:h-[calc(100dvh-12rem)]">
+        <TicketDashboardClient 
+          initialTickets={tickets} 
+          currentUserId={userId}
+          currentUserRole={userRole}
+        />
+      </div>
     </div>
   )
 }

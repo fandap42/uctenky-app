@@ -293,6 +293,15 @@
    4FIS BRAND UTILITIES
    ============================================ */
 @layer utilities {
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
   .tabular-nums {
     font-variant-numeric: tabular-nums;
   }
