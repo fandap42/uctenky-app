@@ -67,7 +67,7 @@ export function Sidebar({ isOpen, onClose, onNavClick }: SidebarProps) {
       {/* Sidebar */}
       <div
         className={cn(
-          "fixed md:static inset-y-0 left-0 z-50 flex flex-col h-full bg-card border-r border-border w-64 transition-transform duration-300 ease-in-out",
+          "fixed md:static inset-y-0 left-0 z-50 flex flex-col h-full bg-card border-r border-border w-64 transition-transform duration-300 ease-in-out overflow-hidden",
           "pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]",
           isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
@@ -124,7 +124,7 @@ export function Sidebar({ isOpen, onClose, onNavClick }: SidebarProps) {
           })}
         </nav>
 
-        <Separator className="bg-border mx-4 w-auto" />
+        <Separator className="bg-border" />
 
         {/* User section */}
         <div className="p-4">
