@@ -49,7 +49,10 @@ export async function createTicket(formData: FormData) {
     })
 
     try {
-      const admins = await prisma.user.findMany({ where: { role: "ADMIN" }, select: { email: true } })
+      const admins = await prisma.user.findMany({ 
+        where: { role: "ADMIN", receiveAdminEmails: true } as any, 
+        select: { email: true } 
+      })
       const adminEmails = admins.map((a) => a.email).filter(Boolean) as string[]
       if (adminEmails.length > 0) {
         await sendEmail({
@@ -91,7 +94,12 @@ export async function updateTicketStatus(
       data: { status },
     })
 
-    if (previousTicket && previousTicket.status !== status && previousTicket.requester?.email) {
+    if (
+      previousTicket &&
+      previousTicket.status !== status &&
+      previousTicket.requester?.email &&
+      (previousTicket.requester as any).receiveEmails
+    ) {
       try {
         let subject = ""
         let msg = ""
@@ -183,7 +191,10 @@ export async function submitForVerification(ticketId: string) {
     })
 
     try {
-      const admins = await prisma.user.findMany({ where: { role: "ADMIN" }, select: { email: true } })
+      const admins = await prisma.user.findMany({ 
+        where: { role: "ADMIN", receiveAdminEmails: true } as any, 
+        select: { email: true } 
+      })
       const adminEmails = admins.map((a) => a.email).filter(Boolean) as string[]
       if (adminEmails.length > 0) {
         await sendEmail({
@@ -340,7 +351,12 @@ export async function updateTicketDetails(
       },
     })
 
-    if (previousTicket && previousTicket.status !== data.status && previousTicket.requester?.email) {
+    if (
+      previousTicket &&
+      previousTicket.status !== data.status &&
+      previousTicket.requester?.email &&
+      (previousTicket.requester as any).receiveEmails
+    ) {
       try {
         let subject = ""
         let msg = ""
