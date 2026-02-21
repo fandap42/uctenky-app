@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { useCallback, useEffect, useMemo, useRef, useState, memo, type PointerEvent as ReactPointerEvent } from "react"
 import { TicketStatus } from "@prisma/client"
 import { Card } from "@/components/ui/card"

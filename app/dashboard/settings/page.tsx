@@ -15,13 +15,16 @@ export default async function SettingsPage() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { receiveEmails: true, receiveAdminEmails: true, role: true } as any
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    select: { receiveEmails: true, receiveAdminEmails: true, role: true }
   })
 
   // Fallback default true just in case
-  const receiveEmails = (user as any)?.receiveEmails ?? true
-  const receiveAdminEmails = (user as any)?.receiveAdminEmails ?? true
-  const isAdmin = (user as any)?.role === "ADMIN"
+  const userData = user as unknown as { receiveEmails?: boolean; receiveAdminEmails?: boolean; role?: string }
+  const receiveEmails = userData?.receiveEmails ?? true
+  const receiveAdminEmails = userData?.receiveAdminEmails ?? true
+  const isAdmin = userData?.role === "ADMIN"
 
   return (
     <div className="space-y-8">

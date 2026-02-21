@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { useState, useMemo, memo } from "react"
 import { TicketStatus } from "@prisma/client"
 import { Card } from "@/components/ui/card"

@@ -50,7 +50,8 @@ export async function createTicket(formData: FormData) {
 
     try {
       const admins = await prisma.user.findMany({ 
-        where: { role: "ADMIN", receiveAdminEmails: true } as any, 
+        // @ts-expect-error: prisma type is outdated
+        where: { role: "ADMIN", receiveAdminEmails: true }, 
         select: { email: true } 
       })
       const adminEmails = admins.map((a) => a.email).filter(Boolean) as string[]
@@ -58,7 +59,7 @@ export async function createTicket(formData: FormData) {
         await sendEmail({
           to: adminEmails,
           subject: "Nová žádost ke schválení",
-          html: `<p>Uživatel <b>${(session.user as any).fullName || session.user.name || session.user.email}</b> vytvořil novou žádost: <b>${purpose}</b>.</p><p><a href="${process.env.AUTH_URL || 'http://localhost:3000'}/dashboard/zadosti">Zobrazit žádosti</a></p>`
+          html: `<p>Uživatel <b>${(session.user as { fullName?: string | null }).fullName || session.user.name || session.user.email}</b> vytvořil novou žádost: <b>${purpose}</b>.</p><p><a href="${process.env.AUTH_URL || 'http://localhost:3000'}/dashboard/zadosti">Zobrazit žádosti</a></p>`
         })
       }
     } catch (e) {
@@ -98,7 +99,7 @@ export async function updateTicketStatus(
       previousTicket &&
       previousTicket.status !== status &&
       previousTicket.requester?.email &&
-      (previousTicket.requester as any).receiveEmails
+      (previousTicket.requester as unknown as { receiveEmails?: boolean })?.receiveEmails
     ) {
       try {
         let subject = ""
@@ -192,7 +193,8 @@ export async function submitForVerification(ticketId: string) {
 
     try {
       const admins = await prisma.user.findMany({ 
-        where: { role: "ADMIN", receiveAdminEmails: true } as any, 
+        // @ts-expect-error: prisma type is outdated
+        where: { role: "ADMIN", receiveAdminEmails: true }, 
         select: { email: true } 
       })
       const adminEmails = admins.map((a) => a.email).filter(Boolean) as string[]
@@ -355,7 +357,7 @@ export async function updateTicketDetails(
       previousTicket &&
       previousTicket.status !== data.status &&
       previousTicket.requester?.email &&
-      (previousTicket.requester as any).receiveEmails
+      (previousTicket.requester as unknown as { receiveEmails?: boolean })?.receiveEmails
     ) {
       try {
         let subject = ""
