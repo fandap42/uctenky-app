@@ -89,9 +89,15 @@ export async function updateTicketStatus(
       include: { requester: true }
     })
 
+    const isReturningToApproved =
+      previousTicket?.status === "VERIFICATION" && status === "APPROVED"
+
     await prisma.ticket.update({
       where: { id: ticketId },
-      data: { status },
+      data: {
+        status,
+        isReturned: isReturningToApproved ? true : undefined,
+      },
     })
 
     if (
@@ -187,7 +193,7 @@ export async function submitForVerification(ticketId: string) {
 
     await prisma.ticket.update({
       where: { id: ticketId },
-      data: { status: "VERIFICATION" },
+      data: { status: "VERIFICATION", isReturned: false },
     })
 
     try {
@@ -340,6 +346,9 @@ export async function updateTicketDetails(
       include: { requester: true }
     })
 
+    const isReturningToApproved =
+      previousTicket?.status === "VERIFICATION" && data.status === "APPROVED"
+
     await prisma.ticket.update({
       where: { id: ticketId },
       data: {
@@ -348,6 +357,7 @@ export async function updateTicketDetails(
         targetDate: data.targetDate,
         status: data.status,
         note: data.note,
+        isReturned: isReturningToApproved ? true : undefined,
       },
     })
 

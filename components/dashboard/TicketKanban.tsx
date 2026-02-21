@@ -10,6 +10,7 @@ interface Ticket {
   purpose: string
   budgetAmount: number
   status: TicketStatus
+  isReturned?: boolean
   requester?: { fullName: string | null; image?: string | null } | null
   section: { name: string }
   receipts: { isPaid: boolean; amount: number }[]
@@ -55,6 +56,12 @@ export const TicketKanban = memo(function TicketKanban({ tickets, onTicketClick 
            const bUnpaid = b.receipts.some(r => !r.isPaid)
            if (aUnpaid && !bUnpaid) return -1
            if (!aUnpaid && bUnpaid) return 1
+           return 0
+         })
+      } else if (col.status === "APPROVED") {
+         colTickets.sort((a, b) => {
+           if (a.isReturned && !b.isReturned) return -1
+           if (!a.isReturned && b.isReturned) return 1
            return 0
          })
       }
@@ -298,7 +305,8 @@ const TicketCard = memo(function TicketCard({ ticket, onClick }: { ticket: Ticke
       onClick={() => onClick(ticket.id)}
       className={cn(
         "w-full p-4 cursor-pointer hover:shadow-md transition-all rounded-[1.5rem] border-border/50",
-        isDoneAndUnpaid && "border-status-pending border-2 shadow-status-pending/10"
+        isDoneAndUnpaid && "border-status-pending border-2 shadow-status-pending/10",
+        ticket.isReturned && "border-destructive border-2"
       )}
     >
       <div className="space-y-3">
@@ -330,6 +338,9 @@ const TicketCard = memo(function TicketCard({ ticket, onClick }: { ticket: Ticke
         <div className="pt-2 border-t border-border/50 flex justify-between items-center">
            {isDoneAndUnpaid && (
              <span className="text-[10px] font-bold text-status-pending uppercase tracking-tighter">Čeká na proplacení</span>
+           )}
+           {ticket.isReturned && (
+             <span className="text-[10px] font-bold text-destructive uppercase tracking-tighter">VRÁCENO</span>
            )}
            <div className="ml-auto flex items-baseline gap-0.5">
              <span className="text-xs font-black text-foreground">{displayAmount.toLocaleString()}</span>
