@@ -43,7 +43,9 @@ export default async function BudgetPage() {
   // Fetch all tickets with section info (for pending budgets)
   const tickets = await prisma.ticket.findMany({
     where: {
-      status: "PENDING_APPROVAL"
+      status: {
+        in: ["PENDING_APPROVAL", "APPROVED"]
+      }
     },
     include: {
       section: { select: { id: true, name: true } },
