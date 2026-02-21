@@ -42,13 +42,14 @@ export const TicketMobileList = memo(function TicketMobileList({ tickets, onTick
     return tickets.filter(t => 
       activeFilters.length === 0 || activeFilters.includes(t.status)
     ).sort((a, b) => {
-      // Custom sort: Put unpaid DONE tickets first
-      if (a.status === "DONE" && b.status === "DONE") {
-        const aUnpaid = a.receipts.some(r => !r.isPaid)
-        const bUnpaid = b.receipts.some(r => !r.isPaid)
-        if (aUnpaid && !bUnpaid) return -1
-        if (!aUnpaid && bUnpaid) return 1
-      }
+      // Custom sort: Put unpaid DONE tickets first globally
+      const aUnpaidDone = a.status === "DONE" && a.receipts.some(r => !r.isPaid)
+      const bUnpaidDone = b.status === "DONE" && b.receipts.some(r => !r.isPaid)
+      
+      if (aUnpaidDone && !bUnpaidDone) return -1
+      if (!aUnpaidDone && bUnpaidDone) return 1
+      
+      // Keep original order (which is createdAt desc from Prisma) for the rest
       return 0
     })
   }, [tickets, activeFilters])
