@@ -78,7 +78,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     ...authConfig.callbacks,
     async jwt(params) {
-      const { token, user, trigger } = params
+      const { token, user } = params
 
       // Start from authConfig's jwt callback if it exists to avoid duplicate logic.
       let nextToken = token
@@ -93,14 +93,28 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           (user as { hasCompletedOnboarding?: boolean }).hasCompletedOnboarding ?? false
       }
 
-      if (trigger === "update") {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: nextToken.id as string },
-          select: { hasCompletedOnboarding: true },
-        })
-        if (dbUser) {
-          ;(nextToken as { hasCompletedOnboarding?: boolean }).hasCompletedOnboarding =
-            dbUser.hasCompletedOnboarding
+      // Always fetch latest role, onboarding status, and section from DB
+      // This ensures that when an admin changes a user's role, or a user completes onboarding,
+      // the changes are reflected immediately without requiring a logout.
+      if (nextToken.id) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: nextToken.id as string },
+            select: { role: true, sectionId: true, hasCompletedOnboarding: true },
+          })
+          
+          if (dbUser) {
+            const tokenWithCustomProps = nextToken as {
+              role?: string
+              sectionId?: string | null
+              hasCompletedOnboarding?: boolean
+            }
+            tokenWithCustomProps.role = dbUser.role
+            tokenWithCustomProps.sectionId = dbUser.sectionId
+            tokenWithCustomProps.hasCompletedOnboarding = dbUser.hasCompletedOnboarding
+          }
+        } catch (error) {
+          console.error("[auth] Error fetching latest user data in jwt callback:", error)
         }
       }
 
