@@ -22,7 +22,7 @@ export function OnboardingDialog() {
 
   const handleComplete = async () => {
     try {
-      await update()
+      await update({ trigger: "update" })
       setOpen(false)
     } catch (error) {
       console.error(
@@ -36,7 +36,7 @@ export function OnboardingDialog() {
   const handleSkip = async () => {
     try {
       await completeOnboarding()
-      await update()
+      await update({ trigger: "update" })
       setOpen(false)
     } catch (error) {
       console.error("Failed to skip onboarding", error)

@@ -137,7 +137,13 @@ function MonthlyTransactionCard({
                    {tx.store || "-"}
                  </TableCell>
                  <TableCell className="py-2 text-sm text-foreground whitespace-nowrap tabular-nums font-semibold">
-                   {(tx.amount || tx.budgetAmount || 0).toLocaleString("cs-CZ")} Kč
+                   {(() => {
+                     const isDoneOrVer = (tx.status === "VERIFICATION" || tx.status === "DONE");
+                     const amount = (isDoneOrVer && tx.receipts)
+                       ? tx.receipts.reduce((sum: number, r: { amount: number | string }) => sum + Number(r.amount), 0)
+                       : (tx.amount || tx.budgetAmount || 0);
+                     return Number(amount).toLocaleString("cs-CZ");
+                   })()} Kč
                  </TableCell>
                  <TableCell className="py-2 text-center">
                     <StatusBadge status={mapTicketStatusToBadge(tx.status)} size="sm" />

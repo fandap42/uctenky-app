@@ -11,7 +11,7 @@ interface Ticket {
   status: TicketStatus
   requester?: { fullName: string | null } | null
   section: { name: string }
-  receipts: { isPaid: boolean }[]
+  receipts: { isPaid: boolean; amount: number }[]
   targetDate: string
 }
 
@@ -288,6 +288,9 @@ const KanbanScrollableColumn = memo(function KanbanScrollableColumn({
 
 const TicketCard = memo(function TicketCard({ ticket, onClick }: { ticket: Ticket; onClick: (id: string) => void }) {
   const isDoneAndUnpaid = ticket.status === "DONE" && ticket.receipts.some(r => !r.isPaid)
+  const displayAmount = ticket.status === "VERIFICATION" || ticket.status === "DONE"
+    ? ticket.receipts.reduce((sum, r) => sum + r.amount, 0)
+    : ticket.budgetAmount
 
   return (
     <Card 
@@ -319,7 +322,7 @@ const TicketCard = memo(function TicketCard({ ticket, onClick }: { ticket: Ticke
              <span className="text-[10px] font-bold text-status-pending uppercase tracking-tighter">Čeká na proplacení</span>
            )}
            <div className="ml-auto flex items-baseline gap-0.5">
-             <span className="text-xs font-black text-foreground">{ticket.budgetAmount.toLocaleString()}</span>
+             <span className="text-xs font-black text-foreground">{displayAmount.toLocaleString()}</span>
              <span className="text-[10px] font-bold text-muted-foreground">Kč</span>
            </div>
         </div>

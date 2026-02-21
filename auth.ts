@@ -78,7 +78,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     ...authConfig.callbacks,
     async jwt(params) {
-      const { token, user, trigger } = params
+      const { token, user, trigger, session } = params
 
       // Start from authConfig's jwt callback if it exists to avoid duplicate logic.
       let nextToken = token
@@ -93,14 +93,44 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           (user as { hasCompletedOnboarding?: boolean }).hasCompletedOnboarding ?? false
       }
 
-      if (trigger === "update") {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: nextToken.id as string },
-          select: { hasCompletedOnboarding: true },
-        })
-        if (dbUser) {
-          ;(nextToken as { hasCompletedOnboarding?: boolean }).hasCompletedOnboarding =
-            dbUser.hasCompletedOnboarding
+      // Refresh role, onboarding status, and section from DB only when needed:
+      // - on explicit session update (trigger === "update"), e.g. after role change or onboarding
+      // - on new sign-in (user is present)
+      // - every 5 minutes to pick up any admin-initiated changes
+      const TOKEN_REFRESH_INTERVAL_MS = 5 * 60 * 1000
+      const now = Date.now()
+      const lastRefresh = (nextToken as { lastDbRefresh?: number }).lastDbRefresh ?? 0
+      
+      const isManualUpdate = 
+        trigger === "update" || 
+        (session && typeof session === "object" && (session as Record<string, unknown>).trigger === "update")
+
+      const shouldRefresh =
+        isManualUpdate ||
+        !!user ||
+        now - lastRefresh > TOKEN_REFRESH_INTERVAL_MS
+
+      if (nextToken.id && shouldRefresh) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: nextToken.id as string },
+            select: { role: true, sectionId: true, hasCompletedOnboarding: true },
+          })
+          
+          if (dbUser) {
+            const tokenWithCustomProps = nextToken as {
+              role?: string
+              sectionId?: string | null
+              hasCompletedOnboarding?: boolean
+              lastDbRefresh?: number
+            }
+            tokenWithCustomProps.role = dbUser.role
+            tokenWithCustomProps.sectionId = dbUser.sectionId
+            tokenWithCustomProps.hasCompletedOnboarding = dbUser.hasCompletedOnboarding
+            tokenWithCustomProps.lastDbRefresh = now
+          }
+        } catch (error) {
+          console.error("[auth] Error fetching latest user data in jwt callback:", error)
         }
       }
 

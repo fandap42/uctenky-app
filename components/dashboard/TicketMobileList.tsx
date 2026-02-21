@@ -11,7 +11,7 @@ interface Ticket {
   status: TicketStatus
   requester?: { fullName: string | null } | null
   section: { name: string }
-  receipts: { isPaid: boolean }[]
+  receipts: { isPaid: boolean; amount: number }[]
   targetDate: string
 }
 
@@ -42,13 +42,14 @@ export const TicketMobileList = memo(function TicketMobileList({ tickets, onTick
     return tickets.filter(t => 
       activeFilters.length === 0 || activeFilters.includes(t.status)
     ).sort((a, b) => {
-      // Custom sort: Put unpaid DONE tickets first
-      if (a.status === "DONE" && b.status === "DONE") {
-        const aUnpaid = a.receipts.some(r => !r.isPaid)
-        const bUnpaid = b.receipts.some(r => !r.isPaid)
-        if (aUnpaid && !bUnpaid) return -1
-        if (!aUnpaid && bUnpaid) return 1
-      }
+      // Custom sort: Put unpaid DONE tickets first globally
+      const aUnpaidDone = a.status === "DONE" && a.receipts.some(r => !r.isPaid)
+      const bUnpaidDone = b.status === "DONE" && b.receipts.some(r => !r.isPaid)
+      
+      if (aUnpaidDone && !bUnpaidDone) return -1
+      if (!aUnpaidDone && bUnpaidDone) return 1
+      
+      // Keep original order (which is createdAt desc from Prisma) for the rest
       return 0
     })
   }, [tickets, activeFilters])
@@ -106,6 +107,9 @@ export const TicketMobileList = memo(function TicketMobileList({ tickets, onTick
 const TicketCardItem = memo(function TicketCardItem({ ticket, onClick }: { ticket: Ticket; onClick: () => void }) {
   const statusConfig = FILTERS.find(f => f.status === ticket.status)
   const isUnpaidDone = ticket.status === "DONE" && ticket.receipts.some(r => !r.isPaid)
+  const displayAmount = ticket.status === "VERIFICATION" || ticket.status === "DONE"
+    ? ticket.receipts.reduce((sum, r) => sum + r.amount, 0)
+    : ticket.budgetAmount
 
   return (
     <Card 
@@ -127,7 +131,7 @@ const TicketCardItem = memo(function TicketCardItem({ ticket, onClick }: { ticke
              <span className="text-[10px] text-muted-foreground">
                {new Date(ticket.targetDate).toLocaleDateString("cs-CZ")}
              </span>
-             <span className="text-xl font-black text-foreground tabular-nums">{ticket.budgetAmount.toLocaleString()} Kč</span>
+             <span className="text-xl font-black text-foreground tabular-nums">{displayAmount.toLocaleString()} Kč</span>
            </div>
         </div>
         
