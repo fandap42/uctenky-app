@@ -209,7 +209,7 @@ export async function getTickets(filters: {
         ]
       },
       include: {
-        requester: { select: { id: true, fullName: true } },
+        requester: { select: { id: true, fullName: true, image: true } },
         section: { select: { id: true, name: true } },
         receipts: true,
       },
@@ -310,7 +310,7 @@ export async function getTicketsBySemester(
         }),
       },
       include: {
-        requester: { select: { id: true, fullName: true } },
+        requester: { select: { id: true, fullName: true, image: true } },
         section: { select: { id: true, name: true } },
         receipts: true,
       },

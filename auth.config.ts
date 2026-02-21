@@ -14,6 +14,9 @@ export const authConfig = {
         token.role = (user as { role?: string }).role ?? "MEMBER"
         token.sectionId = (user as { sectionId?: string | null }).sectionId ?? null
         token.hasCompletedOnboarding = (user as { hasCompletedOnboarding?: boolean }).hasCompletedOnboarding ?? false
+        if (user.image) {
+          token.image = user.image
+        }
       }
       return token
     },
@@ -23,6 +26,9 @@ export const authConfig = {
         session.user.role = token.role as string
         session.user.sectionId = token.sectionId as string | null
         session.user.hasCompletedOnboarding = token.hasCompletedOnboarding as boolean
+        if (token.image || token.picture) {
+          session.user.image = (token.image || token.picture) as string
+        }
       }
       return session
     },

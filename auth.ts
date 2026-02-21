@@ -68,6 +68,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           id: user.id,
           email: user.email,
           name: user.fullName,
+          image: user.image,
           role: user.role,
           sectionId: null,
           hasCompletedOnboarding: user.hasCompletedOnboarding,
@@ -89,8 +90,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         nextToken.id = user.id ?? ""
         nextToken.role = (user as { role?: string }).role ?? "MEMBER"
         nextToken.sectionId = (user as { sectionId?: string | null }).sectionId ?? null
-        nextToken.hasCompletedOnboarding =
-          (user as { hasCompletedOnboarding?: boolean }).hasCompletedOnboarding ?? false
+        nextToken.hasCompletedOnboarding = (user as { hasCompletedOnboarding?: boolean }).hasCompletedOnboarding ?? false
+        if (user.image) {
+          nextToken.image = user.image
+        }
       }
 
       // Refresh role, onboarding status, and section from DB only when needed:
@@ -114,7 +117,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         try {
           const dbUser = await prisma.user.findUnique({
             where: { id: nextToken.id as string },
-            select: { role: true, sectionId: true, hasCompletedOnboarding: true },
+            select: { role: true, sectionId: true, hasCompletedOnboarding: true, image: true },
           })
           
           if (dbUser) {
@@ -123,11 +126,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               sectionId?: string | null
               hasCompletedOnboarding?: boolean
               lastDbRefresh?: number
+              image?: string | null
             }
             tokenWithCustomProps.role = dbUser.role
             tokenWithCustomProps.sectionId = dbUser.sectionId
             tokenWithCustomProps.hasCompletedOnboarding = dbUser.hasCompletedOnboarding
             tokenWithCustomProps.lastDbRefresh = now
+            if (dbUser.image !== undefined) {
+              tokenWithCustomProps.image = dbUser.image
+            }
           }
         } catch (error) {
           console.error("[auth] Error fetching latest user data in jwt callback:", error)

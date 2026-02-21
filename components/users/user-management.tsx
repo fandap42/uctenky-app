@@ -23,6 +23,7 @@ interface User {
   email: string | null
   role: AppRole
   createdAt: string
+  image?: string | null
 }
 
 interface UserManagementProps {
@@ -98,7 +99,16 @@ export function UserManagement({ initialUsers }: UserManagementProps) {
                 {filteredUsers.map((user) => (
                   <TableRow key={user.id} className="border-border hover:bg-muted/10 transition-colors">
                     <TableCell className="py-3 px-4 font-semibold text-foreground">
-                      {user.fullName || "---"}
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold overflow-hidden flex-shrink-0">
+                          {user.image ? (
+                            <img src={user.image} alt={user.fullName || "User"} className="w-full h-full object-cover" />
+                          ) : (
+                            user.fullName?.[0] || "?"
+                          )}
+                        </div>
+                        <span className="truncate">{user.fullName || "---"}</span>
+                      </div>
                     </TableCell>
                     <TableCell className="py-3 px-4 text-sm text-muted-foreground">{user.email}</TableCell>
                     <TableCell className="py-3 px-4">

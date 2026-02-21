@@ -81,7 +81,7 @@ interface Ticket {
   budgetAmount: number
   status: TicketStatus
   requesterId: string | null
-  requester?: { fullName: string | null } | null
+  requester?: { fullName: string | null; image?: string | null } | null
   sectionId: string
   section: { name: string }
   receipts: Receipt[]
@@ -249,9 +249,9 @@ export function TicketDetailDialog({
                     <div>
                       <div className="flex items-center gap-1.5 sm:gap-2">
                         <Avatar className="h-5 w-5 sm:h-6 sm:w-6">
-                          <AvatarImage src="" />
-                          <AvatarFallback className="bg-primary/10 text-primary">
-                            <User className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                          <AvatarImage src={ticket.requester?.image || ""} />
+                          <AvatarFallback className="bg-primary/20 text-primary font-bold text-[10px] sm:text-xs">
+                            {ticket.requester?.fullName?.[0] || "?"}
                           </AvatarFallback>
                         </Avatar>
                         <span className="font-medium text-foreground">{ticket.requester?.fullName || "Smazaný uživatel"}</span>
