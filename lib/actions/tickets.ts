@@ -50,7 +50,6 @@ export async function createTicket(formData: FormData) {
 
     try {
       const admins = await prisma.user.findMany({ 
-        // @ts-expect-error: prisma type is outdated
         where: { role: "ADMIN", receiveAdminEmails: true }, 
         select: { email: true } 
       })
@@ -193,7 +192,6 @@ export async function submitForVerification(ticketId: string) {
 
     try {
       const admins = await prisma.user.findMany({ 
-        // @ts-expect-error: prisma type is outdated
         where: { role: "ADMIN", receiveAdminEmails: true }, 
         select: { email: true } 
       })
