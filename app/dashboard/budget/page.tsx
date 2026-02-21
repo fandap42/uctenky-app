@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { getSemester } from "@/lib/utils/semesters"
 import { BudgetSemesterExport } from "@/components/dashboard/budget-semester-export"
+import { isAdmin, isHeadRole, getSectionForRole } from "@/lib/utils/roles"
 
 export const dynamic = "force-dynamic"
 
@@ -35,9 +36,28 @@ export default async function BudgetPage() {
     select: { id: true, fullName: true, role: true },
   })
 
-  // Redirect if not admin
-  if (!user || user.role !== "ADMIN") {
+  // Redirect if not admin or head
+  if (!user || (!isAdmin(user.role) && !isHeadRole(user.role))) {
     redirect("/dashboard")
+  }
+
+  // Determine section filter for heads
+  let sectionFilter: { id: string } | undefined = undefined;
+  if (!isAdmin(user.role)) {
+    const sectionName = getSectionForRole(user.role)
+    if (sectionName) {
+      const dbSection = await prisma.section.findFirst({
+        where: { name: sectionName, isActive: true },
+        select: { id: true },
+      })
+      if (dbSection) {
+        sectionFilter = { id: dbSection.id }
+      } else {
+        sectionFilter = { id: "none" }
+      }
+    } else {
+      sectionFilter = { id: "none" }
+    }
   }
 
   // Fetch all tickets with section info (for pending budgets)
@@ -45,7 +65,8 @@ export default async function BudgetPage() {
     where: {
       status: {
         in: ["PENDING_APPROVAL", "APPROVED"]
-      }
+      },
+      ...(sectionFilter ? { sectionId: sectionFilter.id } : {})
     },
     include: {
       section: { select: { id: true, name: true } },
@@ -54,6 +75,7 @@ export default async function BudgetPage() {
 
   // Fetch all receipts with ticket and section info (for spent calculation)
   const receipts = await prisma.receipt.findMany({
+    where: sectionFilter ? { ticket: { sectionId: sectionFilter.id } } : undefined,
     include: {
       ticket: {
         include: {
