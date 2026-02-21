@@ -11,7 +11,7 @@ interface Ticket {
   status: TicketStatus
   requester?: { fullName: string | null } | null
   section: { name: string }
-  receipts: { isPaid: boolean }[]
+  receipts: { isPaid: boolean; amount: number }[]
   targetDate: string
 }
 
@@ -106,6 +106,9 @@ export const TicketMobileList = memo(function TicketMobileList({ tickets, onTick
 const TicketCardItem = memo(function TicketCardItem({ ticket, onClick }: { ticket: Ticket; onClick: () => void }) {
   const statusConfig = FILTERS.find(f => f.status === ticket.status)
   const isUnpaidDone = ticket.status === "DONE" && ticket.receipts.some(r => !r.isPaid)
+  const displayAmount = ticket.status === "VERIFICATION" || ticket.status === "DONE"
+    ? ticket.receipts.reduce((sum, r) => sum + r.amount, 0)
+    : ticket.budgetAmount
 
   return (
     <Card 
@@ -127,7 +130,7 @@ const TicketCardItem = memo(function TicketCardItem({ ticket, onClick }: { ticke
              <span className="text-[10px] text-muted-foreground">
                {new Date(ticket.targetDate).toLocaleDateString("cs-CZ")}
              </span>
-             <span className="text-xl font-black text-foreground tabular-nums">{ticket.budgetAmount.toLocaleString()} Kč</span>
+             <span className="text-xl font-black text-foreground tabular-nums">{displayAmount.toLocaleString()} Kč</span>
            </div>
         </div>
         
