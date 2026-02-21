@@ -58,6 +58,10 @@ function AlertDialogContent({
           className
         )}
         {...props}
+        onOpenAutoFocus={(e) => {
+          e.preventDefault()
+          props.onOpenAutoFocus?.(e)
+        }}
       />
     </AlertDialogPortal>
   )
