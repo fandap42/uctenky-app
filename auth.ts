@@ -78,7 +78,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     ...authConfig.callbacks,
     async jwt(params) {
-      const { token, user, trigger } = params
+      const { token, user, trigger, session } = params
 
       // Start from authConfig's jwt callback if it exists to avoid duplicate logic.
       let nextToken = token
@@ -100,8 +100,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       const TOKEN_REFRESH_INTERVAL_MS = 5 * 60 * 1000
       const now = Date.now()
       const lastRefresh = (nextToken as { lastDbRefresh?: number }).lastDbRefresh ?? 0
+      
+      const isManualUpdate = 
+        trigger === "update" || 
+        (session && typeof session === "object" && (session as Record<string, unknown>).trigger === "update")
+
       const shouldRefresh =
-        trigger === "update" ||
+        isManualUpdate ||
         !!user ||
         now - lastRefresh > TOKEN_REFRESH_INTERVAL_MS
 
