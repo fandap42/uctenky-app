@@ -94,6 +94,7 @@ model Ticket {
   updatedAt    DateTime     @updatedAt @map("updated_at")
   note         String?
   isFiled      Boolean      @default(false) @map("is_filed")
+  isReturned   Boolean      @default(false) @map("is_returned")
   receipts     Receipt[]
   requester    User?        @relation(fields: [requesterId], references: [id])
   section      Section      @relation(fields: [sectionId], references: [id], onDelete: Cascade)

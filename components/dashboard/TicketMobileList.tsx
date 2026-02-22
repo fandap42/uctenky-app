@@ -10,6 +10,7 @@ interface Ticket {
   purpose: string
   budgetAmount: number
   status: TicketStatus
+  isReturned?: boolean
   requester?: { fullName: string | null; image?: string | null } | null
   section: { name: string }
   receipts: { isPaid: boolean; amount: number }[]
@@ -49,6 +50,10 @@ export const TicketMobileList = memo(function TicketMobileList({ tickets, onTick
       
       if (aUnpaidDone && !bUnpaidDone) return -1
       if (!aUnpaidDone && bUnpaidDone) return 1
+
+      // Custom sort: Put returned tickets first globally (usually in APPROVED)
+      if (a.isReturned && !b.isReturned) return -1
+      if (!a.isReturned && b.isReturned) return 1
       
       // Keep original order (which is createdAt desc from Prisma) for the rest
       return 0
@@ -112,12 +117,15 @@ const TicketCardItem = memo(function TicketCardItem({ ticket, onClick }: { ticke
     ? ticket.receipts.reduce((sum, r) => sum + r.amount, 0)
     : ticket.budgetAmount
 
+  const isReturned = ticket.isReturned
+
   return (
     <Card 
       onClick={onClick}
       className={cn(
         "p-5 relative overflow-hidden rounded-3xl border-border/50 shadow-sm w-full transition-all active:scale-[0.98] active:bg-muted/50",
-        isUnpaidDone && "border-status-pending border-2"
+        isUnpaidDone && "border-status-pending border-2",
+        isReturned && "border-destructive border-2"
       )}
     >
       <div className="absolute top-1/2 -translate-y-1/2 right-0 p-4">
@@ -155,12 +163,19 @@ const TicketCardItem = memo(function TicketCardItem({ ticket, onClick }: { ticke
           </div>
         </div>
 
-        {/* Unpaid Warning */}
-        {isUnpaidDone && (
-          <div className="pt-3 border-t border-status-pending/20 flex justify-end">
-             <span className="text-[10px] font-black text-status-pending uppercase border border-status-pending/20 bg-status-pending/10 px-2 py-1 rounded-lg animate-pulse">
-               Čeká na proplacení
-             </span>
+        {/* Status Warnings */}
+        {(isUnpaidDone || isReturned) && (
+          <div className="pt-3 border-t border-border/50 flex justify-end">
+             {isUnpaidDone && (
+               <span className="text-[10px] font-black text-status-pending uppercase border border-status-pending/20 bg-status-pending/10 px-2 py-1 rounded-lg animate-pulse">
+                 Čeká na proplacení
+               </span>
+             )}
+             {isReturned && (
+               <span className="text-[10px] font-black text-destructive uppercase border border-destructive/20 bg-destructive/10 px-2 py-1 rounded-lg animate-pulse">
+                 VRÁCENO
+               </span>
+             )}
           </div>
         )}
       </div>
