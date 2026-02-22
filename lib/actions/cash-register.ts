@@ -200,7 +200,7 @@ export async function getAllCashRegisterData() {
         ticket: {
           include: {
             section: { select: { name: true } },
-            requester: { select: { fullName: true } },
+            requester: { select: { fullName: true, image: true } },
             receipts: true
           }
         }
@@ -379,7 +379,7 @@ export async function getPokladnaSemesterData(semesterKey: string) {
         ticket: {
           include: {
             section: { select: { name: true } },
-            requester: { select: { fullName: true } },
+            requester: { select: { fullName: true, image: true } },
             receipts: true
           }
         }

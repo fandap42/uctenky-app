@@ -130,8 +130,12 @@ export function Sidebar({ isOpen, onClose, onNavClick }: SidebarProps) {
         <div className="p-4">
           <div className="bg-muted/50 rounded-2xl p-4 space-y-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
-                {session?.user?.name?.[0] || "?"}
+              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold overflow-hidden">
+                {session?.user?.image ? (
+                  <img src={session.user.image} alt={session.user.name || "User avatar"} className="w-full h-full object-cover" />
+                ) : (
+                  session?.user?.name?.[0] || "?"
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-foreground truncate">
