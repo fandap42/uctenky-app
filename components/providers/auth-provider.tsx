@@ -10,6 +10,9 @@ function SessionGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
 
   useEffect(() => {
+    // Handle loading status as requested in PR review
+    if (status === "loading") return
+
     // If the session expires or is missing, and the user is on a protected route, log them out/redirect.
     if (status === "unauthenticated" && pathname.startsWith("/dashboard")) {
       router.push("/login")
@@ -21,7 +24,7 @@ function SessionGuard({ children }: { children: React.ReactNode }) {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
-    <SessionProvider refetchInterval={5 * 60} refetchOnWindowFocus={true}>
+    <SessionProvider refetchOnWindowFocus={false}>
       <SessionGuard>{children}</SessionGuard>
     </SessionProvider>
   )
