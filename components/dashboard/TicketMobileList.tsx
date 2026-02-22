@@ -140,7 +140,7 @@ const TicketCardItem = memo(function TicketCardItem({ ticket, onClick }: { ticke
              <span className="text-[10px] text-muted-foreground">
                {new Date(ticket.targetDate).toLocaleDateString("cs-CZ")}
              </span>
-             <span className="text-xl font-black text-foreground tabular-nums">{displayAmount.toLocaleString()} Kč</span>
+             <span className="text-xl font-black text-foreground tabular-nums">{displayAmount.toLocaleString("cs-CZ")} Kč</span>
            </div>
         </div>
         

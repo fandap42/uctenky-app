@@ -272,9 +272,9 @@ export function TicketDetailDialog({
                    <span className="text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Čerpání rozpočtu</span>
                    <div className="flex items-baseline gap-1 sm:gap-1.5">
                      <span className={cn("text-base sm:text-lg font-black tabular-nums", isOverBudget ? "text-destructive" : "text-foreground")}>
-                       {totalSpent.toLocaleString()}
+                       {totalSpent.toLocaleString("cs-CZ")}
                      </span>
-                     <span className="text-muted-foreground text-[10px] sm:text-xs font-medium">/ {ticket.budgetAmount.toLocaleString()} Kč</span>
+                     <span className="text-muted-foreground text-[10px] sm:text-xs font-medium">/ {ticket.budgetAmount.toLocaleString("cs-CZ")} Kč</span>
                    </div>
                  </div>
                  <span className={cn("text-[10px] sm:text-xs font-black", isOverBudget ? "text-destructive" : "text-status-success")}>
@@ -291,7 +291,7 @@ export function TicketDetailDialog({
                 {isOverBudget && (
                   <p className="text-[9px] sm:text-[10px] font-bold text-destructive flex items-center gap-1 font-mono uppercase tracking-tight">
                     <AlertCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                    PŘEKROČENO O {(totalSpent - ticket.budgetAmount).toLocaleString()} Kč
+                    PŘEKROČENO O {(totalSpent - ticket.budgetAmount).toLocaleString("cs-CZ")} Kč
                   </p>
                 )}
             </div>

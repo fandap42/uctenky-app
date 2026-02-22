@@ -343,7 +343,7 @@ const TicketCard = memo(function TicketCard({ ticket, onClick }: { ticket: Ticke
              <span className="text-[10px] font-bold text-destructive uppercase tracking-tighter">VRÁCENO</span>
            )}
            <div className="ml-auto flex items-baseline gap-0.5">
-             <span className="text-xs font-black text-foreground">{displayAmount.toLocaleString()}</span>
+             <span className="text-xs font-black text-foreground">{displayAmount.toLocaleString("cs-CZ")}</span>
              <span className="text-[10px] font-bold text-muted-foreground">Kč</span>
            </div>
         </div>
