@@ -249,7 +249,7 @@ export function TicketDetailDialog({
                     <div>
                       <div className="flex items-center gap-1.5 sm:gap-2">
                         <Avatar className="h-5 w-5 sm:h-6 sm:w-6">
-                          <AvatarImage src={ticket.requester?.image || ""} />
+                          <AvatarImage src={ticket.requester?.image || undefined} />
                           <AvatarFallback className="bg-primary/20 text-primary font-bold text-[10px] sm:text-xs">
                             {ticket.requester?.fullName?.[0] || "?"}
                           </AvatarFallback>
