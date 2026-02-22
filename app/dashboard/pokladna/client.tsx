@@ -49,7 +49,7 @@ interface TicketDetailRef {
   updatedAt?: string
   targetDate: string
   section: { name: string }
-  requester?: { fullName: string | null } | null
+  requester?: { fullName: string | null; image?: string | null } | null
   receipts: TicketReceipt[]
   isFiled?: boolean
 }

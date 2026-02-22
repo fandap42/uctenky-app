@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { useCallback, useEffect, useMemo, useRef, useState, memo, type PointerEvent as ReactPointerEvent } from "react"
 import { TicketStatus } from "@prisma/client"
 import { Card } from "@/components/ui/card"
@@ -9,7 +10,8 @@ interface Ticket {
   purpose: string
   budgetAmount: number
   status: TicketStatus
-  requester?: { fullName: string | null } | null
+  isReturned?: boolean
+  requester?: { fullName: string | null; image?: string | null } | null
   section: { name: string }
   receipts: { isPaid: boolean; amount: number }[]
   targetDate: string
@@ -54,6 +56,12 @@ export const TicketKanban = memo(function TicketKanban({ tickets, onTicketClick 
            const bUnpaid = b.receipts.some(r => !r.isPaid)
            if (aUnpaid && !bUnpaid) return -1
            if (!aUnpaid && bUnpaid) return 1
+           return 0
+         })
+      } else if (col.status === "APPROVED") {
+         colTickets.sort((a, b) => {
+           if (a.isReturned && !b.isReturned) return -1
+           if (!a.isReturned && b.isReturned) return 1
            return 0
          })
       }
@@ -297,7 +305,8 @@ const TicketCard = memo(function TicketCard({ ticket, onClick }: { ticket: Ticke
       onClick={() => onClick(ticket.id)}
       className={cn(
         "w-full p-4 cursor-pointer hover:shadow-md transition-all rounded-[1.5rem] border-border/50",
-        isDoneAndUnpaid && "border-status-pending border-2 shadow-status-pending/10"
+        isDoneAndUnpaid && "border-status-pending border-2 shadow-status-pending/10",
+        ticket.isReturned && "border-destructive border-2"
       )}
     >
       <div className="space-y-3">
@@ -308,21 +317,33 @@ const TicketCard = memo(function TicketCard({ ticket, onClick }: { ticket: Ticke
           </span>
         </div>
         
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1.5 items-center">
           <Badge variant="outline" className="text-[10px] font-medium py-0 h-5 px-2 bg-background/50 max-w-[100px] truncate flex-shrink-0" title={ticket.section.name}>
             {ticket.section.name}
           </Badge>
-          <span className="text-[10px] text-muted-foreground ml-auto self-center truncate min-w-0" title={ticket.requester?.fullName || "Smazaný uživatel"}>
-            {ticket.requester?.fullName || "Smazaný uživatel"}
-          </span>
+          <div className="ml-auto flex items-center gap-1.5 min-w-0" title={ticket.requester?.fullName || "Smazaný uživatel"}>
+            <div className="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold overflow-hidden flex-shrink-0">
+              {ticket.requester?.image ? (
+                <img src={ticket.requester.image} alt={ticket.requester.fullName || "User"} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-[8px]">{ticket.requester?.fullName?.[0] || "?"}</span>
+              )}
+            </div>
+            <span className="text-[10px] text-muted-foreground truncate">
+              {ticket.requester?.fullName || "Smazaný uživatel"}
+            </span>
+          </div>
         </div>
 
         <div className="pt-2 border-t border-border/50 flex justify-between items-center">
            {isDoneAndUnpaid && (
              <span className="text-[10px] font-bold text-status-pending uppercase tracking-tighter">Čeká na proplacení</span>
            )}
+           {ticket.isReturned && (
+             <span className="text-[10px] font-bold text-destructive uppercase tracking-tighter">VRÁCENO</span>
+           )}
            <div className="ml-auto flex items-baseline gap-0.5">
-             <span className="text-xs font-black text-foreground">{displayAmount.toLocaleString()}</span>
+             <span className="text-xs font-black text-foreground">{displayAmount.toLocaleString("cs-CZ")}</span>
              <span className="text-[10px] font-bold text-muted-foreground">Kč</span>
            </div>
         </div>

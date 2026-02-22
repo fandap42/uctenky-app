@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache"
 import { TicketStatus } from "@prisma/client"
 import { MESSAGES } from "@/lib/constants/messages"
 import { getSemester, getSemesterRange, getCurrentSemester } from "@/lib/utils/semesters"
+import { sendEmail } from "@/lib/email"
 
 export async function createTicket(formData: FormData) {
   const session = await auth()
@@ -47,6 +48,23 @@ export async function createTicket(formData: FormData) {
       },
     })
 
+    try {
+      const admins = await prisma.user.findMany({ 
+        where: { role: "ADMIN", receiveAdminEmails: true }, 
+        select: { email: true } 
+      })
+      const adminEmails = admins.map((a) => a.email).filter(Boolean) as string[]
+      if (adminEmails.length > 0) {
+        await sendEmail({
+          to: adminEmails,
+          subject: "Nová žádost ke schválení",
+          html: `<p>Uživatel <b>${(session.user as { fullName?: string | null }).fullName || session.user.name || session.user.email}</b> vytvořil novou žádost: <b>${purpose}</b>.</p><p><a href="${process.env.AUTH_URL || 'http://localhost:3000'}/dashboard/zadosti">Zobrazit žádosti</a></p>`
+        })
+      }
+    } catch (e) {
+      console.error("Failed to send create ticket email", e)
+    }
+
     revalidatePath("/dashboard", "layout")
     return { success: true }
   } catch (error) {
@@ -66,10 +84,55 @@ export async function updateTicketStatus(
   }
 
   try {
+    const previousTicket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      include: { requester: true }
+    })
+
+    const isReturningToApproved =
+      previousTicket?.status === "VERIFICATION" && status === "APPROVED"
+
     await prisma.ticket.update({
       where: { id: ticketId },
-      data: { status },
+      data: {
+        status,
+        isReturned: isReturningToApproved ? true : undefined,
+      },
     })
+
+    if (
+      previousTicket &&
+      previousTicket.status !== status &&
+      previousTicket.requester?.email &&
+      (previousTicket.requester as unknown as { receiveEmails?: boolean })?.receiveEmails
+    ) {
+      try {
+        let subject = ""
+        let msg = ""
+        if (status === "APPROVED") {
+          if (previousTicket.status === "VERIFICATION") {
+            subject = "Žádost byla vrácena z ověřování"
+            msg = `Vaše žádost <b>${previousTicket.purpose}</b> byla administrátorem vrácena z ověřování zpět k úpravám.`
+          } else {
+            subject = "Žádost byla schválena"
+            msg = `Vaše žádost <b>${previousTicket.purpose}</b> byla schválena.`
+          }
+        } else if (status === "REJECTED") {
+          subject = "Žádost byla zamítnuta"
+          msg = `Vaše žádost <b>${previousTicket.purpose}</b> byla zamítnuta.`
+        }
+
+        if (subject) {
+          await sendEmail({
+            to: previousTicket.requester.email,
+            subject,
+            html: `<p>${msg}</p><p><a href="${process.env.AUTH_URL || 'http://localhost:3000'}/dashboard">Zobrazit přehled</a></p>`
+          })
+        }
+      } catch (e) {
+        console.error("Failed to send status update email", e)
+      }
+    }
 
     revalidatePath("/dashboard", "layout")
     return { success: true }
@@ -130,8 +193,25 @@ export async function submitForVerification(ticketId: string) {
 
     await prisma.ticket.update({
       where: { id: ticketId },
-      data: { status: "VERIFICATION" },
+      data: { status: "VERIFICATION", isReturned: false },
     })
+
+    try {
+      const admins = await prisma.user.findMany({ 
+        where: { role: "ADMIN", receiveAdminEmails: true }, 
+        select: { email: true } 
+      })
+      const adminEmails = admins.map((a) => a.email).filter(Boolean) as string[]
+      if (adminEmails.length > 0) {
+        await sendEmail({
+          to: adminEmails,
+          subject: "Žádost čeká na ověření",
+          html: `<p>Uživatel zaslal žádost <b>${ticket.purpose}</b> k ověření.</p><p><a href="${process.env.AUTH_URL || 'http://localhost:3000'}/dashboard/pokladna">Zobrazit pokladnu</a></p>`
+        })
+      }
+    } catch (e) {
+      console.error("Failed to send verification ticket email", e)
+    }
 
     revalidatePath("/dashboard", "layout")
     return { success: true }
@@ -209,7 +289,7 @@ export async function getTickets(filters: {
         ]
       },
       include: {
-        requester: { select: { id: true, fullName: true } },
+        requester: { select: { id: true, fullName: true, image: true } },
         section: { select: { id: true, name: true } },
         receipts: true,
       },
@@ -261,6 +341,14 @@ export async function updateTicketDetails(
   }
 
   try {
+    const previousTicket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      include: { requester: true }
+    })
+
+    const isReturningToApproved =
+      previousTicket?.status === "VERIFICATION" && data.status === "APPROVED"
+
     await prisma.ticket.update({
       where: { id: ticketId },
       data: {
@@ -269,8 +357,43 @@ export async function updateTicketDetails(
         targetDate: data.targetDate,
         status: data.status,
         note: data.note,
+        isReturned: isReturningToApproved ? true : undefined,
       },
     })
+
+    if (
+      previousTicket &&
+      previousTicket.status !== data.status &&
+      previousTicket.requester?.email &&
+      (previousTicket.requester as unknown as { receiveEmails?: boolean })?.receiveEmails
+    ) {
+      try {
+        let subject = ""
+        let msg = ""
+        if (data.status === "APPROVED") {
+          if (previousTicket.status === "VERIFICATION") {
+            subject = "Žádost byla vrácena z ověřování"
+            msg = `Vaše žádost <b>${previousTicket.purpose}</b> byla administrátorem vrácena z ověřování zpět k úpravám.`
+          } else {
+            subject = "Žádost byla schválena"
+            msg = `Vaše žádost <b>${previousTicket.purpose}</b> byla schválena.`
+          }
+        } else if (data.status === "REJECTED") {
+          subject = "Žádost byla zamítnuta"
+          msg = `Vaše žádost <b>${previousTicket.purpose}</b> byla zamítnuta.`
+        }
+
+        if (subject) {
+          await sendEmail({
+            to: previousTicket.requester.email,
+            subject,
+            html: `<p>${msg}</p><p><a href="${process.env.AUTH_URL || 'http://localhost:3000'}/dashboard">Zobrazit přehled</a></p>`
+          })
+        }
+      } catch (e) {
+        console.error("Failed to send status update email", e)
+      }
+    }
 
     revalidatePath("/dashboard", "layout")
     return { success: true }
@@ -310,7 +433,7 @@ export async function getTicketsBySemester(
         }),
       },
       include: {
-        requester: { select: { id: true, fullName: true } },
+        requester: { select: { id: true, fullName: true, image: true } },
         section: { select: { id: true, name: true } },
         receipts: true,
       },

@@ -9,21 +9,23 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  passwordHash  String?   @map("password_hash")
-  fullName      String?   @map("full_name")
-  role          AppRole   @default(MEMBER)
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
-  emailVerified DateTime? @map("email_verified")
-  image         String?
-  name          String?
-  sectionId              String?  @map("section_id")
-  bankAccountPrefix      String?  @map("bank_account_prefix")
-  bankAccountNumber      String?  @map("bank_account_number")
-  bankCode               String?  @map("bank_code")
-  hasCompletedOnboarding Boolean  @default(false) @map("has_completed_onboarding")
+  id                     String    @id @default(cuid())
+  email                  String    @unique
+  passwordHash           String?   @map("password_hash")
+  fullName               String?   @map("full_name")
+  role                   AppRole   @default(MEMBER)
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+  emailVerified          DateTime? @map("email_verified")
+  image                  String?
+  name                   String?
+  sectionId              String?   @map("section_id")
+  bankAccountPrefix      String?   @map("bank_account_prefix")
+  bankAccountNumber      String?   @map("bank_account_number")
+  bankCode               String?   @map("bank_code")
+  hasCompletedOnboarding Boolean   @default(false) @map("has_completed_onboarding")
+  receiveEmails          Boolean   @default(true) @map("receive_emails")
+  receiveAdminEmails     Boolean   @default(true) @map("receive_admin_emails")
   accounts               Account[]
   sessions               Session[]
   tickets                Ticket[]
@@ -92,6 +94,7 @@ model Ticket {
   updatedAt    DateTime     @updatedAt @map("updated_at")
   note         String?
   isFiled      Boolean      @default(false) @map("is_filed")
+  isReturned   Boolean      @default(false) @map("is_returned")
   receipts     Receipt[]
   requester    User?        @relation(fields: [requesterId], references: [id])
   section      Section      @relation(fields: [sectionId], references: [id], onDelete: Cascade)

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table"
 import { StatusBadge, mapTicketStatusToBadge } from "@/components/ui/status-badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { sortSemesterKeys, monthNames } from "@/lib/utils/semesters"
 import { PaidStatusSelect } from "./paid-status-select"
 import { FiledStatusSelect } from "./filed-status-select"
@@ -41,6 +42,7 @@ type TransactionRow = Transaction & {
   expenseType?: ExpenseType
   isPaid?: boolean
   isFiled?: boolean
+  isReturned?: boolean
 }
 
 type SemesterTransactions = {
@@ -144,6 +146,11 @@ function MonthlyTransactionCard({
                        : (tx.amount || tx.budgetAmount || 0);
                      return Number(amount).toLocaleString("cs-CZ");
                    })()} Kč
+                   {tx.isReturned && (
+                     <Badge variant="outline" className="ml-2 text-[10px] bg-destructive/10 text-destructive border-destructive/20 uppercase animate-pulse">
+                       Vráceno
+                     </Badge>
+                   )}
                  </TableCell>
                  <TableCell className="py-2 text-center">
                     <StatusBadge status={mapTicketStatusToBadge(tx.status)} size="sm" />
@@ -247,8 +254,11 @@ export function SemesterStructuredList({
 
   const renderSemesterContent = (data: SemesterTransactions, semesterKey: string) => {
     const { transactions } = data
-    // Sort transactions by date (newest first) before grouping
+    // Sort transactions by date (newest first) before grouping, putting returned tickets first
     const sortedTxs = [...transactions].sort((a, b) => {
+      if (a.isReturned && !b.isReturned) return -1
+      if (!a.isReturned && b.isReturned) return 1
+
       const dateA = new Date(a.targetDate || a.createdAt).getTime()
       const dateB = new Date(b.targetDate || b.createdAt).getTime()
       return dateB - dateA

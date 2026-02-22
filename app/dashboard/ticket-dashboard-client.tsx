@@ -25,7 +25,7 @@ interface Ticket {
   budgetAmount: number
   status: TicketStatus
   requesterId: string | null
-  requester?: { fullName: string | null } | null
+  requester?: { fullName: string | null; image?: string | null } | null
   sectionId: string
   section: { name: string }
   receipts: Receipt[]
