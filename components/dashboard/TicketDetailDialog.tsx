@@ -56,7 +56,6 @@ import {
   AlertCircle,
   Trash2,
   Plus,
-  User,
   Calendar,
   QrCode
 } from "lucide-react"
