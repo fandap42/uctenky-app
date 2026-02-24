@@ -5,11 +5,13 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { OverviewTable } from "@/components/pokladna/overview-table"
 import type { TicketClickPayload } from "@/components/pokladna/overview-table"
+import type { DepositClickPayload } from "@/components/pokladna/overview-table"
 import { AlertCircle, History, Pencil } from "lucide-react"
 import { DepositDialog } from "@/components/pokladna/deposit-dialog"
 import { DebtErrorDialog } from "@/components/pokladna/debt-error-dialog"
 import { CashOnHandDialog } from "@/components/pokladna/cash-on-hand-dialog"
 import { HistoryDialog } from "@/components/pokladna/history-dialog"
+import { DepositDetailDialog } from "@/components/pokladna/deposit-detail-dialog"
 import { CashRegisterExport } from "@/components/pokladna/cash-register-export"
 import { TablePagination } from "@/components/ui/table-pagination"
 import { getPokladnaSemesterData } from "@/lib/actions/cash-register"
@@ -125,9 +127,11 @@ const MONTH_NAMES = [
 function MonthlyPokladnaCard({
   group,
   onTicketClick,
+  onDepositClick,
 }: {
   group: MonthlyGroup
   onTicketClick?: (ticket: TicketClickPayload) => void
+  onDepositClick?: (deposit: DepositClickPayload) => void
 }) {
   const [pageSize, setPageSize] = useState<number | "all">(10)
   const [currentPage, setCurrentPage] = useState(1)
@@ -163,6 +167,7 @@ function MonthlyPokladnaCard({
           pageSize={pageSize}
           currentPage={currentPage}
           onTicketClick={onTicketClick}
+          onDepositClick={onDepositClick}
         />
         {totalItems > 0 && (
           <TablePagination
@@ -192,6 +197,7 @@ export function PokladnaClient({
   const [showDebtHistory, setShowDebtHistory] = useState(false)
   const [showCashHistory, setShowCashHistory] = useState(false)
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null)
+  const [selectedDeposit, setSelectedDeposit] = useState<DepositClickPayload | null>(null)
   const { data: session } = useSession()
 
   const selectedTicket = useMemo(() => {
@@ -271,6 +277,7 @@ export function PokladnaClient({
             key={`${group.year}-${group.monthName}`} 
             group={group} 
             onTicketClick={(ticket) => setSelectedTicketId(ticket.id)}
+            onDepositClick={setSelectedDeposit}
           />
         ))}
       </div>
@@ -448,6 +455,13 @@ export function PokladnaClient({
         onOpenChange={(open) => !open && setSelectedTicketId(null)}
         currentUserRole={session?.user?.role || "MEMBER"}
         currentUserId={session?.user?.id || ""}
+      />
+
+      <DepositDetailDialog
+        key={selectedDeposit?.id || "no-deposit"}
+        deposit={selectedDeposit}
+        open={!!selectedDeposit}
+        onOpenChange={(open) => !open && setSelectedDeposit(null)}
       />
     </div>
   )

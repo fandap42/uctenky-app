@@ -61,6 +61,36 @@ export async function deleteDeposit(depositId: string) {
   }
 }
 
+export async function updateDeposit(
+  depositId: string,
+  amount: number,
+  date: Date,
+  description?: string | null
+) {
+  const session = await auth()
+
+  if (session?.user?.role !== "ADMIN") {
+    return { error: MESSAGES.AUTH.ADMIN_ONLY }
+  }
+
+  try {
+    await prisma.deposit.update({
+      where: { id: depositId },
+      data: {
+        amount,
+        date,
+        description: description ?? null,
+      },
+    })
+
+    revalidatePath("/dashboard/pokladna")
+    return { success: true }
+  } catch (error) {
+    console.error("Update deposit error:", error)
+    return { error: "Nepodařilo se upravit vklad" }
+  }
+}
+
 // ============== DEBT ERRORS ==============
 
 export async function createDebtError(amount: number, reason: string, honeypot?: string) {

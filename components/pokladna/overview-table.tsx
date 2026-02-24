@@ -34,10 +34,18 @@ interface OverviewTableProps {
   pageSize?: number | "all"
   currentPage?: number
   onTicketClick?: (ticket: TicketClickPayload) => void
+  onDepositClick?: (deposit: DepositClickPayload) => void
 }
 
 export interface TicketClickPayload {
   id: string
+}
+
+export interface DepositClickPayload {
+  id: string
+  amount: number
+  date: string
+  description?: string | null
 }
 
 interface TransactionRow {
@@ -72,7 +80,8 @@ export function OverviewTable({
   deposits,
   pageSize = "all",
   currentPage = 1,
-  onTicketClick
+  onTicketClick,
+  onDepositClick
 }: OverviewTableProps) {
   // Combine and sort by date
   type CombinedTransaction = TransactionRow & { displayDate: Date; displayType: "TRANSACTION" }
@@ -172,11 +181,21 @@ export function OverviewTable({
                 key={item.id} 
                 className={cn(
                   "border-border transition-all duration-200 group",
-                  isTr && onTicketClick ? "hover:bg-primary/5 cursor-pointer" : "hover:bg-muted/10"
+                  (isTr && onTicketClick) || (!isTr && onDepositClick)
+                    ? "hover:bg-primary/5 cursor-pointer"
+                    : "hover:bg-muted/10"
                 )}
                 onClick={() => {
                   if (isTr && onTicketClick && item.ticket) {
                     onTicketClick(item.ticket)
+                  }
+                  if (!isTr && onDepositClick) {
+                    onDepositClick({
+                      id: item.id,
+                      amount: Number(item.amount),
+                      date: item.date,
+                      description: item.description,
+                    })
                   }
                 }}
               >
