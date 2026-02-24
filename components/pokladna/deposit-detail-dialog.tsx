@@ -71,7 +71,7 @@ export function DepositDetailDialog({ deposit, open, onOpenChange }: DepositDeta
       deposit.id,
       parsedAmount,
       selectedDate,
-      deposit.description ?? "Vklad do pokladny"
+      deposit.description
     )
 
     if (result.error) {

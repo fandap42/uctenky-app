@@ -241,7 +241,11 @@ export function OverviewTable({
                   )}
                 </TableCell>
                 <TableCell className="py-3 px-4 text-center">
-                  <div className="flex items-center justify-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-center gap-2" onClick={(e) => {
+                    if (isTr) {
+                      e.stopPropagation()
+                    }
+                  }}>
                     {isTr ? (
                       <EditNoteDialog receiptId={item.id} initialNote={item.note} />
                     ) : (
@@ -261,7 +265,11 @@ export function OverviewTable({
                 </TableCell>
                 <TableCell className="py-3 px-4 text-center">
                   {isTr ? (
-                    <div className="flex justify-center" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex justify-center" onClick={(e) => {
+                      if (isTr) {
+                        e.stopPropagation()
+                      }
+                    }}>
                       <FunctionalCheckbox 
                         variant="paid"
                         checked={currentIsPaid}
@@ -273,7 +281,11 @@ export function OverviewTable({
                 </TableCell>
                 <TableCell className="py-3 px-4 text-center">
                   {isTr ? (
-                    <div className="flex justify-center" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex justify-center" onClick={(e) => {
+                      if (isTr) {
+                        e.stopPropagation()
+                      }
+                    }}>
                       <FunctionalCheckbox 
                         variant="filed"
                         checked={currentIsFiled}

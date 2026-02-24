@@ -7,6 +7,7 @@ import { TicketStatus } from "@prisma/client"
 import { MESSAGES } from "@/lib/constants/messages"
 import { getSemester, getSemesterRange, getCurrentSemester } from "@/lib/utils/semesters"
 import { sendEmail } from "@/lib/email"
+import { escapeHtml } from "@/lib/utils/html"
 
 export async function createTicket(formData: FormData) {
   const session = await auth()
@@ -55,10 +56,16 @@ export async function createTicket(formData: FormData) {
       })
       const adminEmails = admins.map((a) => a.email).filter(Boolean) as string[]
       if (adminEmails.length > 0) {
+        const requesterName =
+          (session.user as { fullName?: string | null }).fullName ||
+          session.user.name ||
+          session.user.email ||
+          "Neznámý uživatel"
+
         await sendEmail({
           to: adminEmails,
           subject: "Nová žádost ke schválení",
-          html: `<p>Uživatel <b>${(session.user as { fullName?: string | null }).fullName || session.user.name || session.user.email}</b> vytvořil novou žádost: <b>${purpose}</b>.</p><p><a href="${process.env.AUTH_URL || 'http://localhost:3000'}/dashboard/zadosti">Zobrazit žádosti</a></p>`
+          html: `<p>Uživatel <b>${escapeHtml(requesterName)}</b> vytvořil novou žádost: <b>${escapeHtml(purpose)}</b>.</p><p><a href="${process.env.AUTH_URL || 'http://localhost:3000'}/dashboard/zadosti">Zobrazit žádosti</a></p>`
         })
       }
     } catch (e) {
@@ -112,14 +119,14 @@ export async function updateTicketStatus(
         if (status === "APPROVED") {
           if (previousTicket.status === "VERIFICATION") {
             subject = "Žádost byla vrácena z ověřování"
-            msg = `Vaše žádost <b>${previousTicket.purpose}</b> byla administrátorem vrácena z ověřování zpět k úpravám.`
+            msg = `Vaše žádost <b>${escapeHtml(previousTicket.purpose)}</b> byla administrátorem vrácena z ověřování zpět k úpravám.`
           } else {
             subject = "Žádost byla schválena"
-            msg = `Vaše žádost <b>${previousTicket.purpose}</b> byla schválena.`
+            msg = `Vaše žádost <b>${escapeHtml(previousTicket.purpose)}</b> byla schválena.`
           }
         } else if (status === "REJECTED") {
           subject = "Žádost byla zamítnuta"
-          msg = `Vaše žádost <b>${previousTicket.purpose}</b> byla zamítnuta.`
+          msg = `Vaše žádost <b>${escapeHtml(previousTicket.purpose)}</b> byla zamítnuta.`
         }
 
         if (subject) {
@@ -212,7 +219,7 @@ export async function submitForVerification(ticketId: string) {
         await sendEmail({
           to: adminEmails,
           subject: "Žádost čeká na ověření",
-          html: `<p>Uživatel <b>${requesterName}</b> zaslal žádost <b>${ticket.purpose}</b> k ověření.</p><p><a href="${process.env.AUTH_URL || 'http://localhost:3000'}/dashboard/pokladna">Zobrazit pokladnu</a></p>`
+          html: `<p>Uživatel <b>${escapeHtml(requesterName)}</b> zaslal žádost <b>${escapeHtml(ticket.purpose)}</b> k ověření.</p><p><a href="${process.env.AUTH_URL || 'http://localhost:3000'}/dashboard/pokladna">Zobrazit pokladnu</a></p>`
         })
       }
     } catch (e) {

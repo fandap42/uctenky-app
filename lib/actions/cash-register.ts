@@ -79,7 +79,7 @@ export async function updateDeposit(
       data: {
         amount,
         date,
-        description: description ?? null,
+        ...(description !== undefined && { description }),
       },
     })
 
@@ -87,7 +87,7 @@ export async function updateDeposit(
     return { success: true }
   } catch (error) {
     console.error("Update deposit error:", error)
-    return { error: "Nepodařilo se upravit vklad" }
+    return { error: MESSAGES.CASH_REGISTER.UPDATE_DEPOSIT_FAILED }
   }
 }
 

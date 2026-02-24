@@ -49,13 +49,13 @@ export function ReceiptViewDialog({ transactionId: receiptId, purpose, date, amo
           setErrorMessage("Soubor účtenky se nepodařilo načíst")
         }
 
+        setIsPdf(false)
         return
       }
 
       const contentType = response.headers.get('Content-Type') || ''
       setIsPdf(contentType.includes('application/pdf'))
     } catch {
-      // Default to image if we can't determine
       setError(true)
       setErrorMessage("Soubor účtenky se nepodařilo načíst")
       setIsPdf(false)
@@ -70,6 +70,7 @@ export function ReceiptViewDialog({ transactionId: receiptId, purpose, date, amo
     if (open) {
       setLoading(true)
       setError(false)
+      setIsPdf(false)
       setErrorMessage("Soubor účtenky nebyl nalezen")
       checkFileType()
     }
