@@ -174,6 +174,12 @@ export async function submitForVerification(ticketId: string) {
   }
 
   try {
+    const requesterName =
+      (session.user as { fullName?: string | null }).fullName ||
+      session.user.name ||
+      session.user.email ||
+      "Neznámý uživatel"
+
     const ticket = await prisma.ticket.findUnique({
       where: { id: ticketId },
       include: { receipts: true },
@@ -206,7 +212,7 @@ export async function submitForVerification(ticketId: string) {
         await sendEmail({
           to: adminEmails,
           subject: "Žádost čeká na ověření",
-          html: `<p>Uživatel zaslal žádost <b>${ticket.purpose}</b> k ověření.</p><p><a href="${process.env.AUTH_URL || 'http://localhost:3000'}/dashboard/pokladna">Zobrazit pokladnu</a></p>`
+          html: `<p>Uživatel <b>${requesterName}</b> zaslal žádost <b>${ticket.purpose}</b> k ověření.</p><p><a href="${process.env.AUTH_URL || 'http://localhost:3000'}/dashboard/pokladna">Zobrazit pokladnu</a></p>`
         })
       }
     } catch (e) {
