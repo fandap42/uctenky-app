@@ -302,7 +302,7 @@ export async function getTickets(filters: {
             ? { in: filters.status }
             : filters.status,
         }),
-        ...(semesterDateFilter && semesterDateFilter),
+        ...semesterDateFilter,
         ...(type === 'historical' ? {
           AND: [
             {
