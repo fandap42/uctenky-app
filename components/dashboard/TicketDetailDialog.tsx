@@ -703,7 +703,7 @@ export function TicketDetailDialog({
                       </Button>
                       <Button
                         onClick={() => handleStatusUpdate("DONE")}
-                        className="h-8 sm:h-9 px-3.5 sm:px-4 text-[10px] sm:text-xs font-bold bg-primary hover:bg-primary/90 text-white"
+                        className="h-8 sm:h-9 px-3.5 sm:px-4 text-[10px] sm:text-xs font-bold bg-green-600 hover:bg-green-700 text-white"
                         disabled={loading}
                       >
                         Ověřit
