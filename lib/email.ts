@@ -35,7 +35,15 @@ export async function sendEmail({ to, subject, html }: EmailOptions) {
       from: EMAIL_FROM,
       to: Array.isArray(to) ? to.join(", ") : to,
       subject,
-      html,
+      html: `<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+  </head>
+  <body>
+    ${html}
+  </body>
+</html>`,
     })
 
     console.log("Message sent: %s", info.messageId)

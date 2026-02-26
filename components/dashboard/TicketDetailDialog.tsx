@@ -17,20 +17,20 @@ import { Progress } from "@/components/ui/progress"
 import { StatusBadge, mapTicketStatusToBadge } from "@/components/ui/status-badge"
 import { FunctionalCheckbox } from "@/components/ui/functional-checkbox"
 import { PaymentStatusIndicator } from "@/components/ui/payment-status-indicator"
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from "@/components/ui/table"
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from "@/components/ui/select"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ReceiptUploadForm } from "./ReceiptUploadForm"
@@ -39,15 +39,15 @@ import { EditTransactionDialog } from "./edit-transaction-dialog"
 import { EditReceiptDialog } from "./edit-receipt-dialog"
 import { ReceiptViewDialog } from "@/components/receipts/receipt-view-dialog"
 import { QRPaymentDialog } from "./qr-payment-dialog"
-import { 
-  toggleReceiptPaid, 
+import {
+  toggleReceiptPaid,
   updateReceiptExpenseType,
   payAllReceiptsInTicket,
   deleteReceipt,
   toggleReceiptFiled
 } from "@/lib/actions/receipts"
-import { 
-  updateTicketStatus, 
+import {
+  updateTicketStatus,
   submitForVerification,
   deleteTicket
 } from "@/lib/actions/tickets"
@@ -97,9 +97,9 @@ interface TicketDetailDialogProps {
   currentUserId: string
 }
 
-export function TicketDetailDialog({ 
-  ticket, 
-  open, 
+export function TicketDetailDialog({
+  ticket,
+  open,
   onOpenChange,
   currentUserRole,
   currentUserId
@@ -108,14 +108,22 @@ export function TicketDetailDialog({
   const [loading, setLoading] = useState(false)
   const [isUploadOpen, setIsUploadOpen] = useState(false)
   const [isQROpen, setIsQROpen] = useState(false)
-  
+
   const isAdmin = currentUserRole === "ADMIN"
   const isOwner = ticket?.requesterId === currentUserId
 
   if (!ticket) return null
 
-  // Always sort receipts by date (chronological)
-  const receipts = [...(ticket.receipts || [])].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  // Sort receipts by date (chronological) and then by ID for stable sorting
+  const receipts = [...(ticket.receipts || [])].sort((a, b) => {
+    const dateA = new Date(a.date).getTime()
+    const dateB = new Date(b.date).getTime()
+    if (dateA !== dateB) {
+      return dateA - dateB
+    }
+    // Fallback to ID for stable sorting when dates are identical
+    return a.id.localeCompare(b.id)
+  })
 
   const totalSpent = receipts.reduce((sum, r) => sum + r.amount, 0)
   const budgetProgress = Math.min((totalSpent / ticket.budgetAmount) * 100, 100)
@@ -226,7 +234,7 @@ export function TicketDetailDialog({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent showCloseButton={false} className="!max-w-[calc(100vw-24px)] sm:!max-w-[1400px] !w-full h-[calc(100dvh-32px)] sm:h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden bg-background rounded-2xl sm:rounded-[2rem] border border-border/50 sm:border-none shadow-2xl">
-          
+
           {/* --- FIXED HEADER --- */}
           <div className="bg-card p-3 sm:p-6 border-b border-border/60 shrink-0 space-y-3 sm:space-y-4">
             <div className="flex justify-between items-start">
@@ -242,7 +250,7 @@ export function TicketDetailDialog({
                     <DialogTitle className="text-lg sm:text-xl md:text-2xl font-black text-foreground tracking-tight leading-none uppercase mt-2">
                       {ticket.purpose}
                     </DialogTitle>
-                    {isAdmin && <EditTransactionDialog transaction={ticket} />}
+                    {(isAdmin || (isOwner && ticket.status === "PENDING_APPROVAL")) && <EditTransactionDialog transaction={ticket} isAdmin={isAdmin} />}
                   </div>
                   <DialogDescription asChild className="text-muted-foreground font-medium text-xs md:text-sm mt-1 flex items-center gap-x-3 gap-y-1.5 flex-wrap leading-none">
                     <div>
@@ -267,39 +275,39 @@ export function TicketDetailDialog({
 
             {/* Budget Progress Bar */}
             <div className="space-y-1.5 sm:space-y-2 pt-1 sm:pt-2 max-w-sm">
-               <div className="flex justify-between items-end">
-                 <div className="flex flex-col">
-                   <span className="text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Čerpání rozpočtu</span>
-                   <div className="flex items-baseline gap-1 sm:gap-1.5">
-                     <span className={cn("text-base sm:text-lg font-black tabular-nums", isOverBudget ? "text-destructive" : "text-foreground")}>
-                       {totalSpent.toLocaleString("cs-CZ")}
-                     </span>
-                     <span className="text-muted-foreground text-[10px] sm:text-xs font-medium">/ {ticket.budgetAmount.toLocaleString("cs-CZ")} Kč</span>
-                   </div>
-                 </div>
-                 <span className={cn("text-[10px] sm:text-xs font-black", isOverBudget ? "text-destructive" : "text-status-success")}>
-                    {Math.round(budgetProgress)}%
-                 </span>
-               </div>
-               <Progress 
-                  value={budgetProgress} 
-                  className={cn(
-                    "h-2 sm:h-2.5 rounded-full bg-muted/60 border border-muted", 
-                    isOverBudget ? "[&>div]:bg-destructive" : "[&>div]:bg-status-success"
-                  )} 
-                />
-                {isOverBudget && (
-                  <p className="text-[9px] sm:text-[10px] font-bold text-destructive flex items-center gap-1 font-mono uppercase tracking-tight">
-                    <AlertCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                    PŘEKROČENO O {(totalSpent - ticket.budgetAmount).toLocaleString("cs-CZ")} Kč
-                  </p>
+              <div className="flex justify-between items-end">
+                <div className="flex flex-col">
+                  <span className="text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Čerpání rozpočtu</span>
+                  <div className="flex items-baseline gap-1 sm:gap-1.5">
+                    <span className={cn("text-base sm:text-lg font-black tabular-nums", isOverBudget ? "text-destructive" : "text-foreground")}>
+                      {totalSpent.toLocaleString("cs-CZ")}
+                    </span>
+                    <span className="text-muted-foreground text-[10px] sm:text-xs font-medium">/ {ticket.budgetAmount.toLocaleString("cs-CZ")} Kč</span>
+                  </div>
+                </div>
+                <span className={cn("text-[10px] sm:text-xs font-black", isOverBudget ? "text-destructive" : "text-status-success")}>
+                  {Math.round(budgetProgress)}%
+                </span>
+              </div>
+              <Progress
+                value={budgetProgress}
+                className={cn(
+                  "h-2 sm:h-2.5 rounded-full bg-muted/60 border border-muted",
+                  isOverBudget ? "[&>div]:bg-destructive" : "[&>div]:bg-status-success"
                 )}
+              />
+              {isOverBudget && (
+                <p className="text-[9px] sm:text-[10px] font-bold text-destructive flex items-center gap-1 font-mono uppercase tracking-tight">
+                  <AlertCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                  PŘEKROČENO O {(totalSpent - ticket.budgetAmount).toLocaleString("cs-CZ")} Kč
+                </p>
+              )}
             </div>
           </div>
 
           {/* --- SCROLLABLE BODY --- */}
           <div className="flex-1 overflow-y-auto bg-muted/5 p-3 sm:p-6 space-y-4 sm:space-y-6">
-            
+
             {/* Desktop Table View */}
             <div className="hidden md:block">
               {receipts.length === 0 ? (
@@ -363,13 +371,13 @@ export function TicketDetailDialog({
                     </TableHeader>
                     <TableBody>
                       {receipts.map((receipt) => {
-                         const isRejected = receipt.status === "REJECTED"
-                         return (
-                          <TableRow 
-                            key={receipt.id} 
+                        const isRejected = receipt.status === "REJECTED"
+                        return (
+                          <TableRow
+                            key={receipt.id}
                             className={cn(
-                                "group border-border/60 transition-colors",
-                                isRejected ? "opacity-50 grayscale bg-muted/30" : "hover:bg-muted/30"
+                              "group border-border/60 transition-colors",
+                              isRejected ? "opacity-50 grayscale bg-muted/30" : "hover:bg-muted/30"
                             )}
                           >
                             <TableCell className="py-3 px-4">
@@ -384,8 +392,8 @@ export function TicketDetailDialog({
                             {isAdmin && (
                               <TableCell className="py-3 px-4 text-center">
                                 <div className="flex justify-center">
-                                  <Select 
-                                    value={receipt.expenseType} 
+                                  <Select
+                                    value={receipt.expenseType}
                                     onValueChange={(v) => handleExpenseTypeChange(receipt.id, v as ExpenseType)}
                                   >
                                     <SelectTrigger className="h-7 w-[110px] text-xs font-medium">
@@ -413,9 +421,9 @@ export function TicketDetailDialog({
                             <TableCell className="py-3 px-4 text-center">
                               {isAdmin ? (
                                 <div className="flex justify-center">
-                                  <FunctionalCheckbox 
+                                  <FunctionalCheckbox
                                     variant="paid"
-                                    checked={receipt.isPaid} 
+                                    checked={receipt.isPaid}
                                     onCheckedChange={(checked: boolean) => handleReceiptPaidToggle(receipt.id, !!checked)}
                                     disabled={isRejected}
                                   />
@@ -429,9 +437,9 @@ export function TicketDetailDialog({
                             {isAdmin && (
                               <TableCell className="py-3 px-4 text-center">
                                 <div className="flex justify-center">
-                                  <FunctionalCheckbox 
+                                  <FunctionalCheckbox
                                     variant="filed"
-                                    checked={receipt.isFiled} 
+                                    checked={receipt.isFiled}
                                     onCheckedChange={(checked: boolean) => handleReceiptFiledToggle(receipt.id, !!checked)}
                                     disabled={isRejected}
                                   />
@@ -442,7 +450,7 @@ export function TicketDetailDialog({
                               <div className="flex items-center justify-end gap-1">
                                 {isAdmin && <EditReceiptDialog receipt={receipt} />}
                                 {(isOwner && (ticket.status === "APPROVED" || ticket.status === "PENDING_APPROVAL") || isAdmin) && (
-                                  <Button 
+                                  <Button
                                     variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                                     onClick={() => handleDeleteReceipt(receipt.id)}
                                   >
@@ -525,8 +533,8 @@ export function TicketDetailDialog({
                       {receipts.map((receipt) => {
                         const isRejected = receipt.status === "REJECTED"
                         return (
-                          <TableRow 
-                            key={receipt.id} 
+                          <TableRow
+                            key={receipt.id}
                             className={cn(
                               "group border-border/60 transition-colors",
                               isRejected ? "opacity-50 grayscale bg-muted/30" : "hover:bg-muted/30"
@@ -544,8 +552,8 @@ export function TicketDetailDialog({
                             {isAdmin && (
                               <TableCell className="py-3 px-3 text-center">
                                 <div className="flex justify-center">
-                                  <Select 
-                                    value={receipt.expenseType} 
+                                  <Select
+                                    value={receipt.expenseType}
                                     onValueChange={(v) => handleExpenseTypeChange(receipt.id, v as ExpenseType)}
                                   >
                                     <SelectTrigger className="h-7 w-[100px] text-xs font-medium">
@@ -573,9 +581,9 @@ export function TicketDetailDialog({
                             <TableCell className="py-3 px-3 text-center">
                               {isAdmin ? (
                                 <div className="flex justify-center">
-                                  <FunctionalCheckbox 
+                                  <FunctionalCheckbox
                                     variant="paid"
-                                    checked={receipt.isPaid} 
+                                    checked={receipt.isPaid}
                                     onCheckedChange={(checked: boolean) => handleReceiptPaidToggle(receipt.id, !!checked)}
                                     disabled={isRejected}
                                   />
@@ -589,9 +597,9 @@ export function TicketDetailDialog({
                             {isAdmin && (
                               <TableCell className="py-3 px-3 text-center">
                                 <div className="flex justify-center">
-                                  <FunctionalCheckbox 
+                                  <FunctionalCheckbox
                                     variant="filed"
-                                    checked={receipt.isFiled} 
+                                    checked={receipt.isFiled}
                                     onCheckedChange={(checked: boolean) => handleReceiptFiledToggle(receipt.id, !!checked)}
                                     disabled={isRejected}
                                   />
@@ -602,7 +610,7 @@ export function TicketDetailDialog({
                               <div className="flex items-center justify-end gap-1">
                                 {isAdmin && <EditReceiptDialog receipt={receipt} />}
                                 {(isOwner && (ticket.status === "APPROVED" || ticket.status === "PENDING_APPROVAL") || isAdmin) && (
-                                  <Button 
+                                  <Button
                                     variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                                     onClick={() => handleDeleteReceipt(receipt.id)}
                                   >
@@ -623,7 +631,7 @@ export function TicketDetailDialog({
             {/* Add Receipt Button */}
             {(isAdmin || (ticket.status === "APPROVED" && isOwner)) && (
               <div className="flex justify-center pb-2">
-                <Button 
+                <Button
                   onClick={() => setIsUploadOpen(true)}
                   variant="outline"
                   className="rounded-full px-5 h-9 border-dashed border-primary/40 text-primary hover:bg-primary/5 text-xs font-bold flex items-center gap-2"
@@ -637,99 +645,99 @@ export function TicketDetailDialog({
 
           {/* --- FIXED FOOTER (Action Bar) --- */}
           <div className="bg-card/80 backdrop-blur-md p-3 sm:p-4 border-t border-border/60 shrink-0 flex items-center justify-between gap-2 pb-[calc(12px+env(safe-area-inset-bottom))] sm:pb-4">
-             <div className="flex items-center gap-2">
-               {isAdmin && (
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={handleTicketDelete}
-                    className="h-8 w-8 sm:h-9 sm:w-9 text-destructive hover:bg-destructive/10"
-                    disabled={loading}
-                  >
-                    <Trash2 className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-                  </Button>
-               )}
-             </div>
-
-             <div className="flex items-center gap-1.5 sm:gap-2">
-                {isAdmin && ticket.status === "DONE" && (
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsQROpen(true)}
-                    className="h-8 sm:h-9 px-2.5 sm:px-3 text-[10px] sm:text-xs font-bold"
-                  >
-                    <QrCode className="w-3.5 h-3.5 mr-1" />
-                    QR platba
-                  </Button>
-                )}
-
-                {isAdmin && (
-                  <>
-                    {ticket.status === "PENDING_APPROVAL" && (
-                      <>
-                        <Button 
-                          variant="outline"
-                          onClick={() => handleStatusUpdate("REJECTED")} 
-                          className="h-8 sm:h-9 px-2.5 sm:px-3 text-[10px] sm:text-xs font-bold border-destructive/20 text-destructive hover:bg-destructive/5"
-                          disabled={loading}
-                        >
-                          Zamítnout
-                        </Button>
-                        <Button 
-                          onClick={() => handleStatusUpdate("APPROVED")} 
-                          className="h-8 sm:h-9 px-3.5 sm:px-4 text-[10px] sm:text-xs font-bold bg-status-success hover:bg-status-success/90 text-status-success-foreground"
-                          disabled={loading}
-                        >
-                          Schválit
-                        </Button>
-                      </>
-                    )}
-                    {ticket.status === "VERIFICATION" && (
-                      <>
-                        <Button 
-                            onClick={() => handleStatusUpdate("APPROVED")} 
-                            className="h-8 sm:h-9 px-2.5 sm:px-3 text-[10px] sm:text-xs font-bold bg-status-pending hover:bg-status-pending/90 text-status-pending-foreground"
-                            disabled={loading}
-                          >
-                            Zpět
-                          </Button>
-                         <Button 
-                            onClick={() => handleStatusUpdate("DONE")} 
-                            className="h-8 sm:h-9 px-3.5 sm:px-4 text-[10px] sm:text-xs font-bold bg-primary hover:bg-primary/90 text-white"
-                            disabled={loading}
-                          >
-                            Ověřit
-                          </Button>
-                      </>
-                    )}
-                    {ticket.status === "DONE" && (
-                      <Button 
-                        variant="outline" 
-                        className="h-8 sm:h-9 px-3.5 sm:px-4 text-[10px] sm:text-xs font-bold text-status-success border-status-success/30 hover:bg-status-success-muted"
-                        onClick={handlePayAll}
-                        disabled={loading || !hasUnpaidReceipts}
-                      >
-                        {hasUnpaidReceipts ? "Proplatit vše" : "Vše proplaceno"}
-                      </Button>
-                    )}
-                  </>
-                )}
-                
-                {isOwner && ticket.status === "APPROVED" && (
-                    <Button 
-                      onClick={handleSubmitForVerification}
-                      className="h-8 sm:h-9 px-3.5 sm:px-4 text-[10px] sm:text-xs font-bold bg-status-verification hover:bg-status-verification/90 text-status-verification-foreground"
-                      disabled={loading || receipts.length === 0}
-                    >
-                      Odeslat ke schválení
-                    </Button>
-                )}
-
-
-                <Button variant="ghost" onClick={() => onOpenChange(false)} className="h-8 sm:h-9 px-2.5 sm:px-3 text-[10px] sm:text-xs font-bold text-muted-foreground">
-                  Zavřít
+            <div className="flex items-center gap-2">
+              {isAdmin && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleTicketDelete}
+                  className="h-8 w-8 sm:h-9 sm:w-9 text-destructive hover:bg-destructive/10"
+                  disabled={loading}
+                >
+                  <Trash2 className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                 </Button>
-             </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              {isAdmin && ticket.status === "DONE" && (
+                <Button
+                  variant="outline"
+                  onClick={() => setIsQROpen(true)}
+                  className="h-8 sm:h-9 px-2.5 sm:px-3 text-[10px] sm:text-xs font-bold"
+                >
+                  <QrCode className="w-3.5 h-3.5 mr-1" />
+                  QR platba
+                </Button>
+              )}
+
+              {isAdmin && (
+                <>
+                  {ticket.status === "PENDING_APPROVAL" && (
+                    <>
+                      <Button
+                        variant="outline"
+                        onClick={() => handleStatusUpdate("REJECTED")}
+                        className="h-8 sm:h-9 px-2.5 sm:px-3 text-[10px] sm:text-xs font-bold border-destructive/20 text-destructive hover:bg-destructive/5"
+                        disabled={loading}
+                      >
+                        Zamítnout
+                      </Button>
+                      <Button
+                        onClick={() => handleStatusUpdate("APPROVED")}
+                        className="h-8 sm:h-9 px-3.5 sm:px-4 text-[10px] sm:text-xs font-bold bg-status-success hover:bg-status-success/90 text-status-success-foreground"
+                        disabled={loading}
+                      >
+                        Schválit
+                      </Button>
+                    </>
+                  )}
+                  {ticket.status === "VERIFICATION" && (
+                    <>
+                      <Button
+                        onClick={() => handleStatusUpdate("APPROVED")}
+                        className="h-8 sm:h-9 px-2.5 sm:px-3 text-[10px] sm:text-xs font-bold bg-status-pending hover:bg-status-pending/90 text-status-pending-foreground"
+                        disabled={loading}
+                      >
+                        Zpět
+                      </Button>
+                      <Button
+                        onClick={() => handleStatusUpdate("DONE")}
+                        className="h-8 sm:h-9 px-3.5 sm:px-4 text-[10px] sm:text-xs font-bold bg-green-600 hover:bg-green-700 text-white"
+                        disabled={loading}
+                      >
+                        Ověřit
+                      </Button>
+                    </>
+                  )}
+                  {ticket.status === "DONE" && (
+                    <Button
+                      variant="outline"
+                      className="h-8 sm:h-9 px-3.5 sm:px-4 text-[10px] sm:text-xs font-bold text-status-success border-status-success/30 hover:bg-status-success-muted"
+                      onClick={handlePayAll}
+                      disabled={loading || !hasUnpaidReceipts}
+                    >
+                      {hasUnpaidReceipts ? "Proplatit vše" : "Vše proplaceno"}
+                    </Button>
+                  )}
+                </>
+              )}
+
+              {isOwner && ticket.status === "APPROVED" && (
+                <Button
+                  onClick={handleSubmitForVerification}
+                  className="h-8 sm:h-9 px-3.5 sm:px-4 text-[10px] sm:text-xs font-bold bg-status-verification hover:bg-status-verification/90 text-status-verification-foreground"
+                  disabled={loading || receipts.length === 0}
+                >
+                  Odeslat ke schválení
+                </Button>
+              )}
+
+
+              <Button variant="ghost" onClick={() => onOpenChange(false)} className="h-8 sm:h-9 px-2.5 sm:px-3 text-[10px] sm:text-xs font-bold text-muted-foreground">
+                Zavřít
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -746,8 +754,8 @@ export function TicketDetailDialog({
             </DialogTitle>
           </DialogHeader>
           <div className="overflow-y-auto flex-1 -mx-6 px-6 pb-2">
-            <ReceiptUploadForm 
-              ticketId={ticket.id} 
+            <ReceiptUploadForm
+              ticketId={ticket.id}
               onSuccess={() => {
                 setIsUploadOpen(false)
                 router.refresh()

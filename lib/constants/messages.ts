@@ -71,6 +71,10 @@ export const MESSAGES = {
     NO_ACCOUNT: "Uživatel nemá zadané bankovní údaje",
     SAVED: "Bankovní údaje byly uloženy",
   },
+
+  CASH_REGISTER: {
+    UPDATE_DEPOSIT_FAILED: "Nepodařilo se upravit vklad",
+  },
 } as const
 
 // Type helper for accessing messages

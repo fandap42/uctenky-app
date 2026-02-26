@@ -38,27 +38,13 @@ export default async function DashboardPage() {
   }))
 
   return (
-    <div className="pb-20 lg:pb-0">
-      {/* Header - Hidden on mobile since title is in mobile header */}
-      <div className="hidden md:flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-black text-foreground mb-2">
-            Přehled
-          </h1>
-        </div>
-        <RequestFormClient sections={sections} />
-      </div>
-      
-      {/* Mobile: Show only the button */}
-      <div className="flex md:hidden justify-end">
-        <RequestFormClient sections={sections} />
-      </div>
-
-      <div className="lg:h-[calc(100dvh-12rem)]">
-        <TicketDashboardClient 
-          initialTickets={tickets} 
+    <div className="pb-20 lg:pb-0 h-full">
+      <div className="lg:h-[calc(100dvh-6rem)]">
+        <TicketDashboardClient
+          initialTickets={tickets}
           currentUserId={userId}
           currentUserRole={userRole}
+          headerAction={<RequestFormClient key="request-form" sections={sections} />}
         />
       </div>
     </div>

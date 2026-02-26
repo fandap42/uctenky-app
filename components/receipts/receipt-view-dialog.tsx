@@ -24,6 +24,7 @@ export function ReceiptViewDialog({ transactionId: receiptId, purpose, date, amo
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("Soubor účtenky nebyl nalezen")
   const [isPdf, setIsPdf] = useState(false)
   const imageUrl = `/api/receipts/view?id=${receiptId}`
   const formattedDate = date ? new Date(date).toLocaleDateString("cs-CZ") : null
@@ -36,10 +37,27 @@ export function ReceiptViewDialog({ transactionId: receiptId, purpose, date, amo
   const checkFileType = async () => {
     try {
       const response = await fetch(imageUrl, { method: 'HEAD' })
+
+      if (!response.ok) {
+        setError(true)
+
+        if (response.status === 403) {
+          setErrorMessage("Nemáte oprávnění zobrazit tuto účtenku")
+        } else if (response.status === 404) {
+          setErrorMessage("Soubor účtenky nebyl nalezen")
+        } else {
+          setErrorMessage("Soubor účtenky se nepodařilo načíst")
+        }
+
+        setIsPdf(false)
+        return
+      }
+
       const contentType = response.headers.get('Content-Type') || ''
       setIsPdf(contentType.includes('application/pdf'))
     } catch {
-      // Default to image if we can't determine
+      setError(true)
+      setErrorMessage("Soubor účtenky se nepodařilo načíst")
       setIsPdf(false)
     } finally {
       setLoading(false)
@@ -51,6 +69,9 @@ export function ReceiptViewDialog({ transactionId: receiptId, purpose, date, amo
     setIsOpen(open)
     if (open) {
       setLoading(true)
+      setError(false)
+      setIsPdf(false)
+      setErrorMessage("Soubor účtenky nebyl nalezen")
       checkFileType()
     }
   }
@@ -115,7 +136,7 @@ export function ReceiptViewDialog({ transactionId: receiptId, purpose, date, amo
           {error ? (
             <div className="flex flex-col items-center gap-2 text-muted-foreground p-8 text-center">
               <AlertCircle className="w-10 h-10 text-destructive/50" />
-              <p className="text-sm font-medium">Soubor účtenky nebyl nalezen</p>
+              <p className="text-sm font-medium">{errorMessage}</p>
             </div>
           ) : isPdf ? (
             <div className="flex flex-col items-center gap-4 p-8 text-center">
