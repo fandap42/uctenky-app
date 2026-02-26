@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { TicketStatus } from "@prisma/client"
 import { MESSAGES } from "@/lib/constants/messages"
-import { getSemester, getSemesterRange, getCurrentSemester } from "@/lib/utils/semesters"
+import { getSemester, getSemesterRange, getCurrentSemester, sortSemesterKeys } from "@/lib/utils/semesters"
 import { sendEmail } from "@/lib/email"
 import { escapeHtml } from "@/lib/utils/html"
 
@@ -276,6 +276,7 @@ export async function getTickets(filters: {
   sectionId?: string
   status?: TicketStatus | TicketStatus[]
   type?: 'active' | 'historical' | 'all'
+  semesterKey?: string
 } = {}) {
   try {
     // Get current semester range to filter out old DONE tickets
@@ -283,6 +284,14 @@ export async function getTickets(filters: {
     const { start: semesterStart } = getSemesterRange(currentSemester)
 
     const type = filters.type || 'active'
+
+    // Optional semester date range filter
+    const semesterDateFilter = filters.semesterKey
+      ? (() => {
+          const { start, end } = getSemesterRange(filters.semesterKey)
+          return { targetDate: { gte: start, lte: end } }
+        })()
+      : undefined
 
     const tickets = await prisma.ticket.findMany({
       where: {
@@ -293,6 +302,7 @@ export async function getTickets(filters: {
             ? { in: filters.status }
             : filters.status,
         }),
+        ...(semesterDateFilter && semesterDateFilter),
         ...(type === 'historical' ? {
           AND: [
             {
@@ -351,6 +361,36 @@ export async function getTickets(filters: {
   } catch (error) {
     console.error("Get tickets error:", error)
     return { error: "Nepodařilo se načíst žádosti" }
+  }
+}
+
+export async function getArchivedSemesters(filters: { requesterId?: string; sectionId?: string } = {}) {
+  try {
+    const currentSemester = getCurrentSemester()
+    const { start: semesterStart } = getSemesterRange(currentSemester)
+
+    const tickets = await prisma.ticket.findMany({
+      where: {
+        ...(filters.requesterId && { requesterId: filters.requesterId }),
+        ...(filters.sectionId && { sectionId: filters.sectionId }),
+        OR: [
+          { status: 'REJECTED' },
+          {
+            AND: [
+              { status: 'DONE' },
+              { targetDate: { lt: semesterStart } }
+            ]
+          }
+        ]
+      },
+      select: { targetDate: true },
+    })
+
+    const semesterKeys = new Set(tickets.map(t => getSemester(t.targetDate)))
+    return { semesters: sortSemesterKeys(Array.from(semesterKeys)) }
+  } catch (error) {
+    console.error("Get archived semesters error:", error)
+    return { error: "Nepodařilo se načíst semestry", semesters: [] }
   }
 }
 
