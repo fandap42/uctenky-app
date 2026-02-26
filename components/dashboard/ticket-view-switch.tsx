@@ -11,7 +11,7 @@ export function TicketViewSwitch({ view, onChange }: TicketViewSwitchProps) {
     return (
         <div className="flex flex-col items-end gap-1.5 pt-1">
             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider text-right">
-                Historie
+                Archivované
             </span>
             <button
                 type="button"

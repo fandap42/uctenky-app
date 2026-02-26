@@ -351,7 +351,7 @@ export function PokladnaClient({
                 className="text-muted-foreground hover:text-foreground font-bold text-[10px] uppercase flex items-center gap-1 h-6 px-2 rounded-full bg-muted/20 transition-all border border-transparent hover:border-current/10"
               >
                 <History className="w-3 h-3" />
-                Historie
+                Archivované
               </Button>
               <Button 
                 variant="ghost" 
@@ -383,7 +383,7 @@ export function PokladnaClient({
                 className="text-muted-foreground hover:text-foreground font-bold text-[10px] uppercase flex items-center gap-1 h-6 px-2 rounded-full bg-muted/20 transition-all border border-transparent hover:border-current/10"
               >
                 <History className="w-3 h-3" />
-                Historie
+                Archivované
               </Button>
               <Button 
                 variant="ghost" 
