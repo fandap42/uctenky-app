@@ -32,6 +32,11 @@ services:
       S3_BUCKET: "${S3_BUCKET:-receipts}"
       S3_PUBLIC_ENDPOINT: "${S3_PUBLIC_ENDPOINT}"
       ENCRYPTION_KEY: "${ENCRYPTION_KEY}"
+      SMTP_HOST: "${SMTP_HOST}"
+      SMTP_PORT: "${SMTP_PORT}"
+      SMTP_USER: "${SMTP_USER}"
+      SMTP_PASS: "${SMTP_PASS}"
+      EMAIL_FROM: "${EMAIL_FROM}"
     depends_on:
       postgres:
         condition: service_healthy

@@ -19,6 +19,7 @@ import { toast } from "sonner"
 import { TicketStatus } from "@prisma/client"
 
 interface EditTransactionDialogProps {
+  isAdmin?: boolean
   transaction: {
     id: string
     purpose: string
@@ -29,7 +30,7 @@ interface EditTransactionDialogProps {
   }
 }
 
-export function EditTransactionDialog({ transaction }: EditTransactionDialogProps) {
+export function EditTransactionDialog({ transaction, isAdmin = true }: EditTransactionDialogProps) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -50,7 +51,7 @@ export function EditTransactionDialog({ transaction }: EditTransactionDialogProp
       purpose,
       budgetAmount,
       targetDate,
-      status,
+      status: status || transaction.status,
       note,
       middle_name_honey: honeypot,
     })
@@ -79,7 +80,7 @@ export function EditTransactionDialog({ transaction }: EditTransactionDialogProp
         <DialogHeader>
           <DialogTitle className="text-foreground">Upravit žádost</DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Změňte libovolné údaje o žádosti. Jen pro administrátory.
+            {isAdmin ? "Změňte libovolné údaje o žádosti. Jen pro administrátory." : "Upravte údaje o své žádosti."}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
@@ -127,20 +128,24 @@ export function EditTransactionDialog({ transaction }: EditTransactionDialogProp
                 className="bg-background border-border text-foreground"
               />
             </div>
-            <div className="space-y-2 col-span-2">
-              <Label htmlFor="status" className="text-foreground">Stav</Label>
-              <select
-                id="status"
-                name="status"
-                defaultValue={transaction.status}
-                className="w-full h-10 px-3 py-2 bg-background border border-border rounded-md text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option value="PENDING_APPROVAL">Čeká na schválení</option>
-                <option value="APPROVED">Schváleno (Nahrávání účtenek)</option>
-                <option value="VERIFICATION">Čeká na kontrolu</option>
-                <option value="DONE">Hotovo</option>
-              </select>
-            </div>
+            {isAdmin ? (
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="status" className="text-foreground">Stav</Label>
+                <select
+                  id="status"
+                  name="status"
+                  defaultValue={transaction.status}
+                  className="w-full h-10 px-3 py-2 bg-background border border-border rounded-md text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="PENDING_APPROVAL">Čeká na schválení</option>
+                  <option value="APPROVED">Schváleno (Nahrávání účtenek)</option>
+                  <option value="VERIFICATION">Čeká na kontrolu</option>
+                  <option value="DONE">Hotovo</option>
+                </select>
+              </div>
+            ) : (
+              <input type="hidden" name="status" value={transaction.status} />
+            )}
             <div className="space-y-2 col-span-2">
               <Label htmlFor="note" className="text-foreground">Poznámka</Label>
               <Textarea

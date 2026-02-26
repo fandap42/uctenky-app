@@ -97,28 +97,22 @@ export default async function SectionHeadDashboardPage({ searchParams }: PagePro
   // const totalCount = tickets.length
 
   return (
-    <div className="space-y-8 pb-20 lg:pb-0">
-      {/* Header */}
-      <div className={userIsAdmin ? "flex items-center justify-between" : "hidden md:flex items-center justify-between"}>
-        <div>
-          <h1 className="hidden md:block text-3xl font-black text-foreground mb-2">
-            Žádosti sekce: {section.name}
-          </h1>
-        </div>
-        {userIsAdmin && (
-          <SectionFilter sections={allSections} currentSectionId={selectedSectionId} />
-        )}
-      </div>
-
+    <div className="space-y-8 pb-20 lg:pb-0 h-full">
       {/* Kanban Board */}
-      <div className="lg:h-[calc(100dvh-12rem)]">
-        <SectionDashboardClient 
+      <div className="lg:h-[calc(100dvh-6rem)]">
+        <SectionDashboardClient
           initialTickets={tickets}
-          currentUserId={session.user.id}
-          currentUserRole={user.role}
+          currentUserId={session!.user!.id}
+          currentUserRole={user!.role}
+          sectionId={section!.id === "all" || !section!.id ? "" : section!.id}
+          title={
+            <h1 className="hidden md:block text-3xl font-black text-foreground mb-2">
+              Žádosti sekce: {section!.name}
+            </h1>
+          }
+          headerAction={userIsAdmin ? <SectionFilter sections={allSections} currentSectionId={selectedSectionId} /> : undefined}
         />
       </div>
     </div>
   )
 }
-

@@ -7,6 +7,7 @@ import { TicketStatus } from "@prisma/client"
 import { MESSAGES } from "@/lib/constants/messages"
 import { getSemester, getSemesterRange, getCurrentSemester } from "@/lib/utils/semesters"
 import { sendEmail } from "@/lib/email"
+import { escapeHtml } from "@/lib/utils/html"
 
 export async function createTicket(formData: FormData) {
   const session = await auth()
@@ -49,16 +50,22 @@ export async function createTicket(formData: FormData) {
     })
 
     try {
-      const admins = await prisma.user.findMany({ 
-        where: { role: "ADMIN", receiveAdminEmails: true }, 
-        select: { email: true } 
+      const admins = await prisma.user.findMany({
+        where: { role: "ADMIN", receiveAdminEmails: true },
+        select: { email: true }
       })
       const adminEmails = admins.map((a) => a.email).filter(Boolean) as string[]
       if (adminEmails.length > 0) {
+        const requesterName =
+          (session.user as { fullName?: string | null }).fullName ||
+          session.user.name ||
+          session.user.email ||
+          "Neznámý uživatel"
+
         await sendEmail({
           to: adminEmails,
           subject: "Nová žádost ke schválení",
-          html: `<p>Uživatel <b>${(session.user as { fullName?: string | null }).fullName || session.user.name || session.user.email}</b> vytvořil novou žádost: <b>${purpose}</b>.</p><p><a href="${process.env.AUTH_URL || 'http://localhost:3000'}/dashboard/zadosti">Zobrazit žádosti</a></p>`
+          html: `<p>Uživatel <b>${escapeHtml(requesterName)}</b> vytvořil novou žádost: <b>${escapeHtml(purpose)}</b>.</p><p><a href="${process.env.AUTH_URL || 'http://localhost:3000'}/dashboard/zadosti">Zobrazit žádosti</a></p>`
         })
       }
     } catch (e) {
@@ -112,14 +119,14 @@ export async function updateTicketStatus(
         if (status === "APPROVED") {
           if (previousTicket.status === "VERIFICATION") {
             subject = "Žádost byla vrácena z ověřování"
-            msg = `Vaše žádost <b>${previousTicket.purpose}</b> byla administrátorem vrácena z ověřování zpět k úpravám.`
+            msg = `Vaše žádost <b>${escapeHtml(previousTicket.purpose)}</b> byla administrátorem vrácena z ověřování zpět k úpravám.`
           } else {
             subject = "Žádost byla schválena"
-            msg = `Vaše žádost <b>${previousTicket.purpose}</b> byla schválena.`
+            msg = `Vaše žádost <b>${escapeHtml(previousTicket.purpose)}</b> byla schválena.`
           }
         } else if (status === "REJECTED") {
           subject = "Žádost byla zamítnuta"
-          msg = `Vaše žádost <b>${previousTicket.purpose}</b> byla zamítnuta.`
+          msg = `Vaše žádost <b>${escapeHtml(previousTicket.purpose)}</b> byla zamítnuta.`
         }
 
         if (subject) {
@@ -174,6 +181,12 @@ export async function submitForVerification(ticketId: string) {
   }
 
   try {
+    const requesterName =
+      (session.user as { fullName?: string | null }).fullName ||
+      session.user.name ||
+      session.user.email ||
+      "Neznámý uživatel"
+
     const ticket = await prisma.ticket.findUnique({
       where: { id: ticketId },
       include: { receipts: true },
@@ -197,16 +210,16 @@ export async function submitForVerification(ticketId: string) {
     })
 
     try {
-      const admins = await prisma.user.findMany({ 
-        where: { role: "ADMIN", receiveAdminEmails: true }, 
-        select: { email: true } 
+      const admins = await prisma.user.findMany({
+        where: { role: "ADMIN", receiveAdminEmails: true },
+        select: { email: true }
       })
       const adminEmails = admins.map((a) => a.email).filter(Boolean) as string[]
       if (adminEmails.length > 0) {
         await sendEmail({
           to: adminEmails,
           subject: "Žádost čeká na ověření",
-          html: `<p>Uživatel zaslal žádost <b>${ticket.purpose}</b> k ověření.</p><p><a href="${process.env.AUTH_URL || 'http://localhost:3000'}/dashboard/pokladna">Zobrazit pokladnu</a></p>`
+          html: `<p>Uživatel <b>${escapeHtml(requesterName)}</b> zaslal žádost <b>${escapeHtml(ticket.purpose)}</b> k ověření.</p><p><a href="${process.env.AUTH_URL || 'http://localhost:3000'}/dashboard/pokladna">Zobrazit pokladnu</a></p>`
         })
       }
     } catch (e) {
@@ -262,11 +275,14 @@ export async function getTickets(filters: {
   requesterId?: string
   sectionId?: string
   status?: TicketStatus | TicketStatus[]
+  type?: 'active' | 'historical' | 'all'
 } = {}) {
   try {
     // Get current semester range to filter out old DONE tickets
     const currentSemester = getCurrentSemester()
     const { start: semesterStart } = getSemesterRange(currentSemester)
+
+    const type = filters.type || 'active'
 
     const tickets = await prisma.ticket.findMany({
       where: {
@@ -277,16 +293,36 @@ export async function getTickets(filters: {
             ? { in: filters.status }
             : filters.status,
         }),
-        // Hide DONE tickets from previous semesters (based on target date)
-        OR: [
-          { status: { not: "DONE" } },
-          { 
-            AND: [
-              { status: "DONE" },
-              { targetDate: { gte: semesterStart } }
-            ]
-          }
-        ]
+        ...(type === 'historical' ? {
+          AND: [
+            {
+              OR: [
+                { status: 'REJECTED' },
+                {
+                  AND: [
+                    { status: 'DONE' },
+                    { targetDate: { lt: semesterStart } }
+                  ]
+                }
+              ]
+            }
+          ]
+        } : type === 'active' ? {
+          AND: [
+            { status: { not: 'REJECTED' } },
+            {
+              OR: [
+                { status: { not: 'DONE' } },
+                {
+                  AND: [
+                    { status: 'DONE' },
+                    { targetDate: { gte: semesterStart } }
+                  ]
+                }
+              ]
+            }
+          ]
+        } : {}) // 'all'
       },
       include: {
         requester: { select: { id: true, fullName: true, image: true } },
@@ -296,7 +332,7 @@ export async function getTickets(filters: {
       orderBy: { createdAt: "desc" },
     })
 
-    return { 
+    return {
       tickets: tickets.map(t => ({
         ...t,
         budgetAmount: Number(t.budgetAmount),
@@ -331,8 +367,8 @@ export async function updateTicketDetails(
 ) {
   const session = await auth()
 
-  if (session?.user?.role !== "ADMIN") {
-    return { error: MESSAGES.AUTH.ADMIN_ONLY }
+  if (!session?.user?.id) {
+    return { error: MESSAGES.AUTH.UNAUTHORIZED }
   }
 
   // Honeypot check
@@ -346,8 +382,20 @@ export async function updateTicketDetails(
       include: { requester: true }
     })
 
+    if (!previousTicket) {
+      return { error: MESSAGES.TRANSACTION.NOT_FOUND }
+    }
+
+    const isAdmin = session.user.role === "ADMIN"
+    const isOwner = previousTicket.requesterId === session.user.id
+
+    if (!isAdmin && !(isOwner && previousTicket.status === "PENDING_APPROVAL")) {
+      return { error: MESSAGES.AUTH.FORBIDDEN }
+    }
+
+    const newStatus = isAdmin ? data.status : previousTicket.status
     const isReturningToApproved =
-      previousTicket?.status === "VERIFICATION" && data.status === "APPROVED"
+      previousTicket.status === "VERIFICATION" && newStatus === "APPROVED"
 
     await prisma.ticket.update({
       where: { id: ticketId },
@@ -355,7 +403,7 @@ export async function updateTicketDetails(
         purpose: data.purpose,
         budgetAmount: data.budgetAmount,
         targetDate: data.targetDate,
-        status: data.status,
+        status: newStatus,
         note: data.note,
         isReturned: isReturningToApproved ? true : undefined,
       },

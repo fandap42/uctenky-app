@@ -21,7 +21,7 @@ export function ApprovalActions({ ticketId, currentStatus, purpose, budgetAmount
 
   async function handleStatusChange(status: TicketStatus) {
     setIsLoading(status)
-    
+
     const result = await updateTicketDetails(ticketId, {
       purpose,
       budgetAmount,
@@ -36,10 +36,10 @@ export function ApprovalActions({ ticketId, currentStatus, purpose, budgetAmount
         status === "APPROVED"
           ? "Žádost byla schválena"
           : status === "DONE"
-          ? "Hotovo / Uzavřeno"
-          : status === "VERIFICATION"
-          ? "Ověřeno: Účtenka vložena"
-          : "Stav žádosti byl aktualizován"
+            ? "Hotovo / Uzavřeno"
+            : status === "VERIFICATION"
+              ? "Ověřeno: Účtenka vložena"
+              : "Stav žádosti byl aktualizován"
       )
       window.dispatchEvent(new CustomEvent("app-data-refresh"))
       router.refresh()
@@ -101,7 +101,7 @@ export function ApprovalActions({ ticketId, currentStatus, purpose, budgetAmount
         <Button
           onClick={() => handleStatusChange("DONE")}
           disabled={isLoading !== null}
-          className="h-8 px-3 text-xs font-bold bg-status-verification hover:bg-status-verification/90 text-white flex items-center gap-1.5 transition-colors"
+          className="h-8 px-3 text-xs font-bold bg-green-600 hover:bg-green-700 text-white flex items-center gap-1.5 transition-colors"
         >
           {isLoading === "DONE" ? (
             <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">

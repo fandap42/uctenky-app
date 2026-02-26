@@ -11,5 +11,6 @@ export const CZECH_BANKS = [
   { code: "3030", name: "Air Bank" },
   { code: "3500", name: "ING Bank" },
   { code: "5500", name: "Raiffeisenbank" },
+  { code: "6210", name: "mBank" },
   { code: "6363", name: "Partners Banka" },
 ] as const
