@@ -275,11 +275,14 @@ export async function getTickets(filters: {
   requesterId?: string
   sectionId?: string
   status?: TicketStatus | TicketStatus[]
+  type?: 'active' | 'historical' | 'all'
 } = {}) {
   try {
     // Get current semester range to filter out old DONE tickets
     const currentSemester = getCurrentSemester()
     const { start: semesterStart } = getSemesterRange(currentSemester)
+
+    const type = filters.type || 'active'
 
     const tickets = await prisma.ticket.findMany({
       where: {
@@ -290,16 +293,36 @@ export async function getTickets(filters: {
             ? { in: filters.status }
             : filters.status,
         }),
-        // Hide DONE tickets from previous semesters (based on target date)
-        OR: [
-          { status: { not: "DONE" } },
-          {
-            AND: [
-              { status: "DONE" },
-              { targetDate: { gte: semesterStart } }
-            ]
-          }
-        ]
+        ...(type === 'historical' ? {
+          AND: [
+            {
+              OR: [
+                { status: 'REJECTED' },
+                {
+                  AND: [
+                    { status: 'DONE' },
+                    { targetDate: { lt: semesterStart } }
+                  ]
+                }
+              ]
+            }
+          ]
+        } : type === 'active' ? {
+          AND: [
+            { status: { not: 'REJECTED' } },
+            {
+              OR: [
+                { status: { not: 'DONE' } },
+                {
+                  AND: [
+                    { status: 'DONE' },
+                    { targetDate: { gte: semesterStart } }
+                  ]
+                }
+              ]
+            }
+          ]
+        } : {}) // 'all'
       },
       include: {
         requester: { select: { id: true, fullName: true, image: true } },
