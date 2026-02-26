@@ -50,9 +50,9 @@ export async function createTicket(formData: FormData) {
     })
 
     try {
-      const admins = await prisma.user.findMany({ 
-        where: { role: "ADMIN", receiveAdminEmails: true }, 
-        select: { email: true } 
+      const admins = await prisma.user.findMany({
+        where: { role: "ADMIN", receiveAdminEmails: true },
+        select: { email: true }
       })
       const adminEmails = admins.map((a) => a.email).filter(Boolean) as string[]
       if (adminEmails.length > 0) {
@@ -210,9 +210,9 @@ export async function submitForVerification(ticketId: string) {
     })
 
     try {
-      const admins = await prisma.user.findMany({ 
-        where: { role: "ADMIN", receiveAdminEmails: true }, 
-        select: { email: true } 
+      const admins = await prisma.user.findMany({
+        where: { role: "ADMIN", receiveAdminEmails: true },
+        select: { email: true }
       })
       const adminEmails = admins.map((a) => a.email).filter(Boolean) as string[]
       if (adminEmails.length > 0) {
@@ -293,7 +293,7 @@ export async function getTickets(filters: {
         // Hide DONE tickets from previous semesters (based on target date)
         OR: [
           { status: { not: "DONE" } },
-          { 
+          {
             AND: [
               { status: "DONE" },
               { targetDate: { gte: semesterStart } }
@@ -309,7 +309,7 @@ export async function getTickets(filters: {
       orderBy: { createdAt: "desc" },
     })
 
-    return { 
+    return {
       tickets: tickets.map(t => ({
         ...t,
         budgetAmount: Number(t.budgetAmount),
@@ -344,8 +344,8 @@ export async function updateTicketDetails(
 ) {
   const session = await auth()
 
-  if (session?.user?.role !== "ADMIN") {
-    return { error: MESSAGES.AUTH.ADMIN_ONLY }
+  if (!session?.user?.id) {
+    return { error: MESSAGES.AUTH.UNAUTHORIZED }
   }
 
   // Honeypot check
@@ -359,8 +359,20 @@ export async function updateTicketDetails(
       include: { requester: true }
     })
 
+    if (!previousTicket) {
+      return { error: MESSAGES.TRANSACTION.NOT_FOUND }
+    }
+
+    const isAdmin = session.user.role === "ADMIN"
+    const isOwner = previousTicket.requesterId === session.user.id
+
+    if (!isAdmin && !(isOwner && previousTicket.status === "PENDING_APPROVAL")) {
+      return { error: MESSAGES.AUTH.FORBIDDEN }
+    }
+
+    const newStatus = isAdmin ? data.status : previousTicket.status
     const isReturningToApproved =
-      previousTicket?.status === "VERIFICATION" && data.status === "APPROVED"
+      previousTicket.status === "VERIFICATION" && newStatus === "APPROVED"
 
     await prisma.ticket.update({
       where: { id: ticketId },
@@ -368,7 +380,7 @@ export async function updateTicketDetails(
         purpose: data.purpose,
         budgetAmount: data.budgetAmount,
         targetDate: data.targetDate,
-        status: data.status,
+        status: newStatus,
         note: data.note,
         isReturned: isReturningToApproved ? true : undefined,
       },
