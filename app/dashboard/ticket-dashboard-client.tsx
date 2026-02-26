@@ -57,7 +57,7 @@ export function TicketDashboardClient({
   const [view, setView] = useState<"active" | "historical">("active")
   const [historicalTickets, setHistoricalTickets] = useState<Ticket[]>([])
   const [isLoadingHistory, setIsLoadingHistory] = useState(false)
-  const [hasLoadedHistory, setHasLoadedHistory] = useState(false)
+  const [, setHasLoadedHistory] = useState(false)
 
   const selectedTicket = view === "active"
     ? initialTickets.find(t => t.id === selectedTicketId) || null
@@ -69,20 +69,33 @@ export function TicketDashboardClient({
   }, [])
 
   useEffect(() => {
-    if (view === "historical" && !hasLoadedHistory) {
+    let isMounted = true
+
+    if (view === "historical") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoadingHistory(true)
       getTickets({
         type: "historical",
         ...(currentUserRole !== "ADMIN" ? { requesterId: currentUserId } : {})
-      }).then(res => {
-        if (res.tickets) {
-          setHistoricalTickets(res.tickets as any)
-        }
-        setIsLoadingHistory(false)
-        setHasLoadedHistory(true)
       })
+        .then(res => {
+          if (!isMounted) return
+          if (res.tickets) {
+            setHistoricalTickets(res.tickets as unknown as Ticket[])
+          }
+        })
+        .finally(() => {
+          if (isMounted) {
+            setIsLoadingHistory(false)
+            setHasLoadedHistory(true)
+          }
+        })
     }
-  }, [view, hasLoadedHistory, currentUserRole, currentUserId])
+
+    return () => {
+      isMounted = false
+    }
+  }, [view, currentUserRole, currentUserId])
 
   return (
     <div className="flex flex-col h-full">

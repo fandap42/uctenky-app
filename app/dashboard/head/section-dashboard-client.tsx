@@ -59,12 +59,7 @@ export function SectionDashboardClient({
   const [view, setView] = useState<"active" | "historical">("active")
   const [historicalTickets, setHistoricalTickets] = useState<Ticket[]>([])
   const [isLoadingHistory, setIsLoadingHistory] = useState(false)
-  const [hasLoadedHistory, setHasLoadedHistory] = useState(false)
-
-  // When section changes, we should reload history if we are in historical view
-  useEffect(() => {
-    setHasLoadedHistory(false)
-  }, [sectionId])
+  const [, setHasLoadedHistory] = useState(false)
 
   const selectedTicket = view === "active"
     ? initialTickets.find(t => t.id === selectedTicketId) || null
@@ -75,18 +70,32 @@ export function SectionDashboardClient({
     setIsDialogOpen(true)
   }, [])
 
+  // Use an effect tied directly to view and sectionId changing
   useEffect(() => {
-    if (view === "historical" && !hasLoadedHistory && sectionId) {
+    let isMounted = true
+
+    if (view === "historical") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoadingHistory(true)
-      getTickets({ type: "historical", sectionId }).then(res => {
-        if (res.tickets) {
-          setHistoricalTickets(res.tickets as any)
-        }
-        setIsLoadingHistory(false)
-        setHasLoadedHistory(true)
-      })
+      getTickets({ type: "historical", sectionId })
+        .then(res => {
+          if (!isMounted) return
+          if (res.tickets) {
+            setHistoricalTickets(res.tickets as unknown as Ticket[])
+          }
+        })
+        .finally(() => {
+          if (isMounted) {
+            setIsLoadingHistory(false)
+            setHasLoadedHistory(true)
+          }
+        })
     }
-  }, [view, hasLoadedHistory, sectionId])
+
+    return () => {
+      isMounted = false
+    }
+  }, [view, sectionId])
 
   return (
     <div className="flex flex-col h-full">

@@ -44,7 +44,7 @@ export default async function DashboardPage() {
           initialTickets={tickets}
           currentUserId={userId}
           currentUserRole={userRole}
-          headerAction={<RequestFormClient sections={sections} />}
+          headerAction={<RequestFormClient key="request-form" sections={sections} />}
         />
       </div>
     </div>

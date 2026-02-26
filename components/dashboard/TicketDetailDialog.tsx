@@ -114,8 +114,16 @@ export function TicketDetailDialog({
 
   if (!ticket) return null
 
-  // Always sort receipts by date (chronological)
-  const receipts = [...(ticket.receipts || [])].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  // Sort receipts by date (chronological) and then by ID for stable sorting
+  const receipts = [...(ticket.receipts || [])].sort((a, b) => {
+    const dateA = new Date(a.date).getTime()
+    const dateB = new Date(b.date).getTime()
+    if (dateA !== dateB) {
+      return dateA - dateB
+    }
+    // Fallback to ID for stable sorting when dates are identical
+    return a.id.localeCompare(b.id)
+  })
 
   const totalSpent = receipts.reduce((sum, r) => sum + r.amount, 0)
   const budgetProgress = Math.min((totalSpent / ticket.budgetAmount) * 100, 100)

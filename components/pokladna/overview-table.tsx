@@ -75,8 +75,8 @@ interface DepositRow {
   description?: string | null
 }
 
-export function OverviewTable({ 
-  transactions, 
+export function OverviewTable({
+  transactions,
   deposits,
   pageSize = "all",
   currentPage = 1,
@@ -98,7 +98,11 @@ export function OverviewTable({
       displayDate: new Date(d.date),
       displayType: "DEPOSIT" as const,
     })),
-  ].sort((a, b) => b.displayDate.getTime() - a.displayDate.getTime())
+  ].sort((a, b) => {
+    const timeDiff = b.displayDate.getTime() - a.displayDate.getTime()
+    if (timeDiff !== 0) return timeDiff
+    return a.id.localeCompare(b.id)
+  })
 
   // Ephemeral state for checkboxes
   const [checkedIds, setCheckedIds] = useState<Record<string, boolean>>({})
@@ -115,7 +119,7 @@ export function OverviewTable({
     const newStatus = !currentStatus
     setOptimisticStatuses(prev => ({ ...prev, [receiptId]: { ...prev[receiptId], isPaid: newStatus } }))
     setLoadingIds(prev => ({ ...prev, [receiptId]: true }))
-    
+
     const result = await toggleReceiptPaid(receiptId, newStatus)
     if (result.error) {
       toast.error(result.error)
@@ -132,7 +136,7 @@ export function OverviewTable({
     const newStatus = !currentStatus
     setOptimisticStatuses(prev => ({ ...prev, [receiptId]: { ...prev[receiptId], isFiled: newStatus } }))
     setLoadingIds(prev => ({ ...prev, [receiptId]: true }))
-    
+
     const result = await toggleReceiptFiled(receiptId, newStatus)
     if (result.error) {
       toast.error(result.error)
@@ -177,8 +181,8 @@ export function OverviewTable({
               : undefined
 
             return (
-              <TableRow 
-                key={item.id} 
+              <TableRow
+                key={item.id}
                 className={cn(
                   "border-border transition-all duration-200 group",
                   (isTr && onTicketClick) || (!isTr && onDepositClick)
@@ -252,8 +256,8 @@ export function OverviewTable({
                       <div className="w-4" />
                     )}
                     {isTr && (item.receiptUrl || item.fileUrl) ? (
-                      <ReceiptViewDialog 
-                        transactionId={item.id} 
+                      <ReceiptViewDialog
+                        transactionId={item.id}
                         purpose={item.purpose || "-"}
                         date={item.targetDate || item.createdAt}
                         amount={Math.abs(Number(item.amount))}
@@ -270,7 +274,7 @@ export function OverviewTable({
                         e.stopPropagation()
                       }
                     }}>
-                      <FunctionalCheckbox 
+                      <FunctionalCheckbox
                         variant="paid"
                         checked={currentIsPaid}
                         onCheckedChange={() => handleTogglePaid(item.id, !!currentIsPaid)}
@@ -286,7 +290,7 @@ export function OverviewTable({
                         e.stopPropagation()
                       }
                     }}>
-                      <FunctionalCheckbox 
+                      <FunctionalCheckbox
                         variant="filed"
                         checked={currentIsFiled}
                         onCheckedChange={() => handleToggleFiled(item.id, !!currentIsFiled)}
@@ -297,9 +301,9 @@ export function OverviewTable({
                 </TableCell>
                 <TableCell className="py-3 px-0 text-center">
                   <div className="flex justify-center" onClick={(e) => e.stopPropagation()}>
-                    <Checkbox 
-                      id={`track-${item.id}`} 
-                      checked={!!checkedIds[item.id]} 
+                    <Checkbox
+                      id={`track-${item.id}`}
+                      checked={!!checkedIds[item.id]}
                       onCheckedChange={() => toggleCheck(item.id)}
                       className="border-muted-foreground/40 data-[state=checked]:bg-primary data-[state=checked]:border-primary rounded-md w-4 h-4 shadow-sm mx-auto opacity-80 group-hover:opacity-100 transition-all"
                     />
