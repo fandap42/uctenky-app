@@ -49,7 +49,7 @@ export const TicketHistoricalList = memo(function TicketHistoricalList({
     }
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-20 lg:pb-0 h-full overflow-y-auto content-start pr-2 scrollbar-none mt-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-20 lg:pb-0 content-start pr-2 mt-2">
             {tickets.map(ticket => (
                 <TicketCardItem
                     key={ticket.id}

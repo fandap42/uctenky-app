@@ -123,7 +123,7 @@ export function SectionDashboardClient({
         </div>
       )}
 
-      <div className="flex-1 min-h-0 overflow-hidden -mx-1 px-1">
+      <div className="flex-1 min-h-0 overflow-auto -mx-1 px-1">
         {view === "active" ? (
           <>
             {/* Desktop Kanban */}
