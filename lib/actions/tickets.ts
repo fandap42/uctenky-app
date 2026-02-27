@@ -366,13 +366,37 @@ export async function getTickets(filters: {
 
 export async function getArchivedSemesters(filters: { requesterId?: string; sectionId?: string } = {}) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return { error: MESSAGES.AUTH.UNAUTHORIZED, semesters: [] }
+    }
+
+    const isAdmin = session.user.role === "ADMIN"
+
+    // Enforce authorization: non-admins can only query their own data
+    const authorizedFilters: { requesterId?: string; sectionId?: string } = {}
+    if (filters.requesterId && !isAdmin) {
+      if (filters.requesterId !== session.user.id) {
+        return { error: MESSAGES.AUTH.UNAUTHORIZED, semesters: [] }
+      }
+      authorizedFilters.requesterId = filters.requesterId
+    } else if (filters.requesterId && isAdmin) {
+      authorizedFilters.requesterId = filters.requesterId
+    }
+    if (filters.sectionId) {
+      if (!isAdmin && session.user.sectionId !== filters.sectionId) {
+        return { error: MESSAGES.AUTH.UNAUTHORIZED, semesters: [] }
+      }
+      authorizedFilters.sectionId = filters.sectionId
+    }
+
     const currentSemester = getCurrentSemester()
     const { start: semesterStart } = getSemesterRange(currentSemester)
 
     const tickets = await prisma.ticket.findMany({
       where: {
-        ...(filters.requesterId && { requesterId: filters.requesterId }),
-        ...(filters.sectionId && { sectionId: filters.sectionId }),
+        ...(authorizedFilters.requesterId && { requesterId: authorizedFilters.requesterId }),
+        ...(authorizedFilters.sectionId && { sectionId: authorizedFilters.sectionId }),
         OR: [
           { status: 'REJECTED' },
           {

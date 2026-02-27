@@ -38,7 +38,6 @@ interface SectionDashboardClientProps {
   initialTickets: Ticket[]
   currentUserId: string
   currentUserRole: string
-  sectionId: string
   headerAction?: React.ReactNode
   title?: React.ReactNode
 }
@@ -47,8 +46,6 @@ export function SectionDashboardClient({
   initialTickets,
   currentUserId,
   currentUserRole,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  sectionId,
   headerAction,
   title
 }: SectionDashboardClientProps) {

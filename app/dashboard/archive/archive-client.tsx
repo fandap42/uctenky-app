@@ -52,8 +52,12 @@ interface ArchiveClientProps {
 
 function getSemesterLabel(key: string): string {
   const isWinter = key.startsWith("ZS")
-  const year = parseInt(key.slice(2))
-  return `${isWinter ? "Zimní" : "Letní"} semestr 20${year}`
+  const yearPart = parseInt(key.slice(2), 10)
+  if (Number.isNaN(yearPart)) {
+    return key
+  }
+  const fullYear = 2000 + yearPart
+  return `${isWinter ? "Zimní" : "Letní"} semestr ${fullYear}`
 }
 
 export function ArchiveClient({
@@ -98,7 +102,12 @@ export function ArchiveClient({
           return
         }
         if (res.semesters) {
-          setSemesters(res.semesters)
+          const fetchedSemesters = res.semesters as string[]
+          setSemesters(fetchedSemesters)
+          // Reset semester selection if the current value is no longer available
+          setSelectedSemester(prev =>
+            prev !== "all" && !fetchedSemesters.includes(prev) ? "all" : prev
+          )
         }
       })
       .catch(error => {
