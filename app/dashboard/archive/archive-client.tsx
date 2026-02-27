@@ -79,7 +79,37 @@ export function ArchiveClient({
     setIsDialogOpen(true)
   }, [])
 
-  // Re-fetch tickets when filters change
+  // Fetch available semesters when filterMode changes (not dependent on selectedSemester)
+  useEffect(() => {
+    let isMounted = true
+
+    const semesterFilters: { requesterId?: string; sectionId?: string } = {}
+    if (filterMode === "my" && !isAdminUser) {
+      semesterFilters.requesterId = currentUserId
+    } else if (filterMode === "section" && currentUserSectionId) {
+      semesterFilters.sectionId = currentUserSectionId
+    }
+
+    getArchivedSemesters(semesterFilters)
+      .then(res => {
+        if (!isMounted) return
+        if (res.error) {
+          console.error("Failed to load archived semesters:", res.error)
+          return
+        }
+        if (res.semesters) {
+          setSemesters(res.semesters)
+        }
+      })
+      .catch(error => {
+        if (!isMounted) return
+        console.error("Error loading archived semesters:", error)
+      })
+
+    return () => { isMounted = false }
+  }, [filterMode, currentUserId, currentUserSectionId, isAdminUser])
+
+  // Fetch tickets when filters change
   useEffect(() => {
     let isMounted = true
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -102,31 +132,29 @@ export function ArchiveClient({
       filters.semesterKey = selectedSemester
     }
 
-    // Fetch both tickets and semesters
-    const semesterFilters: { requesterId?: string; sectionId?: string } = {}
-    if (filterMode === "my" && !isAdminUser) {
-      semesterFilters.requesterId = currentUserId
-    } else if (filterMode === "section" && currentUserSectionId) {
-      semesterFilters.sectionId = currentUserSectionId
-    }
-
-    Promise.all([
-      getTickets(filters),
-      getArchivedSemesters(semesterFilters),
-    ]).then(([ticketRes, semesterRes]) => {
-      if (!isMounted) return
-      if (ticketRes.tickets) {
-        setTickets(ticketRes.tickets as unknown as Ticket[])
-      }
-      if (semesterRes.semesters) {
-        setSemesters(semesterRes.semesters)
-      }
-    }).finally(() => {
-      if (isMounted) setIsLoading(false)
-    })
+    getTickets(filters)
+      .then(res => {
+        if (!isMounted) return
+        if (res.error) {
+          console.error("Failed to load archived tickets:", res.error)
+          return
+        }
+        if (res.tickets) {
+          setTickets(res.tickets as unknown as Ticket[])
+        }
+      })
+      .catch(error => {
+        if (!isMounted) return
+        console.error("Error loading archived tickets:", error)
+      })
+      .finally(() => {
+        if (isMounted) setIsLoading(false)
+      })
 
     return () => { isMounted = false }
   }, [selectedSemester, filterMode, currentUserId, currentUserSectionId, isAdminUser])
+
+  const hasSectionId = !!currentUserSectionId
 
   return (
     <div className="flex flex-col h-full">
@@ -156,9 +184,11 @@ export function ArchiveClient({
           </Select>
 
           {/* My / Section toggle */}
-          <div className="flex rounded-xl border border-border overflow-hidden">
+          <div className="flex rounded-xl border border-border overflow-hidden" role="radiogroup" aria-label="Filtrování žádostí">
             <button
               type="button"
+              role="radio"
+              aria-checked={filterMode === "my"}
               onClick={() => setFilterMode("my")}
               className={cn(
                 "px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors",
@@ -171,12 +201,17 @@ export function ArchiveClient({
             </button>
             <button
               type="button"
-              onClick={() => setFilterMode("section")}
+              role="radio"
+              aria-checked={filterMode === "section"}
+              disabled={!hasSectionId}
+              onClick={() => hasSectionId && setFilterMode("section")}
               className={cn(
                 "px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors border-l border-border",
-                filterMode === "section"
-                  ? "bg-foreground text-background"
-                  : "bg-card text-muted-foreground hover:bg-muted/50"
+                !hasSectionId
+                  ? "bg-muted text-muted-foreground/40 cursor-not-allowed"
+                  : filterMode === "section"
+                    ? "bg-foreground text-background"
+                    : "bg-card text-muted-foreground hover:bg-muted/50"
               )}
             >
               Sekce
