@@ -375,12 +375,10 @@ export async function getArchivedSemesters(filters: { requesterId?: string; sect
 
     // Enforce authorization: non-admins can only query their own data
     const authorizedFilters: { requesterId?: string; sectionId?: string } = {}
-    if (filters.requesterId && !isAdmin) {
-      if (filters.requesterId !== session.user.id) {
+    if (filters.requesterId) {
+      if (!isAdmin && filters.requesterId !== session.user.id) {
         return { error: MESSAGES.AUTH.UNAUTHORIZED, semesters: [] }
       }
-      authorizedFilters.requesterId = filters.requesterId
-    } else if (filters.requesterId && isAdmin) {
       authorizedFilters.requesterId = filters.requesterId
     }
     if (filters.sectionId) {
