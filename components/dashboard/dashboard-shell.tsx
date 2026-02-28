@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils"
 // Navigation items for page title mapping
 const navigationTitles: Record<string, string> = {
   "/dashboard": "Přehled",
+  "/dashboard/archive": "Archiv",
   "/dashboard/head": "Žádosti sekce",
   "/dashboard/pokladna": "Pokladna",
   "/dashboard/budget": "Rozpočty",

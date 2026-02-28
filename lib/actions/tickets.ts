@@ -4,8 +4,9 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { TicketStatus } from "@prisma/client"
+import { isHeadRole, getSectionForRole } from "@/lib/utils/roles"
 import { MESSAGES } from "@/lib/constants/messages"
-import { getSemester, getSemesterRange, getCurrentSemester } from "@/lib/utils/semesters"
+import { getSemester, getSemesterRange, getCurrentSemester, sortSemesterKeys } from "@/lib/utils/semesters"
 import { sendEmail } from "@/lib/email"
 import { escapeHtml } from "@/lib/utils/html"
 
@@ -276,6 +277,7 @@ export async function getTickets(filters: {
   sectionId?: string
   status?: TicketStatus | TicketStatus[]
   type?: 'active' | 'historical' | 'all'
+  semesterKey?: string
 } = {}) {
   try {
     // Get current semester range to filter out old DONE tickets
@@ -283,6 +285,14 @@ export async function getTickets(filters: {
     const { start: semesterStart } = getSemesterRange(currentSemester)
 
     const type = filters.type || 'active'
+
+    // Optional semester date range filter
+    const semesterDateFilter = filters.semesterKey
+      ? (() => {
+          const { start, end } = getSemesterRange(filters.semesterKey)
+          return { targetDate: { gte: start, lte: end } }
+        })()
+      : undefined
 
     const tickets = await prisma.ticket.findMany({
       where: {
@@ -293,6 +303,7 @@ export async function getTickets(filters: {
             ? { in: filters.status }
             : filters.status,
         }),
+        ...semesterDateFilter,
         ...(type === 'historical' ? {
           AND: [
             {
@@ -351,6 +362,73 @@ export async function getTickets(filters: {
   } catch (error) {
     console.error("Get tickets error:", error)
     return { error: "Nepodařilo se načíst žádosti" }
+  }
+}
+
+export async function getArchivedSemesters(filters: { requesterId?: string; sectionId?: string } = {}) {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return { error: MESSAGES.AUTH.UNAUTHORIZED, semesters: [] }
+    }
+
+    const isAdmin = session.user.role === "ADMIN"
+
+    // Enforce authorization: non-admins can only query their own data
+    const authorizedFilters: { requesterId?: string; sectionId?: string } = {}
+    if (filters.requesterId) {
+      if (!isAdmin && filters.requesterId !== session.user.id) {
+        return { error: MESSAGES.AUTH.UNAUTHORIZED, semesters: [] }
+      }
+      authorizedFilters.requesterId = filters.requesterId
+    }
+    if (filters.sectionId) {
+      if (!isAdmin) {
+        // Resolve user's section from HEAD role
+        const userRole = session.user.role || "MEMBER"
+        let userSectionId: string | null = null
+        if (isHeadRole(userRole)) {
+          const sectionName = getSectionForRole(userRole)
+          if (sectionName) {
+            const section = await prisma.section.findFirst({
+              where: { name: sectionName, isActive: true },
+              select: { id: true },
+            })
+            userSectionId = section?.id ?? null
+          }
+        }
+        if (userSectionId !== filters.sectionId) {
+          return { error: MESSAGES.AUTH.UNAUTHORIZED, semesters: [] }
+        }
+      }
+      authorizedFilters.sectionId = filters.sectionId
+    }
+
+    const currentSemester = getCurrentSemester()
+    const { start: semesterStart } = getSemesterRange(currentSemester)
+
+    const tickets = await prisma.ticket.findMany({
+      where: {
+        ...(authorizedFilters.requesterId && { requesterId: authorizedFilters.requesterId }),
+        ...(authorizedFilters.sectionId && { sectionId: authorizedFilters.sectionId }),
+        OR: [
+          { status: 'REJECTED' },
+          {
+            AND: [
+              { status: 'DONE' },
+              { targetDate: { lt: semesterStart } }
+            ]
+          }
+        ]
+      },
+      select: { targetDate: true },
+    })
+
+    const semesterKeys = new Set(tickets.map(t => getSemester(t.targetDate)))
+    return { semesters: sortSemesterKeys(Array.from(semesterKeys)) }
+  } catch (error) {
+    console.error("Get archived semesters error:", error)
+    return { error: "Nepodařilo se načíst semestry", semesters: [] }
   }
 }
 
