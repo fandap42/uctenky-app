@@ -4,6 +4,7 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { TicketStatus } from "@prisma/client"
+import { isHeadRole, getSectionForRole } from "@/lib/utils/roles"
 import { MESSAGES } from "@/lib/constants/messages"
 import { getSemester, getSemesterRange, getCurrentSemester, sortSemesterKeys } from "@/lib/utils/semesters"
 import { sendEmail } from "@/lib/email"
@@ -382,8 +383,23 @@ export async function getArchivedSemesters(filters: { requesterId?: string; sect
       authorizedFilters.requesterId = filters.requesterId
     }
     if (filters.sectionId) {
-      if (!isAdmin && session.user.sectionId !== filters.sectionId) {
-        return { error: MESSAGES.AUTH.UNAUTHORIZED, semesters: [] }
+      if (!isAdmin) {
+        // Resolve user's section from HEAD role
+        const userRole = session.user.role || "MEMBER"
+        let userSectionId: string | null = null
+        if (isHeadRole(userRole)) {
+          const sectionName = getSectionForRole(userRole)
+          if (sectionName) {
+            const section = await prisma.section.findFirst({
+              where: { name: sectionName, isActive: true },
+              select: { id: true },
+            })
+            userSectionId = section?.id ?? null
+          }
+        }
+        if (userSectionId !== filters.sectionId) {
+          return { error: MESSAGES.AUTH.UNAUTHORIZED, semesters: [] }
+        }
       }
       authorizedFilters.sectionId = filters.sectionId
     }

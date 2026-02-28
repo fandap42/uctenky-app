@@ -47,7 +47,7 @@ interface ArchiveClientProps {
   initialSemesters: string[]
   currentUserId: string
   currentUserRole: string
-  currentUserSectionId: string | null
+  headSectionId: string | null
 }
 
 function getSemesterLabel(key: string): string {
@@ -65,7 +65,7 @@ export function ArchiveClient({
   initialSemesters,
   currentUserId,
   currentUserRole,
-  currentUserSectionId,
+  headSectionId,
 }: ArchiveClientProps) {
   const isAdminUser = currentUserRole === "ADMIN"
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null)
@@ -90,8 +90,8 @@ export function ArchiveClient({
     const semesterFilters: { requesterId?: string; sectionId?: string } = {}
     if (filterMode === "my" && !isAdminUser) {
       semesterFilters.requesterId = currentUserId
-    } else if (filterMode === "section" && currentUserSectionId) {
-      semesterFilters.sectionId = currentUserSectionId
+    } else if (filterMode === "section" && headSectionId) {
+      semesterFilters.sectionId = headSectionId
     }
 
     getArchivedSemesters(semesterFilters)
@@ -116,7 +116,7 @@ export function ArchiveClient({
       })
 
     return () => { isMounted = false }
-  }, [filterMode, currentUserId, currentUserSectionId, isAdminUser])
+  }, [filterMode, currentUserId, headSectionId, isAdminUser])
 
   // Fetch tickets when filters change
   useEffect(() => {
@@ -133,8 +133,8 @@ export function ArchiveClient({
 
     if (filterMode === "my" && !isAdminUser) {
       filters.requesterId = currentUserId
-    } else if (filterMode === "section" && currentUserSectionId) {
-      filters.sectionId = currentUserSectionId
+    } else if (filterMode === "section" && headSectionId) {
+      filters.sectionId = headSectionId
     }
 
     if (selectedSemester !== "all") {
@@ -161,9 +161,9 @@ export function ArchiveClient({
       })
 
     return () => { isMounted = false }
-  }, [selectedSemester, filterMode, currentUserId, currentUserSectionId, isAdminUser])
+  }, [selectedSemester, filterMode, currentUserId, headSectionId, isAdminUser])
 
-  const hasSectionId = !!currentUserSectionId
+  const hasSectionId = !!headSectionId
 
   return (
     <div className="flex flex-col h-full">

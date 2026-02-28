@@ -1,7 +1,8 @@
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
+import { prisma } from "@/lib/prisma"
 import { getTickets, getArchivedSemesters } from "@/lib/actions/tickets"
-import { isAdmin } from "@/lib/utils/roles"
+import { isAdmin, isHeadRole, getSectionForRole } from "@/lib/utils/roles"
 import { ArchiveClient } from "./archive-client"
 
 export const dynamic = "force-dynamic"
@@ -15,7 +16,19 @@ export default async function ArchivePage() {
 
   const userId = session.user.id
   const userRole = session.user.role || "MEMBER"
-  const userSectionId = session.user.sectionId || null
+
+  // Resolve section ID from HEAD role (deprecated sectionId on user is no longer used)
+  let headSectionId: string | null = null
+  if (isHeadRole(userRole)) {
+    const sectionName = getSectionForRole(userRole)
+    if (sectionName) {
+      const section = await prisma.section.findFirst({
+        where: { name: sectionName, isActive: true },
+        select: { id: true },
+      })
+      headSectionId = section?.id ?? null
+    }
+  }
 
   // Determine initial filters based on role
   const initialFilters = isAdmin(userRole) ? {} : { requesterId: userId }
@@ -43,7 +56,7 @@ export default async function ArchivePage() {
           initialSemesters={semesters}
           currentUserId={userId}
           currentUserRole={userRole}
-          currentUserSectionId={userSectionId}
+          headSectionId={headSectionId}
         />
       </div>
     </div>
