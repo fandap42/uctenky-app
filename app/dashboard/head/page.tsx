@@ -104,7 +104,6 @@ export default async function SectionHeadDashboardPage({ searchParams }: PagePro
           initialTickets={tickets}
           currentUserId={session!.user!.id}
           currentUserRole={user!.role}
-          sectionId={section!.id === "all" || !section!.id ? "" : section!.id}
           title={
             <h1 className="hidden md:block text-3xl font-black text-foreground mb-2">
               Žádosti sekce: {section!.name}
