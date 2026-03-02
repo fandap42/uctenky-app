@@ -49,7 +49,8 @@ import {
 import {
   updateTicketStatus,
   submitForVerification,
-  deleteTicket
+  deleteTicket,
+  assignTicketProcessor
 } from "@/lib/actions/tickets"
 import {
   CheckCircle2,
@@ -81,6 +82,7 @@ interface Ticket {
   status: TicketStatus
   requesterId: string | null
   requester?: { fullName: string | null; image?: string | null } | null
+  processingBy?: { id: string; fullName: string | null; image?: string | null } | null
   sectionId: string
   section: { name: string }
   receipts: Receipt[]
@@ -106,6 +108,7 @@ export function TicketDetailDialog({
 }: TicketDetailDialogProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [assigneeLoading, setAssigneeLoading] = useState(false)
   const [isUploadOpen, setIsUploadOpen] = useState(false)
   const [isQROpen, setIsQROpen] = useState(false)
 
@@ -130,6 +133,7 @@ export function TicketDetailDialog({
   const isOverBudget = totalSpent > ticket.budgetAmount
   const hasUnpaidReceipts = receipts.some((receipt) => !receipt.isPaid && receipt.status !== "REJECTED")
   const headerStatus = mapTicketStatusToBadge(ticket.status)
+  const isAssignedToMe = ticket.processingBy?.id === currentUserId
 
   const handleStatusUpdate = async (status: TicketStatus) => {
     setLoading(true)
@@ -230,6 +234,19 @@ export function TicketDetailDialog({
     }
   }
 
+  const handleToggleAssignee = async () => {
+    setAssigneeLoading(true)
+    const result = await assignTicketProcessor(ticket.id, isAssignedToMe ? null : currentUserId)
+    if (result.success) {
+      toast.success(isAssignedToMe ? "Žádost byla uvolněna" : "Žádost byla přiřazena vám")
+      window.dispatchEvent(new CustomEvent("app-data-refresh"))
+      router.refresh()
+    } else {
+      toast.error(result.error)
+    }
+    setAssigneeLoading(false)
+  }
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -266,6 +283,10 @@ export function TicketDetailDialog({
                       <div className="flex items-center gap-1 sm:gap-1.5">
                         <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                         <span>{new Date(ticket.targetDate).toLocaleDateString("cs-CZ")}</span>
+                      </div>
+                      <div className="text-[11px] sm:text-xs">
+                        <span className="text-muted-foreground">Zpracovává finance: </span>
+                        <span className="font-semibold text-foreground">{ticket.processingBy?.fullName || "Nepřiřazeno"}</span>
                       </div>
                     </div>
                   </DialogDescription>
@@ -733,6 +754,16 @@ export function TicketDetailDialog({
                 </Button>
               )}
 
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  disabled={assigneeLoading}
+                  onClick={handleToggleAssignee}
+                  className="h-8 sm:h-9 px-3.5 sm:px-4 text-[10px] sm:text-xs font-bold"
+                >
+                  {assigneeLoading ? "Ukládám..." : isAssignedToMe ? "Uvolnit žádost" : "Převzít žádost"}
+                </Button>
+              )}
 
               <Button variant="ghost" onClick={() => onOpenChange(false)} className="h-8 sm:h-9 px-2.5 sm:px-3 text-[10px] sm:text-xs font-bold text-muted-foreground">
                 Zavřít

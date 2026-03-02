@@ -12,6 +12,7 @@ interface Ticket {
   status: TicketStatus
   isReturned?: boolean
   requester?: { fullName: string | null; image?: string | null } | null
+  processingBy?: { fullName: string | null } | null
   section: { name: string }
   receipts: { isPaid: boolean; amount: number }[]
   targetDate: string
@@ -157,6 +158,11 @@ export const TicketCardItem = memo(function TicketCardItem({ ticket, onClick }: 
           <Badge variant="secondary" className="text-[10px] font-bold h-5 px-2 bg-muted text-muted-foreground uppercase tracking-wider rounded-md truncate flex-shrink-0" title={ticket.section.name}>
             {ticket.section.name}
           </Badge>
+          {ticket.processingBy?.fullName && (
+            <Badge variant="secondary" className="text-[10px] font-bold h-5 px-2 bg-primary/10 text-primary rounded-md truncate max-w-[140px]" title={`Řeší: ${ticket.processingBy.fullName}`}>
+              Řeší: {ticket.processingBy.fullName}
+            </Badge>
+          )}
           <div className="flex items-center gap-1.5 min-w-0" title={ticket.requester?.fullName || "Smazaný uživatel"}>
             <div className="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold overflow-hidden flex-shrink-0">
               {ticket.requester?.image ? (

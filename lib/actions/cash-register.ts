@@ -231,6 +231,7 @@ export async function getAllCashRegisterData() {
           include: {
             section: { select: { name: true } },
             requester: { select: { fullName: true, image: true } },
+            processingBy: { select: { id: true, fullName: true, image: true } },
             receipts: true
           }
         }
@@ -410,6 +411,7 @@ export async function getPokladnaSemesterData(semesterKey: string) {
           include: {
             section: { select: { name: true } },
             requester: { select: { fullName: true, image: true } },
+            processingBy: { select: { id: true, fullName: true, image: true } },
             receipts: true
           }
         }

@@ -272,6 +272,27 @@ export async function deleteTicket(ticketId: string) {
   }
 }
 
+export async function assignTicketProcessor(ticketId: string, processorId: string | null) {
+  const session = await auth()
+
+  if (session?.user?.role !== "ADMIN") {
+    return { error: MESSAGES.AUTH.ADMIN_ONLY }
+  }
+
+  try {
+    await prisma.ticket.update({
+      where: { id: ticketId },
+      data: { processingById: processorId },
+    })
+
+    revalidatePath("/dashboard", "layout")
+    return { success: true }
+  } catch (error) {
+    console.error("Assign ticket processor error:", error)
+    return { error: MESSAGES.TRANSACTION.UPDATE_FAILED }
+  }
+}
+
 export async function getTickets(filters: {
   requesterId?: string
   sectionId?: string
@@ -337,6 +358,7 @@ export async function getTickets(filters: {
       },
       include: {
         requester: { select: { id: true, fullName: true, image: true } },
+        processingBy: { select: { id: true, fullName: true, image: true } },
         section: { select: { id: true, name: true } },
         receipts: true,
       },
@@ -560,6 +582,7 @@ export async function getTicketsBySemester(
       },
       include: {
         requester: { select: { id: true, fullName: true, image: true } },
+        processingBy: { select: { id: true, fullName: true, image: true } },
         section: { select: { id: true, name: true } },
         receipts: true,
       },
