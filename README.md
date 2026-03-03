@@ -68,6 +68,9 @@ MINIO_ROOT_PASSWORD=minioadmin
 
 # Encryption (for bank account data)
 ENCRYPTION_KEY="your-64-char-hex-string"    # Generate with: openssl rand -hex 32
+
+# AI worker authentication
+AI_WORKER_SECRET="shared-worker-secret"
 ```
 
 ### 3. Start infrastructure
@@ -110,6 +113,16 @@ The application will be available at `http://localhost:3000`.
 | `npm run lint` | Run ESLint |
 | `npx prisma studio` | Open Prisma database GUI |
 | `npx prisma migrate dev` | Create and apply migrations |
+
+### AI Worker (local machine)
+
+```bash
+cd ai-worker
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+AI_WORKER_SECRET=shared-worker-secret API_BASE_URL=http://localhost:3000 python worker.py
+```
 
 ## Project Structure
 

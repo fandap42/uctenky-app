@@ -25,6 +25,7 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [queuedForAi, setQueuedForAi] = useState(false)
   
   const [store, setStore] = useState("")
   const [amount, setAmount] = useState("")
@@ -60,6 +61,7 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
     }
 
     setUploading(true)
+    setQueuedForAi(false)
     try {
       const formData = new FormData()
       formData.append("file", file)
@@ -75,7 +77,8 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
       if (result.error) {
         toast.error(result.error)
       } else {
-        toast.success(MESSAGES.UPLOAD.SUCCESS)
+        toast.success("Účtenka nahrána. Zařazeno do fronty AI analýzy.")
+        setQueuedForAi(true)
         setFile(null)
         setPreview(null)
         setStore("")
@@ -195,6 +198,11 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
           "Nahrát účtenku"
         )}
       </Button>
+      {queuedForAi && (
+        <p className="text-xs text-muted-foreground text-center">
+          Účtenka čeká na AI analýzu. Po zpracování můžete zkontrolovat předvyplněné údaje.
+        </p>
+      )}
     </form>
   )
 }
