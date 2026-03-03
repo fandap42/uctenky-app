@@ -322,11 +322,6 @@ const TicketCard = memo(function TicketCard({ ticket, onClick }: { ticket: Ticke
           <Badge variant="outline" className="text-[10px] font-medium py-0 h-5 px-2 bg-background/50 max-w-[100px] truncate flex-shrink-0" title={ticket.section.name}>
             {ticket.section.name}
           </Badge>
-          {ticket.processingBy?.fullName && (
-            <Badge variant="secondary" className="text-[10px] font-medium py-0 h-5 px-2 bg-primary/10 text-primary max-w-[130px] truncate flex-shrink-0" title={`Řeší: ${ticket.processingBy.fullName}`}>
-              Řeší: {ticket.processingBy.fullName}
-            </Badge>
-          )}
           <div className="ml-auto flex items-center gap-1.5 min-w-0" title={ticket.requester?.fullName || "Smazaný uživatel"}>
             <div className="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold overflow-hidden flex-shrink-0">
               {ticket.requester?.image ? (
