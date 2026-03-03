@@ -285,7 +285,7 @@ export function TicketDetailDialog({
                         <span>{new Date(ticket.targetDate).toLocaleDateString("cs-CZ")}</span>
                       </div>
                       <div className="text-[11px] sm:text-xs">
-                        <span className="text-muted-foreground">Řeší finance: </span>
+                        <span className="text-muted-foreground">Proplácí: </span>
                         <span className="font-semibold text-foreground">{ticket.processingBy?.fullName || "Nepřiřazeno"}</span>
                       </div>
                     </div>
