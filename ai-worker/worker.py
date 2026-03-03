@@ -77,7 +77,16 @@ def main() -> None:
                 try:
                     process_receipt(item)
                 except Exception as receipt_error:
-                    complete_receipt(item["id"], {"error": str(receipt_error)}, "FAILED")
+                    complete_receipt(
+                        item["id"],
+                        {
+                            "error": str(receipt_error),
+                            "receiptId": item.get("id"),
+                            "imageUrl": item.get("imageUrl"),
+                            "stage": "process_receipt",
+                        },
+                        "FAILED",
+                    )
         except Exception as queue_error:
             print(f"[worker] queue error: {queue_error}")
 
