@@ -134,6 +134,7 @@ export function TicketDetailDialog({
   const hasUnpaidReceipts = receipts.some((receipt) => !receipt.isPaid && receipt.status !== "REJECTED")
   const headerStatus = mapTicketStatusToBadge(ticket.status)
   const isAssignedToMe = ticket.processingBy?.id === currentUserId
+  const isAssignedToOther = !!ticket.processingBy?.id && ticket.processingBy.id !== currentUserId
 
   const handleStatusUpdate = async (status: TicketStatus) => {
     setLoading(true)
@@ -665,22 +666,20 @@ export function TicketDetailDialog({
           </div>
 
           {/* --- FIXED FOOTER (Action Bar) --- */}
-          <div className="bg-card/80 backdrop-blur-md p-3 sm:p-4 border-t border-border/60 shrink-0 flex items-center justify-between gap-2 pb-[calc(12px+env(safe-area-inset-bottom))] sm:pb-4">
-            <div className="flex items-center gap-2">
+          <div className="bg-card/80 backdrop-blur-md p-3 sm:p-4 border-t border-border/60 shrink-0 flex flex-col min-[520px]:flex-row gap-2 pb-[calc(12px+env(safe-area-inset-bottom))] sm:pb-4 min-[520px]:items-center min-[520px]:justify-between">
+            <div className="w-full flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
               {isAdmin && (
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={handleTicketDelete}
-                  className="h-8 w-8 sm:h-9 sm:w-9 text-destructive hover:bg-destructive/10"
+                  className="hidden min-[520px]:inline-flex mr-auto h-8 w-8 sm:h-9 sm:w-9 text-destructive hover:bg-destructive/10"
                   disabled={loading}
                 >
                   <Trash2 className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                 </Button>
               )}
-            </div>
 
-            <div className="flex items-center gap-1.5 sm:gap-2">
               {isAdmin && ticket.status === "DONE" && (
                 <Button
                   variant="outline"
@@ -759,13 +758,35 @@ export function TicketDetailDialog({
                   variant="outline"
                   disabled={assigneeLoading}
                   onClick={handleToggleAssignee}
-                  className="h-8 sm:h-9 px-3.5 sm:px-4 text-[10px] sm:text-xs font-bold"
+                  className={cn(
+                    "h-8 sm:h-9 px-3.5 sm:px-4 text-[10px] sm:text-xs font-bold",
+                    isAssignedToOther && "border-destructive/20 text-destructive hover:bg-destructive/5"
+                  )}
                 >
-                  {assigneeLoading ? "Ukládám..." : isAssignedToMe ? "Uvolnit žádost" : "Převzít žádost"}
+                  {assigneeLoading ? "Ukládám..." : isAssignedToMe ? "Uvolnit" : "Převzít"}
                 </Button>
               )}
 
-              <Button variant="ghost" onClick={() => onOpenChange(false)} className="h-8 sm:h-9 px-2.5 sm:px-3 text-[10px] sm:text-xs font-bold text-muted-foreground">
+              <Button variant="ghost" onClick={() => onOpenChange(false)} className="hidden min-[520px]:inline-flex h-8 sm:h-9 px-2.5 sm:px-3 text-[10px] sm:text-xs font-bold text-muted-foreground">
+                Zavřít
+              </Button>
+            </div>
+
+            <div className="flex items-center justify-between min-[520px]:hidden">
+              {isAdmin ? (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleTicketDelete}
+                  className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                  disabled={loading}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              ) : (
+                <div />
+              )}
+              <Button variant="ghost" onClick={() => onOpenChange(false)} className="h-8 px-2.5 text-[10px] font-bold text-muted-foreground">
                 Zavřít
               </Button>
             </div>
