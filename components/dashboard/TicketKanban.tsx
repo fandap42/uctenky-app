@@ -12,6 +12,7 @@ interface Ticket {
   status: TicketStatus
   isReturned?: boolean
   requester?: { fullName: string | null; image?: string | null } | null
+  processingBy?: { fullName: string | null } | null
   section: { name: string }
   receipts: { isPaid: boolean; amount: number }[]
   targetDate: string

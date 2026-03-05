@@ -29,6 +29,7 @@ model User {
   accounts               Account[]
   sessions               Session[]
   tickets                Ticket[]
+  assignedTickets        Ticket[]  @relation("TicketProcessor")
 
   @@map("users")
 }
@@ -95,13 +96,16 @@ model Ticket {
   note         String?
   isFiled      Boolean      @default(false) @map("is_filed")
   isReturned   Boolean      @default(false) @map("is_returned")
+  processingById String?    @map("processing_by_id")
   receipts     Receipt[]
   requester    User?        @relation(fields: [requesterId], references: [id])
+  processingBy User?        @relation("TicketProcessor", fields: [processingById], references: [id], onDelete: SetNull)
   section      Section      @relation(fields: [sectionId], references: [id], onDelete: Cascade)
 
   @@index([requesterId])
   @@index([sectionId])
   @@index([status])
+  @@index([processingById])
   @@map("tickets")
 }
 
