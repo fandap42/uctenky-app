@@ -49,7 +49,8 @@ import {
 import {
   updateTicketStatus,
   submitForVerification,
-  deleteTicket
+  deleteTicket,
+  assignTicketProcessor
 } from "@/lib/actions/tickets"
 import {
   CheckCircle2,
@@ -81,6 +82,7 @@ interface Ticket {
   status: TicketStatus
   requesterId: string | null
   requester?: { fullName: string | null; image?: string | null } | null
+  processingBy?: { id: string; fullName: string | null; image?: string | null } | null
   sectionId: string
   section: { name: string }
   receipts: Receipt[]
@@ -106,6 +108,7 @@ export function TicketDetailDialog({
 }: TicketDetailDialogProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [assigneeLoading, setAssigneeLoading] = useState(false)
   const [isUploadOpen, setIsUploadOpen] = useState(false)
   const [isQROpen, setIsQROpen] = useState(false)
 
@@ -130,6 +133,8 @@ export function TicketDetailDialog({
   const isOverBudget = totalSpent > ticket.budgetAmount
   const hasUnpaidReceipts = receipts.some((receipt) => !receipt.isPaid && receipt.status !== "REJECTED")
   const headerStatus = mapTicketStatusToBadge(ticket.status)
+  const isAssignedToMe = ticket.processingBy?.id === currentUserId
+  const isAssignedToOther = !!ticket.processingBy?.id && ticket.processingBy.id !== currentUserId
 
   const handleStatusUpdate = async (status: TicketStatus) => {
     setLoading(true)
@@ -230,6 +235,19 @@ export function TicketDetailDialog({
     }
   }
 
+  const handleToggleAssignee = async () => {
+    setAssigneeLoading(true)
+    const result = await assignTicketProcessor(ticket.id, isAssignedToMe ? null : currentUserId)
+    if (result.success) {
+      toast.success(isAssignedToMe ? "Žádost byla uvolněna" : "Žádost byla přiřazena vám")
+      window.dispatchEvent(new CustomEvent("app-data-refresh"))
+      router.refresh()
+    } else {
+      toast.error(result.error)
+    }
+    setAssigneeLoading(false)
+  }
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -266,6 +284,10 @@ export function TicketDetailDialog({
                       <div className="flex items-center gap-1 sm:gap-1.5">
                         <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                         <span>{new Date(ticket.targetDate).toLocaleDateString("cs-CZ")}</span>
+                      </div>
+                      <div className="text-[11px] sm:text-xs">
+                        <span className="text-muted-foreground">Proplácí: </span>
+                        <span className="font-semibold text-foreground">{ticket.processingBy?.fullName || "Nepřiřazeno"}</span>
                       </div>
                     </div>
                   </DialogDescription>
@@ -644,22 +666,20 @@ export function TicketDetailDialog({
           </div>
 
           {/* --- FIXED FOOTER (Action Bar) --- */}
-          <div className="bg-card/80 backdrop-blur-md p-3 sm:p-4 border-t border-border/60 shrink-0 flex items-center justify-between gap-2 pb-[calc(12px+env(safe-area-inset-bottom))] sm:pb-4">
-            <div className="flex items-center gap-2">
+          <div className="bg-card/80 backdrop-blur-md p-3 sm:p-4 border-t border-border/60 shrink-0 flex flex-col min-[5px]:flex-row gap-2 pb-[calc(12px+env(safe-area-inset-bottom))] sm:pb-4 min-[5px]:items-center min-[5px]:justify-between">
+            <div className="w-full min-w-0 flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
               {isAdmin && (
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={handleTicketDelete}
-                  className="h-8 w-8 sm:h-9 sm:w-9 text-destructive hover:bg-destructive/10"
+                  className="hidden min-[5px]:inline-flex mr-auto h-8 w-8 sm:h-9 sm:w-9 text-destructive hover:bg-destructive/10"
                   disabled={loading}
                 >
                   <Trash2 className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                 </Button>
               )}
-            </div>
 
-            <div className="flex items-center gap-1.5 sm:gap-2">
               {isAdmin && ticket.status === "DONE" && (
                 <Button
                   variant="outline"
@@ -733,8 +753,40 @@ export function TicketDetailDialog({
                 </Button>
               )}
 
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  disabled={assigneeLoading}
+                  onClick={handleToggleAssignee}
+                  className={cn(
+                    "h-8 sm:h-9 px-3.5 sm:px-4 text-[10px] sm:text-xs font-bold",
+                    isAssignedToOther && "border-destructive/20 text-destructive hover:bg-destructive/5"
+                  )}
+                >
+                  {assigneeLoading ? "Ukládám..." : isAssignedToMe ? "Uvolnit" : "Převzít"}
+                </Button>
+              )}
 
-              <Button variant="ghost" onClick={() => onOpenChange(false)} className="h-8 sm:h-9 px-2.5 sm:px-3 text-[10px] sm:text-xs font-bold text-muted-foreground">
+              <Button variant="ghost" onClick={() => onOpenChange(false)} className="hidden min-[5px]:inline-flex h-8 sm:h-9 px-2.5 sm:px-3 text-[10px] sm:text-xs font-bold text-muted-foreground">
+                Zavřít
+              </Button>
+            </div>
+
+            <div className="flex items-center justify-between min-[5px]:hidden">
+              {isAdmin ? (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleTicketDelete}
+                  className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                  disabled={loading}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              ) : (
+                <div />
+              )}
+              <Button variant="ghost" onClick={() => onOpenChange(false)} className="h-8 px-2.5 text-[10px] font-bold text-muted-foreground">
                 Zavřít
               </Button>
             </div>
