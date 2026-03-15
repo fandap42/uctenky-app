@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # Stage 1: Build
-FROM node:20-bookworm-slim AS builder
+FROM node:22-bookworm-slim AS builder
 WORKDIR /app
 
 # Install dependencies needed for native modules and Prisma
@@ -24,7 +24,7 @@ RUN npx prisma generate
 RUN npm run build
 
 # Stage 2: Runner
-FROM node:20-bookworm-slim AS runner
+FROM node:22-bookworm-slim AS runner
 WORKDIR /app
 
 # Install openssl for production
