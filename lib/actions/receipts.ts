@@ -135,6 +135,7 @@ export async function uploadReceipt(formData: FormData) {
         expenseType,
         note,
         status: "PENDING",
+        aiStatus: "PENDING",
       }
     })
 

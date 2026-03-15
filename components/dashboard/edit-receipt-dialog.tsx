@@ -24,7 +24,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { updateReceiptDetails } from "@/lib/actions/receipts"
 import { toast } from "sonner"
-import { ExpenseType } from "@prisma/client"
+import { AiStatus, ExpenseType } from "@prisma/client"
 import { Settings2 } from "lucide-react"
 
 interface EditReceiptDialogProps {
@@ -35,6 +35,8 @@ interface EditReceiptDialogProps {
     date: string | Date
     expenseType: ExpenseType
     note?: string | null
+    aiStatus?: AiStatus
+    aiData?: unknown
   }
 }
 
@@ -43,12 +45,25 @@ export function EditReceiptDialog({ receipt }: EditReceiptDialogProps) {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
-  const [store, setStore] = useState(receipt.store)
-  const [amount, setAmount] = useState(String(receipt.amount))
+  const aiData = (receipt.aiData && typeof receipt.aiData === "object") ? receipt.aiData as Record<string, unknown> : null
+  const aiStore = typeof aiData?.store === "string"
+    ? aiData.store
+    : typeof aiData?.merchant === "string"
+      ? aiData.merchant
+      : null
+  const aiAmountValue = aiData?.amount ?? aiData?.total
+  const parsedAiAmount = typeof aiAmountValue === "string" ? Number(aiAmountValue) : aiAmountValue
+  const aiAmount = typeof parsedAiAmount === "number" && Number.isFinite(parsedAiAmount) ? parsedAiAmount : null
+  const aiDate = typeof aiData?.date === "string" ? aiData.date : null
+
+  const [store, setStore] = useState(receipt.aiStatus === "COMPLETED" && aiStore ? aiStore : receipt.store)
+  const [amount, setAmount] = useState(String(receipt.aiStatus === "COMPLETED" && aiAmount !== null ? aiAmount : receipt.amount))
   const [date, setDate] = useState(
-    typeof receipt.date === 'string' 
-      ? receipt.date.split('T')[0] 
-      : receipt.date.toISOString().split('T')[0]
+    receipt.aiStatus === "COMPLETED" && aiDate
+      ? aiDate.split('T')[0]
+      : typeof receipt.date === 'string'
+        ? receipt.date.split('T')[0]
+        : receipt.date.toISOString().split('T')[0]
   )
   const [expenseType, setExpenseType] = useState<ExpenseType>(receipt.expenseType)
   const [note, setNote] = useState(receipt.note || "")
@@ -86,6 +101,7 @@ export function EditReceiptDialog({ receipt }: EditReceiptDialogProps) {
           <DialogTitle>Upravit účtenku</DialogTitle>
           <DialogDescription>
             Změňte údaje o této účtence. Jen pro administrátory.
+            {receipt.aiStatus === "COMPLETED" && " Pole jsou předvyplněná z AI analýzy."}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">

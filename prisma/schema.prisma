@@ -118,6 +118,8 @@ model Receipt {
   isPaid      Boolean       @default(false) @map("is_paid")
   expenseType ExpenseType   @default(MATERIAL) @map("expense_type")
   status      ReceiptStatus @default(PENDING)
+  aiStatus    AiStatus      @default(PENDING) @map("ai_status")
+  aiData      Json?         @map("ai_data")
   ticketId    String        @map("ticket_id")
   createdAt   DateTime      @default(now()) @map("created_at")
   updatedAt   DateTime      @updatedAt @map("updated_at")
@@ -127,6 +129,7 @@ model Receipt {
 
   @@index([ticketId])
   @@index([status])
+  @@index([aiStatus])
   @@map("receipts")
 }
 
@@ -189,4 +192,10 @@ enum ReceiptStatus {
 enum ExpenseType {
   MATERIAL
   SERVICE
+}
+
+enum AiStatus {
+  PENDING
+  COMPLETED
+  FAILED
 }

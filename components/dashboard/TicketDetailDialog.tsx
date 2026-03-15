@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { TicketStatus, ReceiptStatus, ExpenseType } from "@prisma/client"
+import { TicketStatus, ReceiptStatus, ExpenseType, AiStatus } from "@prisma/client"
 import {
   Dialog,
   DialogContent,
@@ -71,6 +71,8 @@ interface Receipt {
   isPaid: boolean
   expenseType: ExpenseType
   status: ReceiptStatus
+  aiStatus?: AiStatus
+  aiData?: unknown
   isFiled: boolean
   note?: string | null
 }
