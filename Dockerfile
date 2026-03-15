@@ -7,14 +7,13 @@ WORKDIR /app
 # Install dependencies needed for native modules and Prisma
 RUN apt-get update && apt-get install -y openssl ca-certificates libssl-dev
 
-# Copy configuration files
-COPY package.json ./
+# Copy dependency manifests
+COPY package.json package-lock.json ./
 COPY prisma ./prisma/
 
 # Install dependencies
-# Using npm install without lockfile to ensure fresh resolution for Linux
 ENV PRISMA_SKIP_POSTINSTALL_GENERATE=1
-RUN npm install
+RUN npm ci
 
 # Copy the rest of the application
 COPY . .
