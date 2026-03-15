@@ -1,5 +1,4 @@
 import { PrismaClient } from "@prisma/client"
-import { Pool } from 'pg'
 import { PrismaPg } from '@prisma/adapter-pg'
 
 // Forces Prisma Client refresh after schema migration
@@ -11,8 +10,7 @@ const globalForPrisma = globalThis as unknown as {
 
 export const prisma = globalForPrisma.prisma ?? (() => {
   try {
-    const pool = new Pool({ connectionString })
-    const adapter = new PrismaPg(pool)
+    const adapter = new PrismaPg({ connectionString })
     const client = new PrismaClient({ 
       adapter,
       log: []
