@@ -259,7 +259,7 @@ export function OverviewTable({
                       <ReceiptViewDialog
                         transactionId={item.id}
                         purpose={item.purpose || "-"}
-                        date={item.targetDate || item.createdAt}
+                        date={item.date || item.targetDate || item.createdAt}
                         amount={Math.abs(Number(item.amount))}
                       />
                     ) : (
