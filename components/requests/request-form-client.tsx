@@ -14,7 +14,7 @@ const RequestForm = dynamic(
 
 interface RequestFormClientProps {
   sections: Section[]
-  users: { id: string; fullName: string; email?: string | null }[]
+  users: { id: string; fullName: string | null; email?: string | null }[]
   currentUserRole: string
 }
 
