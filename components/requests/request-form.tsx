@@ -33,7 +33,7 @@ interface Section {
 interface RequestFormProps {
   trigger?: React.ReactNode
   sections: Section[]
-  users?: { id: string; fullName: string; email?: string | null }[]
+  users?: { id: string; fullName: string | null; email?: string | null }[]
   currentUserRole?: string
 }
 
