@@ -22,6 +22,14 @@ export default async function DashboardPage() {
     select: { id: true, name: true },
   })
 
+  const users =
+    userRole === "ADMIN"
+      ? await prisma.user.findMany({
+          orderBy: { fullName: "asc" },
+          select: { id: true, fullName: true, email: true },
+        })
+      : []
+
   // Fetch tickets based on role
   // If ADMIN, fetch all. If MEMBER, fetch only theirs.
   const filters = isAdmin(userRole) ? {} : { requesterId: userId }
@@ -44,7 +52,14 @@ export default async function DashboardPage() {
           initialTickets={tickets}
           currentUserId={userId}
           currentUserRole={userRole}
-          headerAction={<RequestFormClient key="request-form" sections={sections} />}
+          headerAction={
+            <RequestFormClient
+              key="request-form"
+              sections={sections}
+              users={users}
+              currentUserRole={userRole}
+            />
+          }
         />
       </div>
     </div>

@@ -33,14 +33,46 @@ interface Section {
 interface RequestFormProps {
   trigger?: React.ReactNode
   sections: Section[]
+  users?: { id: string; fullName: string; email?: string | null }[]
+  currentUserRole?: string
 }
 
-export function RequestForm({ trigger, sections }: RequestFormProps) {
+export function RequestForm({ trigger, sections, users = [], currentUserRole = "MEMBER" }: RequestFormProps) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [selectedSection, setSelectedSection] = useState("")
-  const [targetDate, setTargetDate] = useState(() => new Date().toISOString().split("T")[0])
+  const [selectedUserId, setSelectedUserId] = useState("")
+  const [userQuery, setUserQuery] = useState("")
+  const [isUserListOpen, setIsUserListOpen] = useState(false)
+  const [highlightedIndex, setHighlightedIndex] = useState(0)
+  const [targetDate, setTargetDate] = useState(() => {
+    const minDate = new Date()
+    minDate.setDate(minDate.getDate() + 7)
+    return minDate.toISOString().split("T")[0]
+  })
   const router = useRouter()
+
+  const minDate = new Date()
+  minDate.setHours(0, 0, 0, 0)
+  minDate.setDate(minDate.getDate() + 7)
+
+  function resetForm() {
+    setSelectedSection("")
+    setSelectedUserId("")
+    setUserQuery("")
+    setIsUserListOpen(false)
+    setHighlightedIndex(0)
+    const defaultTarget = new Date()
+    defaultTarget.setDate(defaultTarget.getDate() + 7)
+    setTargetDate(defaultTarget.toISOString().split("T")[0])
+  }
+
+  const filteredUsers = users.filter((user) => {
+    const normalized = `${user.fullName ?? user.email ?? ""}`.toLowerCase()
+    return normalized.includes(userQuery.toLowerCase())
+  })
+
+  const visibleUsers = filteredUsers.length ? filteredUsers : users
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -57,6 +89,10 @@ export function RequestForm({ trigger, sections }: RequestFormProps) {
       return
     }
 
+    if (currentUserRole === "ADMIN" && selectedUserId) {
+      formData.set("requesterId", selectedUserId)
+    }
+
     setIsLoading(true)
     formData.set("sectionId", selectedSection)
 
@@ -66,8 +102,8 @@ export function RequestForm({ trigger, sections }: RequestFormProps) {
       toast.error(result.error)
     } else {
       toast.success("Žádost byla úspěšně vytvořena")
+      resetForm()
       setOpen(false)
-      setSelectedSection("")
       router.refresh()
     }
 
@@ -75,7 +111,15 @@ export function RequestForm({ trigger, sections }: RequestFormProps) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(value) => {
+        setOpen(value)
+        if (!value) {
+          resetForm()
+        }
+      }}
+    >
       <DialogTrigger asChild>
         {trigger || (
           <Button className="fixed bottom-4 right-4 z-30 md:static bg-primary hover:bg-primary/90 hover:scale-105 text-primary-foreground font-black uppercase tracking-tight h-11 px-6 rounded-2xl shadow-lg shadow-primary/20 transition-all duration-200">
@@ -83,7 +127,7 @@ export function RequestForm({ trigger, sections }: RequestFormProps) {
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="bg-card border-none sm:max-w-[500px] rounded-[2.5rem] p-8 shadow-2xl">
+      <DialogContent className="bg-card border-none sm:max-w-[500px] w-full max-h-[90vh] overflow-y-auto rounded-[2.5rem] p-4 sm:p-8 shadow-2xl">
         <DialogHeader>
           <DialogTitle className="text-foreground text-2xl font-black tracking-tight">
             Nová žádost o nákup
@@ -93,6 +137,88 @@ export function RequestForm({ trigger, sections }: RequestFormProps) {
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6 mt-6">
+          {currentUserRole === "ADMIN" && (
+            <div className="space-y-2 relative">
+              <Label htmlFor="userFilter" className="text-xs font-bold uppercase tracking-wider ml-1 text-muted-foreground">
+                Žádost za uživatele (volitelné)
+              </Label>
+              <Input
+                id="userFilter"
+                value={userQuery}
+                onFocus={() => {
+                  setIsUserListOpen(true)
+                  setHighlightedIndex(0)
+                }}
+                onKeyDown={(e) => {
+                  if (!isUserListOpen && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+                    setIsUserListOpen(true)
+                    e.preventDefault()
+                    return
+                  }
+
+                  if (!visibleUsers.length) {
+                    return
+                  }
+
+                  if (e.key === "ArrowDown") {
+                    e.preventDefault()
+                    setHighlightedIndex((prev) => (prev + 1) % visibleUsers.length)
+                  } else if (e.key === "ArrowUp") {
+                    e.preventDefault()
+                    setHighlightedIndex((prev) => (prev - 1 + visibleUsers.length) % visibleUsers.length)
+                  } else if (e.key === "Enter") {
+                    e.preventDefault()
+                    const selected = visibleUsers[highlightedIndex]
+                    if (selected) {
+                      setSelectedUserId(selected.id)
+                      setUserQuery(selected.fullName || selected.email || "")
+                      setIsUserListOpen(false)
+                    }
+                  }
+                }}
+                onChange={(e) => {
+                  setUserQuery(e.target.value)
+                  setIsUserListOpen(true)
+                  setHighlightedIndex(0)
+                  const match = users.find((user) =>
+                    `${user.fullName ?? user.email ?? ""}`.toLowerCase() ===
+                    e.target.value.toLowerCase()
+                  )
+                  setSelectedUserId(match?.id ?? "")
+                }}
+                onBlur={() => setTimeout(() => setIsUserListOpen(false), 150)}
+                placeholder="Vyhledejte uživatele..."
+                className="bg-muted/50 border-none h-10 rounded-xl text-foreground font-bold"
+                autoComplete="off"
+              />
+              {isUserListOpen && (
+                <div className="absolute left-0 right-0 mt-1 max-h-64 overflow-y-auto rounded-xl border bg-card shadow-lg z-20">
+                  {visibleUsers.map((user, index) => (
+                    <button
+                      type="button"
+                      key={user.id}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onMouseEnter={() => setHighlightedIndex(index)}
+                      onClick={() => {
+                        setSelectedUserId(user.id)
+                        setUserQuery(user.fullName || user.email || "")
+                        setIsUserListOpen(false)
+                      }}
+                      className={`w-full text-left px-3 py-2 hover:bg-accent hover:text-accent-foreground ${
+                        highlightedIndex === index ? "bg-accent text-accent-foreground" : ""
+                      }`}
+                    >
+                      {user.fullName || user.email}
+                    </button>
+                  ))}
+                  {filteredUsers.length === 0 && (
+                    <div className="px-3 py-2 text-muted-foreground">Žádní uživatelé</div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="section" className="text-xs font-bold uppercase tracking-wider ml-1 text-muted-foreground">
               Sekce / Projekt *
@@ -173,7 +299,10 @@ export function RequestForm({ trigger, sections }: RequestFormProps) {
             <Button
               type="button"
               variant="ghost"
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                resetForm()
+                setOpen(false)
+              }}
               className="font-bold rounded-xl"
             >
               Zrušit

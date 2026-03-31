@@ -103,10 +103,9 @@ export async function uploadReceipt(formData: FormData) {
     }
 
     // Validation: Date (skip for admins)
-    const ticketCreatedAt = new Date(ticket.createdAt)
-    const ticketDate = new Date(ticketCreatedAt < ticket.targetDate ? ticketCreatedAt : ticket.targetDate)
-    if (date < ticketDate && !isAdmin) {
-      return { error: "Datum účtenky nesmí být starší než datum vytvoření žádosti" }
+    const ticketTargetDate = new Date(ticket.targetDate)
+    if (date < ticketTargetDate && !isAdmin) {
+      return { error: "Datum účtenky nesmí být starší než cílové datum žádosti" }
     }
 
     // Validation: Budget
