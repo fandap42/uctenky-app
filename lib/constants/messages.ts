@@ -37,6 +37,7 @@ export const MESSAGES = {
     MISSING_SECTION: "Vyberte sekci",
     CREATE_FAILED: "Nepodařilo se vytvořit žádost",
     UPDATE_FAILED: "Nepodařilo se aktualizovat žádost",
+    INVALID_TARGET_DATE: "Datum nákupu musí být alespoň 7 dní od dneška",
     DELETE_FAILED: "Nepodařilo se smazat žádost",
     DELETE_FORBIDDEN: "Nemáte oprávnění k smazání této žádosti v jejím aktuálním stavu.",
     RECEIPT_UPLOAD_FAILED: "Nepodařilo se nahrát účtenku",

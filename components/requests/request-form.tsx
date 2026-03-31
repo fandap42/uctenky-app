@@ -39,8 +39,17 @@ export function RequestForm({ trigger, sections }: RequestFormProps) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [selectedSection, setSelectedSection] = useState("")
-  const [targetDate, setTargetDate] = useState(() => new Date().toISOString().split("T")[0])
+  const [targetDate, setTargetDate] = useState(() => {
+    const minDate = new Date()
+    minDate.setDate(minDate.getDate() + 7)
+    return minDate.toISOString().split("T")[0]
+  })
   const router = useRouter()
+
+  const minDate = new Date()
+  minDate.setHours(0, 0, 0, 0)
+  minDate.setDate(minDate.getDate() + 7)
+  const minTargetDateString = minDate.toISOString().split("T")[0]
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -54,6 +63,12 @@ export function RequestForm({ trigger, sections }: RequestFormProps) {
     const budgetAmount = Number.parseFloat(String(formData.get("budgetAmount") ?? ""))
     if (Number.isNaN(budgetAmount) || budgetAmount <= 0) {
       toast.error("Rozpočet musí být kladné číslo")
+      return
+    }
+
+    const selectedTargetDate = new Date(targetDate)
+    if (selectedTargetDate < minDate) {
+      toast.error(MESSAGES.TRANSACTION.INVALID_TARGET_DATE)
       return
     }
 
@@ -162,6 +177,7 @@ export function RequestForm({ trigger, sections }: RequestFormProps) {
                 name="targetDate"
                 type="date"
                 required
+                min={minTargetDateString}
                 value={targetDate}
                 onChange={(e) => setTargetDate(e.target.value)}
                 className="bg-muted/50 border-none h-12 rounded-xl text-foreground font-bold"
