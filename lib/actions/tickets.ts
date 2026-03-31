@@ -29,6 +29,7 @@ export async function createTicket(formData: FormData) {
   const sectionId = formData.get("sectionId") as string
   const targetDateStr = formData.get("targetDate") as string
   const targetDate = targetDateStr ? new Date(targetDateStr) : new Date()
+  const requestedUserId = formData.get("requesterId") as string | null
 
   const minTargetDate = new Date()
   minTargetDate.setHours(0, 0, 0, 0)
@@ -37,6 +38,13 @@ export async function createTicket(formData: FormData) {
   const isAdmin = session.user.role === "ADMIN"
   if (!isAdmin && targetDate < minTargetDate) {
     return { error: MESSAGES.TRANSACTION.INVALID_TARGET_DATE }
+  }
+
+  if (isAdmin && requestedUserId && requestedUserId !== session.user.id) {
+    const user = await prisma.user.findUnique({ where: { id: requestedUserId } })
+    if (!user) {
+      return { error: "Vybraný uživatel neexistuje" }
+    }
   }
 
   if (!purpose || isNaN(budgetAmount)) {
@@ -50,7 +58,10 @@ export async function createTicket(formData: FormData) {
   try {
     await prisma.ticket.create({
       data: {
-        requesterId: session.user.id,
+        requesterId:
+          isAdmin && requestedUserId && requestedUserId.length > 0
+            ? requestedUserId
+            : session.user.id,
         sectionId,
         purpose,
         budgetAmount,
