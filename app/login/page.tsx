@@ -30,7 +30,9 @@ export default function LoginPage() {
         redirect: false,
       })
 
-      if (result?.error) {
+      if (result?.error === "RateLimited") {
+        toast.error("Příliš mnoho pokusů o přihlášení. Zkuste to prosím později.")
+      } else if (result?.error) {
         toast.error("Neplatný email nebo heslo")
       } else {
         router.push("/dashboard")

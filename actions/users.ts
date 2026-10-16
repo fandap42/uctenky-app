@@ -14,6 +14,14 @@ export async function getUsers() {
 
   const users = await prisma.user.findMany({
     orderBy: { fullName: "asc" },
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+      role: true,
+      image: true,
+      createdAt: true,
+    },
   })
 
   return users
@@ -50,6 +58,7 @@ export async function updateUser(
       data: {
         role: data.role,
       },
+      select: { id: true, fullName: true, email: true, role: true, image: true },
     })
 
     revalidatePath("/dashboard/users")

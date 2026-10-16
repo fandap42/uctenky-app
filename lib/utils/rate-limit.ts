@@ -114,3 +114,13 @@ export const uploadRateLimiter = new RateLimiter({
   windowMs: 60 * 1000, // 60 seconds
   maxRequests: 10, // max 10 uploads per minute per IP
 })
+
+export const receiptUploadRateLimiter = new RateLimiter({
+  windowMs: 60 * 1000,
+  maxRequests: 10,
+})
+
+export const loginRateLimiter = new RateLimiter({
+  windowMs: 15 * 60 * 1000,
+  maxRequests: 10,
+})

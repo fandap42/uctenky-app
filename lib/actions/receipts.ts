@@ -8,6 +8,7 @@ import { MESSAGES } from "@/lib/constants/messages"
 import { uploadFile } from "@/lib/s3"
 import { fileTypeFromBuffer } from "file-type"
 import { convertHeicBufferToJpeg } from "@/lib/utils/heic-conversion"
+import { receiptUploadRateLimiter } from "@/lib/utils/rate-limit"
 
 const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif', 'pdf']
 const ALLOWED_MIME_TYPES = [
@@ -40,7 +41,21 @@ export async function uploadReceipt(formData: FormData) {
       return { error: MESSAGES.UPLOAD.REQUIRED_FIELDS }
     }
 
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return { error: MESSAGES.UPLOAD.INVALID_AMOUNT }
+    }
 
+    if (Number.isNaN(date.getTime())) {
+      return { error: MESSAGES.TRANSACTION.INVALID_DATE }
+    }
+
+    if (!Object.values(ExpenseType).includes(expenseType)) {
+      return { error: MESSAGES.UPLOAD.REQUIRED_FIELDS }
+    }
+
+    if (!receiptUploadRateLimiter.check(session.user.id).allowed) {
+      return { error: MESSAGES.RATE_LIMIT.TOO_MANY_REQUESTS }
+    }
 
     const ticket = await prisma.ticket.findUnique({
       where: { id: ticketId },
@@ -317,6 +332,14 @@ export async function updateReceiptDetails(
     return { error: MESSAGES.AUTH.ADMIN_ONLY }
   }
 
+  if (!Number.isFinite(data.amount)) {
+    return { error: MESSAGES.UPLOAD.INVALID_AMOUNT }
+  }
+
+  if (!(data.date instanceof Date) || Number.isNaN(data.date.getTime())) {
+    return { error: MESSAGES.TRANSACTION.INVALID_DATE }
+  }
+
   try {
     await prisma.receipt.update({
       where: { id: receiptId },
@@ -343,8 +366,8 @@ export async function updateReceiptNote(
 ) {
   const session = await auth()
 
-  if (!session?.user?.id) {
-    return { error: MESSAGES.AUTH.UNAUTHORIZED }
+  if (session?.user?.role !== "ADMIN") {
+    return { error: MESSAGES.AUTH.ADMIN_ONLY }
   }
 
   try {
