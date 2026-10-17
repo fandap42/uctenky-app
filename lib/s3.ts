@@ -13,6 +13,12 @@ const s3Client = new S3Client({
     secretAccessKey: process.env.S3_SECRET_KEY || "minioadmin123",
   },
   forcePathStyle: true, // Required for MinIO
+  requestHandler: {
+    connectionTimeout: 5_000,
+    requestTimeout: 60_000,
+    socketTimeout: 60_000,
+    throwOnRequestTimeout: true,
+  },
 })
 
 /** Bucket name for storing receipts */
