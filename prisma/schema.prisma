@@ -29,7 +29,8 @@ model User {
   accounts               Account[]
   sessions               Session[]
   tickets                Ticket[]
-  assignedTickets        Ticket[]  @relation("TicketProcessor")
+  assignedTickets        Ticket[]   @relation("TicketProcessor")
+  auditLogs              AuditLog[]
 
   @@map("users")
 }
@@ -156,6 +157,25 @@ model CashOnHand {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("cash_on_hand")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?  @map("actor_id")
+  actorEmail String?  @map("actor_email")
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String?  @map("entity_id")
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
 }
 
 enum AppRole {
