@@ -27,7 +27,7 @@
 - Receipt upload with HEIC/HEIF conversion support
 - Cash register (Pokladna) management
 - Budget tracking by section and semester
-- CSV export functionality (Czech Excel compatible)
+- CSV and XLSX export functionality
 - Comprehensive design system for consistent UI
 
 ---
@@ -521,13 +521,13 @@ flowchart LR
     COH[Cash on Hand] --> RC
 ```
 
-### 4. CSV Export
+### 4. CSV & XLSX Export
 
-Exports use semicolon separator for Czech Excel compatibility:
+Exports support both standard comma-separated CSV (default English delimiter `,` with `.` decimal separator) and native Excel `.xlsx` files:
 
 ```csv
-Sekce;Účel;Částka
-"Vzdělávací akce";"Nákup materiálu";-520,00
+Sekce,Účel,Částka
+"Vzdělávací akce","Nákup materiálu",-520.00
 ```
 
 ---
