@@ -165,7 +165,7 @@ export default async function BudgetPage() {
       {semesterData.length > 0 ? (
         semesterData.map((sem) => (
           <Card key={sem.semester} className="bg-card border-border shadow-sm overflow-hidden rounded-[2.5rem]">
-            <CardHeader className="flex flex-row items-center justify-between pb-6 border-b border-border bg-muted/20">
+            <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 pb-6 border-b border-border bg-muted/20">
               <CardTitle className="text-2xl font-black text-foreground">
                 {sem.semester}
               </CardTitle>

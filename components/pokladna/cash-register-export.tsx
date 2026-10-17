@@ -3,6 +3,8 @@
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { monthNames } from "@/lib/utils/semesters"
+import { FileDown, FileSpreadsheet } from "lucide-react"
+import * as XLSX from "xlsx"
 
 interface Transaction {
   id: string
@@ -41,13 +43,7 @@ export function CashRegisterExport({
   year,
   month,
 }: CashRegisterExportProps) {
-  function exportToCSV() {
-    if (transactions.length === 0 && deposits.length === 0) {
-      toast.error("Žádná data k exportu")
-      return
-    }
-
-    // Combine transactions and deposits into a single table
+  function buildRows() {
     type RowItem = {
       date: Date
       type: "transaction" | "deposit"
@@ -94,8 +90,18 @@ export function CashRegisterExport({
 
     // Sort by date
     rows.sort((a, b) => a.date.getTime() - b.date.getTime())
+    return rows
+  }
 
-    // CSV Headers - semicolon separated for Czech Excel
+  function exportToCSV() {
+    if (transactions.length === 0 && deposits.length === 0) {
+      toast.error("Žádná data k exportu")
+      return
+    }
+
+    const rows = buildRows()
+
+    // CSV Headers - comma separated (default English CSV)
     const headers = [
       "Datum",
       "Sekce",
@@ -105,27 +111,27 @@ export function CashRegisterExport({
       "Typ",
     ]
 
-    // Format rows - plain numbers without formatting for Excel
+    // Format rows - plain numbers with dot decimal separator for comma-delimited CSV
     const csvRows = rows.map((r) => [
       r.date.toLocaleDateString("cs-CZ"),
-      `"${r.section}"`,
+      `"${r.section.replace(/"/g, '""')}"`,
       `"${r.purpose.replace(/"/g, '""')}"`,
       `"${r.store.replace(/"/g, '""')}"`,
-      r.amount.toFixed(2).replace(".", ","), // Czech decimal separator, no thousands separator
-      r.expenseType,
+      r.amount.toFixed(2),
+      `"${r.expenseType.replace(/"/g, '""')}"`,
     ])
 
     // Build CSV content
     const monthName = monthNames[month]
     const csvContent = [
-      `Pokladna - ${monthName} ${year}`,
+      `"Pokladna - ${monthName} ${year}"`,
       "",
-      `Počáteční zůstatek;${beginningBalance.toFixed(2).replace(".", ",")}`,
+      `Počáteční zůstatek,${beginningBalance.toFixed(2)}`,
       "",
-      headers.join(";"),
-      ...csvRows.map((r) => r.join(";")),
+      headers.join(","),
+      ...csvRows.map((r) => r.join(",")),
       "",
-      `Konečný zůstatek;${endingBalance.toFixed(2).replace(".", ",")}`,
+      `Konečný zůstatek,${endingBalance.toFixed(2)}`,
     ].join("\n")
 
     // Create download link with BOM for Excel UTF-8 support
@@ -144,30 +150,82 @@ export function CashRegisterExport({
     link.click()
     document.body.removeChild(link)
 
-    toast.success("Export dokončen")
+    toast.success("Export CSV dokončen")
+  }
+
+  function exportToXLSX() {
+    if (transactions.length === 0 && deposits.length === 0) {
+      toast.error("Žádná data k exportu")
+      return
+    }
+
+    const rows = buildRows()
+    const monthName = monthNames[month]
+
+    const headers = [
+      "Datum",
+      "Sekce",
+      "Účel",
+      "Obchod",
+      "Částka",
+      "Typ",
+    ]
+
+    const sheetData = [
+      [`Pokladna - ${monthName} ${year}`],
+      [],
+      ["Počáteční zůstatek", Number(beginningBalance.toFixed(2))],
+      [],
+      headers,
+      ...rows.map((r) => [
+        r.date.toLocaleDateString("cs-CZ"),
+        r.section,
+        r.purpose,
+        r.store,
+        Number(r.amount.toFixed(2)),
+        r.expenseType,
+      ]),
+      [],
+      ["Konečný zůstatek", Number(endingBalance.toFixed(2))],
+    ]
+
+    const worksheet = XLSX.utils.aoa_to_sheet(sheetData)
+    worksheet["!cols"] = [
+      { wch: 16 },
+      { wch: 24 },
+      { wch: 32 },
+      { wch: 24 },
+      { wch: 15 },
+      { wch: 15 },
+    ]
+
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, `${monthName} ${year}`)
+    XLSX.writeFile(workbook, `pokladna-${monthName.toLowerCase()}-${year}.xlsx`)
+
+    toast.success("Export XLSX dokončen")
   }
 
   return (
-    <Button
-      onClick={exportToCSV}
-      variant="outline"
-      className="border-blue-500/50 text-blue-400 hover:bg-blue-500/10"
-    >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-4 w-4 mr-2"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
+    <div className="flex flex-wrap items-center gap-2">
+      <Button
+        onClick={exportToCSV}
+        variant="outline"
+        size="sm"
+        className="border-blue-500/50 text-blue-400 hover:bg-blue-500/10"
       >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-        />
-      </svg>
-      Export CSV
-    </Button>
+        <FileDown className="h-4 w-4 mr-2" />
+        Export CSV
+      </Button>
+      <Button
+        onClick={exportToXLSX}
+        variant="outline"
+        size="sm"
+        className="border-blue-500/50 text-blue-400 hover:bg-blue-500/10"
+      >
+        <FileSpreadsheet className="h-4 w-4 mr-2" />
+        Export XLSX
+      </Button>
+    </div>
   )
 }
