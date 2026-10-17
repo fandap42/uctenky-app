@@ -5,6 +5,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter"
 import { compare } from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 import { authConfig } from "./auth.config"
+import { loginRateLimiter, getClientIpFromHeaders } from "@/lib/utils/rate-limit"
 
 if (prisma && !('account' in prisma)) {
   console.error("[auth] CRITICAL: prisma.account is missing from Prisma client!")
@@ -35,11 +36,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         email: { label: "Email", type: "email" },
         password: { label: "Heslo", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
+        const ip = request?.headers ? getClientIpFromHeaders(request.headers) : "unknown"
+        if (loginRateLimiter.isRateLimited(ip)) {
+          return null
+        }
+
         console.log("[auth] authorize called with email:", credentials?.email)
 
         if (!credentials?.email || !credentials?.password) {
           console.log("[auth] Missing credentials")
+          loginRateLimiter.check(ip)
           return null
         }
 
@@ -53,6 +60,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         console.log("[auth] User found:", user ? "yes" : "no")
         if (!user || !user.passwordHash) {
+          loginRateLimiter.check(ip)
           return null
         }
 
@@ -61,6 +69,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         console.log("[auth] Password valid:", isPasswordValid)
 
         if (!isPasswordValid) {
+          loginRateLimiter.check(ip)
           return null
         }
 

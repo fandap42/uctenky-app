@@ -10,6 +10,107 @@ import { getSemester, getSemesterRange, getCurrentSemester, sortSemesterKeys } f
 import { sendEmail } from "@/lib/email"
 import { escapeHtml } from "@/lib/utils/html"
 
+async function getHeadSectionId(role: string): Promise<string | null> {
+  // Resolve user's section from HEAD role
+  if (!isHeadRole(role)) return null
+  const sectionName = getSectionForRole(role)
+  if (!sectionName) return null
+  const section = await prisma.section.findFirst({
+    where: { name: sectionName, isActive: true },
+    select: { id: true },
+  })
+  return section?.id ?? null
+}
+
+async function getCurrentUserRole(userId: string): Promise<string | null> {
+  const dbUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  })
+  return dbUser?.role ?? null
+}
+
+async function authorizeTicketFilters(
+  user: { id: string; role?: string | null },
+  filters: { requesterId?: string; sectionId?: string }
+): Promise<{ requesterId?: string; sectionId?: string } | null> {
+  const { requesterId, sectionId } = filters
+  const role = await getCurrentUserRole(user.id)
+  if (!role) {
+    return null
+  }
+
+  if (role === "ADMIN") {
+    return { requesterId, sectionId }
+  }
+
+  if (requesterId && requesterId !== user.id) {
+    return null
+  }
+
+  if (sectionId) {
+    const headSectionId = await getHeadSectionId(role)
+    if (headSectionId !== sectionId) {
+      return null
+    }
+  }
+
+  if (!requesterId && !sectionId) {
+    return { requesterId: user.id }
+  }
+
+  return { requesterId, sectionId }
+}
+
+async function notifyRequesterOfStatusChange(
+  ticket: {
+    purpose: string
+    status: TicketStatus
+    requester: { email: string; receiveEmails: boolean } | null
+  },
+  newStatus: TicketStatus
+) {
+  if (ticket.status === newStatus || !ticket.requester?.email || !ticket.requester.receiveEmails) {
+    return
+  }
+
+  try {
+    const purpose = escapeHtml(ticket.purpose)
+    let subject = ""
+    let msg = ""
+    if (newStatus === "APPROVED") {
+      if (ticket.status === "VERIFICATION") {
+        subject = "Žádost byla vrácena z ověřování"
+        msg = `Vaše žádost <b>${purpose}</b> byla administrátorem vrácena z ověřování zpět k úpravám.`
+      } else {
+        subject = "Žádost byla schválena"
+        msg = `Vaše žádost <b>${purpose}</b> byla schválena.`
+      }
+    } else if (newStatus === "REJECTED") {
+      subject = "Žádost byla zamítnuta"
+      msg = `Vaše žádost <b>${purpose}</b> byla zamítnuta.`
+    }
+
+    if (subject) {
+      await sendEmail({
+        to: ticket.requester.email,
+        subject,
+        html: `<p>${msg}</p><p><a href="${process.env.AUTH_URL || 'http://localhost:3000'}/dashboard">Zobrazit přehled</a></p>`
+      })
+    }
+  } catch (e) {
+    console.error("Failed to send status update email", e)
+  }
+}
+
+function isValidAmount(value: number): boolean {
+  return Number.isFinite(value) && value > 0
+}
+
+function isValidDate(value: Date): boolean {
+  return value instanceof Date && !Number.isNaN(value.getTime())
+}
+
 export async function createTicket(formData: FormData) {
   const session = await auth()
 
@@ -31,6 +132,10 @@ export async function createTicket(formData: FormData) {
   const targetDate = targetDateStr ? new Date(targetDateStr) : new Date()
   const requestedUserId = formData.get("requesterId") as string | null
 
+  if (!isValidDate(targetDate)) {
+    return { error: MESSAGES.TRANSACTION.INVALID_DATE }
+  }
+
   const minTargetDate = new Date()
   minTargetDate.setHours(0, 0, 0, 0)
   minTargetDate.setDate(minTargetDate.getDate() + 7)
@@ -47,11 +152,23 @@ export async function createTicket(formData: FormData) {
     }
   }
 
-  if (!purpose || isNaN(budgetAmount)) {
+  if (!purpose?.trim() || isNaN(budgetAmount)) {
     return { error: MESSAGES.TRANSACTION.MISSING_FIELDS }
   }
 
+  if (!isValidAmount(budgetAmount)) {
+    return { error: MESSAGES.UPLOAD.INVALID_AMOUNT }
+  }
+
   if (!sectionId) {
+    return { error: MESSAGES.TRANSACTION.MISSING_SECTION }
+  }
+
+  const section = await prisma.section.findFirst({
+    where: { id: sectionId, isActive: true },
+    select: { id: true },
+  })
+  if (!section) {
     return { error: MESSAGES.TRANSACTION.MISSING_SECTION }
   }
 
@@ -128,38 +245,8 @@ export async function updateTicketStatus(
       },
     })
 
-    if (
-      previousTicket &&
-      previousTicket.status !== status &&
-      previousTicket.requester?.email &&
-      (previousTicket.requester as unknown as { receiveEmails?: boolean })?.receiveEmails
-    ) {
-      try {
-        let subject = ""
-        let msg = ""
-        if (status === "APPROVED") {
-          if (previousTicket.status === "VERIFICATION") {
-            subject = "Žádost byla vrácena z ověřování"
-            msg = `Vaše žádost <b>${escapeHtml(previousTicket.purpose)}</b> byla administrátorem vrácena z ověřování zpět k úpravám.`
-          } else {
-            subject = "Žádost byla schválena"
-            msg = `Vaše žádost <b>${escapeHtml(previousTicket.purpose)}</b> byla schválena.`
-          }
-        } else if (status === "REJECTED") {
-          subject = "Žádost byla zamítnuta"
-          msg = `Vaše žádost <b>${escapeHtml(previousTicket.purpose)}</b> byla zamítnuta.`
-        }
-
-        if (subject) {
-          await sendEmail({
-            to: previousTicket.requester.email,
-            subject,
-            html: `<p>${msg}</p><p><a href="${process.env.AUTH_URL || 'http://localhost:3000'}/dashboard">Zobrazit přehled</a></p>`
-          })
-        }
-      } catch (e) {
-        console.error("Failed to send status update email", e)
-      }
+    if (previousTicket) {
+      await notifyRequesterOfStatusChange(previousTicket, status)
     }
 
     revalidatePath("/dashboard", "layout")
@@ -320,7 +407,18 @@ export async function getTickets(filters: {
   type?: 'active' | 'historical' | 'all'
   semesterKey?: string
 } = {}) {
+  const session = await auth()
+
+  if (!session?.user?.id) {
+    return { error: MESSAGES.AUTH.UNAUTHORIZED }
+  }
+
   try {
+    const authorizedFilters = await authorizeTicketFilters(session.user, filters)
+    if (!authorizedFilters) {
+      return { error: MESSAGES.AUTH.FORBIDDEN }
+    }
+
     // Get current semester range to filter out old DONE tickets
     const currentSemester = getCurrentSemester()
     const { start: semesterStart } = getSemesterRange(currentSemester)
@@ -337,8 +435,8 @@ export async function getTickets(filters: {
 
     const tickets = await prisma.ticket.findMany({
       where: {
-        ...(filters.requesterId && { requesterId: filters.requesterId }),
-        ...(filters.sectionId && { sectionId: filters.sectionId }),
+        ...(authorizedFilters.requesterId && { requesterId: authorizedFilters.requesterId }),
+        ...(authorizedFilters.sectionId && { sectionId: authorizedFilters.sectionId }),
         ...(filters.status && {
           status: Array.isArray(filters.status)
             ? { in: filters.status }
@@ -414,36 +512,10 @@ export async function getArchivedSemesters(filters: { requesterId?: string; sect
       return { error: MESSAGES.AUTH.UNAUTHORIZED, semesters: [] }
     }
 
-    const isAdmin = session.user.role === "ADMIN"
-
     // Enforce authorization: non-admins can only query their own data
-    const authorizedFilters: { requesterId?: string; sectionId?: string } = {}
-    if (filters.requesterId) {
-      if (!isAdmin && filters.requesterId !== session.user.id) {
-        return { error: MESSAGES.AUTH.UNAUTHORIZED, semesters: [] }
-      }
-      authorizedFilters.requesterId = filters.requesterId
-    }
-    if (filters.sectionId) {
-      if (!isAdmin) {
-        // Resolve user's section from HEAD role
-        const userRole = session.user.role || "MEMBER"
-        let userSectionId: string | null = null
-        if (isHeadRole(userRole)) {
-          const sectionName = getSectionForRole(userRole)
-          if (sectionName) {
-            const section = await prisma.section.findFirst({
-              where: { name: sectionName, isActive: true },
-              select: { id: true },
-            })
-            userSectionId = section?.id ?? null
-          }
-        }
-        if (userSectionId !== filters.sectionId) {
-          return { error: MESSAGES.AUTH.UNAUTHORIZED, semesters: [] }
-        }
-      }
-      authorizedFilters.sectionId = filters.sectionId
+    const authorizedFilters = await authorizeTicketFilters(session.user, filters)
+    if (!authorizedFilters) {
+      return { error: MESSAGES.AUTH.UNAUTHORIZED, semesters: [] }
     }
 
     const currentSemester = getCurrentSemester()
@@ -509,6 +581,18 @@ export async function updateTicketDetails(
     const isAdmin = session.user.role === "ADMIN"
     const isOwner = previousTicket.requesterId === session.user.id
 
+    if (!data.purpose?.trim()) {
+      return { error: MESSAGES.TRANSACTION.MISSING_FIELDS }
+    }
+
+    if (!isValidAmount(data.budgetAmount)) {
+      return { error: MESSAGES.UPLOAD.INVALID_AMOUNT }
+    }
+
+    if (!isValidDate(data.targetDate)) {
+      return { error: MESSAGES.TRANSACTION.INVALID_DATE }
+    }
+
     const minTargetDate = new Date()
     minTargetDate.setHours(0, 0, 0, 0)
     minTargetDate.setDate(minTargetDate.getDate() + 7)
@@ -537,39 +621,7 @@ export async function updateTicketDetails(
       },
     })
 
-    if (
-      previousTicket &&
-      previousTicket.status !== data.status &&
-      previousTicket.requester?.email &&
-      (previousTicket.requester as unknown as { receiveEmails?: boolean })?.receiveEmails
-    ) {
-      try {
-        let subject = ""
-        let msg = ""
-        if (data.status === "APPROVED") {
-          if (previousTicket.status === "VERIFICATION") {
-            subject = "Žádost byla vrácena z ověřování"
-            msg = `Vaše žádost <b>${previousTicket.purpose}</b> byla administrátorem vrácena z ověřování zpět k úpravám.`
-          } else {
-            subject = "Žádost byla schválena"
-            msg = `Vaše žádost <b>${previousTicket.purpose}</b> byla schválena.`
-          }
-        } else if (data.status === "REJECTED") {
-          subject = "Žádost byla zamítnuta"
-          msg = `Vaše žádost <b>${previousTicket.purpose}</b> byla zamítnuta.`
-        }
-
-        if (subject) {
-          await sendEmail({
-            to: previousTicket.requester.email,
-            subject,
-            html: `<p>${msg}</p><p><a href="${process.env.AUTH_URL || 'http://localhost:3000'}/dashboard">Zobrazit přehled</a></p>`
-          })
-        }
-      } catch (e) {
-        console.error("Failed to send status update email", e)
-      }
-    }
+    await notifyRequesterOfStatusChange(previousTicket, newStatus)
 
     revalidatePath("/dashboard", "layout")
     return { success: true }
@@ -590,8 +642,8 @@ export async function getTicketsBySemester(
 ) {
   const session = await auth()
 
-  if (!session?.user?.id) {
-    return { error: MESSAGES.AUTH.UNAUTHORIZED }
+  if (!session?.user?.id || (await getCurrentUserRole(session.user.id)) !== "ADMIN") {
+    return { error: MESSAGES.AUTH.ADMIN_ONLY }
   }
 
   const { start, end } = getSemesterRange(semesterKey)
@@ -647,8 +699,8 @@ export async function getTicketSemesterTotals(
 ) {
   const session = await auth()
 
-  if (!session?.user?.id) {
-    return { error: MESSAGES.AUTH.UNAUTHORIZED }
+  if (!session?.user?.id || (await getCurrentUserRole(session.user.id)) !== "ADMIN") {
+    return { error: MESSAGES.AUTH.ADMIN_ONLY }
   }
 
   try {
