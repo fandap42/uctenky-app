@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { ChevronDown, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { reloadIfVersionSkew } from "@/lib/utils/version-skew"
 
 type LoadResult<T> = T | { error?: string }
 
@@ -39,6 +40,7 @@ export function CollapsibleSemester<T>({
         setData(result as T)
       }
     } catch (loadError) {
+      if (reloadIfVersionSkew(loadError)) return
       console.error("Semester load error:", loadError)
       if (!silent) setError("Nepodařilo se načíst data")
     } finally {

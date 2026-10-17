@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog"
 import { BankAccountForm } from "@/components/bank-account/bank-account-form"
 import { completeOnboarding } from "@/lib/actions/bank-account"
+import { reloadIfVersionSkew } from "@/lib/utils/version-skew"
 
 export function OnboardingDialog() {
   const { data: session, update } = useSession()
@@ -39,6 +40,7 @@ export function OnboardingDialog() {
       await update({ trigger: "update" })
       setOpen(false)
     } catch (error) {
+      if (reloadIfVersionSkew(error)) return
       console.error("Failed to skip onboarding", error)
       setOpen(true)
     }
