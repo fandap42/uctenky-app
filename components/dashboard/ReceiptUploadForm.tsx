@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { uploadReceipt } from "@/lib/actions/receipts"
 import { validateReceiptFile } from "@/lib/utils/file-validator"
 import { MESSAGES } from "@/lib/constants/messages"
+import { reloadIfVersionSkew } from "@/lib/utils/version-skew"
 import { Loader2, Camera } from "lucide-react"
 import { ExpenseType } from "@prisma/client"
 import { Textarea } from "@/components/ui/textarea"
@@ -86,6 +87,7 @@ export function ReceiptUploadForm({ ticketId, onSuccess }: ReceiptUploadFormProp
         router.refresh()
       }
     } catch (error: unknown) {
+      if (reloadIfVersionSkew(error)) return
       const message = error instanceof Error ? error.message : MESSAGES.UPLOAD.UPLOAD_FAILED
       toast.error(message)
     } finally {

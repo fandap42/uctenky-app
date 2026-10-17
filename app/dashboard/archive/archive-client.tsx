@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from "react"
 import { TicketDetailDialog } from "@/components/dashboard/TicketDetailDialog"
 import { TicketCardItem } from "@/components/dashboard/TicketMobileList"
 import { getTickets, getArchivedSemesters } from "@/lib/actions/tickets"
+import { reloadIfVersionSkew } from "@/lib/utils/version-skew"
 import { TicketStatus, ReceiptStatus, ExpenseType } from "@prisma/client"
 import { cn } from "@/lib/utils"
 import {
@@ -111,6 +112,7 @@ export function ArchiveClient({
         }
       })
       .catch(error => {
+        if (reloadIfVersionSkew(error)) return
         if (!isMounted) return
         console.error("Error loading archived semesters:", error)
       })
@@ -153,6 +155,7 @@ export function ArchiveClient({
         }
       })
       .catch(error => {
+        if (reloadIfVersionSkew(error)) return
         if (!isMounted) return
         console.error("Error loading archived tickets:", error)
       })

@@ -6,6 +6,7 @@ import { toast } from "sonner"
 import { uploadReceipt } from "@/lib/actions/receipts"
 import { validateReceiptFile } from "@/lib/utils/file-validator"
 import { MESSAGES } from "@/lib/constants/messages"
+import { reloadIfVersionSkew } from "@/lib/utils/version-skew"
 
 export interface UseReceiptUploadOptions {
   ticketId: string
@@ -113,6 +114,7 @@ export function useReceiptUpload({ ticketId, onSuccess }: UseReceiptUploadOption
         router.refresh()
       }
     } catch (error) {
+      if (reloadIfVersionSkew(error)) return
       console.error("Upload error:", error)
       toast.error(error instanceof Error ? error.message : MESSAGES.UPLOAD.UPLOAD_FAILED)
     } finally {

@@ -8,6 +8,9 @@ import { MESSAGES } from "@/lib/constants/messages"
 import { uploadFile } from "@/lib/s3"
 import { fileTypeFromBuffer } from "file-type"
 import { convertHeicBufferToJpeg } from "@/lib/utils/heic-conversion"
+import { receiptUploadRateLimiter } from "@/lib/utils/rate-limit"
+import { logger } from "@/lib/logger"
+import { logAudit } from "@/lib/audit"
 
 const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif', 'pdf']
 const ALLOWED_MIME_TYPES = [
@@ -40,7 +43,22 @@ export async function uploadReceipt(formData: FormData) {
       return { error: MESSAGES.UPLOAD.REQUIRED_FIELDS }
     }
 
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return { error: MESSAGES.UPLOAD.INVALID_AMOUNT }
+    }
 
+    if (Number.isNaN(date.getTime())) {
+      return { error: MESSAGES.TRANSACTION.INVALID_DATE }
+    }
+
+    if (!Object.values(ExpenseType).includes(expenseType)) {
+      return { error: MESSAGES.UPLOAD.REQUIRED_FIELDS }
+    }
+
+    if (!receiptUploadRateLimiter.check(session.user.id).allowed) {
+      logger.warn({ userId: session.user.id, ticketId }, "Receipt upload rate limit exceeded")
+      return { error: MESSAGES.RATE_LIMIT.TOO_MANY_REQUESTS }
+    }
 
     const ticket = await prisma.ticket.findUnique({
       where: { id: ticketId },
@@ -97,7 +115,7 @@ export async function uploadReceipt(formData: FormData) {
         outputBuffer = await convertHeicBufferToJpeg(buffer)
         outputFileType = { ext: "jpg", mime: "image/jpeg" }
       } catch (error) {
-        console.error("HEIC conversion error:", error)
+        logger.error({ err: error, userId: session.user.id, ticketId }, "HEIC conversion error")
         return { error: MESSAGES.UPLOAD.HEIC_ERROR }
       }
     }
@@ -124,7 +142,7 @@ export async function uploadReceipt(formData: FormData) {
     // Upload to MinIO
     const url = await uploadFile(outputBuffer, key, outputFileType.mime)
 
-    await prisma.receipt.create({
+    const createdReceipt = await prisma.receipt.create({
       data: {
         ticketId,
         store: store || "Neznámý obchod",
@@ -137,10 +155,24 @@ export async function uploadReceipt(formData: FormData) {
       }
     })
 
+    await logAudit({
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      action: "RECEIPT_UPLOAD",
+      entityType: "Receipt",
+      entityId: createdReceipt.id,
+      metadata: {
+        ticketId,
+        store: createdReceipt.store,
+        amount,
+        expenseType,
+      },
+    })
+
     revalidatePath("/dashboard", "layout")
     return { success: true }
   } catch (error) {
-    console.error("Upload receipt error:", error)
+    logger.error({ err: error, userId: session.user.id }, "Upload receipt error")
     return { error: MESSAGES.UPLOAD.UPLOAD_FAILED }
   }
 }
@@ -161,10 +193,19 @@ export async function updateReceiptStatus(
       data: { status },
     })
 
+    await logAudit({
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      action: "RECEIPT_STATUS_CHANGE",
+      entityType: "Receipt",
+      entityId: receiptId,
+      metadata: { status },
+    })
+
     revalidatePath("/dashboard", "layout")
     return { success: true }
   } catch (error) {
-    console.error("Update receipt status error:", error)
+    logger.error({ err: error, userId: session.user.id, receiptId, status }, "Update receipt status error")
     return { error: MESSAGES.TRANSACTION.UPDATE_FAILED }
   }
 }
@@ -185,10 +226,19 @@ export async function toggleReceiptPaid(
       data: { isPaid },
     })
 
+    await logAudit({
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      action: "RECEIPT_PAID_TOGGLE",
+      entityType: "Receipt",
+      entityId: receiptId,
+      metadata: { isPaid },
+    })
+
     revalidatePath("/dashboard", "layout")
     return { success: true }
   } catch (error) {
-    console.error("Toggle receipt paid status error:", error)
+    logger.error({ err: error, userId: session.user.id, receiptId, isPaid }, "Toggle receipt paid status error")
     return { error: "Nepodařilo se změnit stav proplacení" }
   }
 }
@@ -209,10 +259,19 @@ export async function toggleReceiptFiled(
       data: { isFiled },
     })
 
+    await logAudit({
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      action: "RECEIPT_FILED_TOGGLE",
+      entityType: "Receipt",
+      entityId: receiptId,
+      metadata: { isFiled },
+    })
+
     revalidatePath("/dashboard", "layout")
     return { success: true }
   } catch (error) {
-    console.error("Toggle receipt filed status error:", error)
+    logger.error({ err: error, userId: session.user.id, receiptId, isFiled }, "Toggle receipt filed status error")
     return { error: "Nepodařilo se změnit stav zařazení" }
   }
 }
@@ -233,10 +292,19 @@ export async function updateReceiptExpenseType(
       data: { expenseType },
     })
 
+    await logAudit({
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      action: "RECEIPT_EXPENSE_TYPE_CHANGE",
+      entityType: "Receipt",
+      entityId: receiptId,
+      metadata: { expenseType },
+    })
+
     revalidatePath("/dashboard", "layout")
     return { success: true }
   } catch (error) {
-    console.error("Update receipt expense type error:", error)
+    logger.error({ err: error, userId: session.user.id, receiptId, expenseType }, "Update receipt expense type error")
     return { error: "Nepodařilo se změnit typ výdaje" }
   }
 }
@@ -251,15 +319,24 @@ export async function payAllReceiptsInTicket(ticketId: string) {
   }
 
   try {
-    await prisma.receipt.updateMany({
+    const result = await prisma.receipt.updateMany({
       where: { ticketId },
       data: { isPaid: true },
+    })
+
+    await logAudit({
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      action: "RECEIPT_PAY_ALL",
+      entityType: "Ticket",
+      entityId: ticketId,
+      metadata: { updatedCount: result.count },
     })
 
     revalidatePath("/dashboard", "layout")
     return { success: true }
   } catch (error) {
-    console.error("Pay all receipts error:", error)
+    logger.error({ err: error, userId: session.user.id, ticketId }, "Pay all receipts error")
     return { error: "Nepodařilo se proplatit všechny účtenky" }
   }
 }
@@ -293,10 +370,23 @@ export async function deleteReceipt(receiptId: string) {
       where: { id: receiptId }
     })
 
+    await logAudit({
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      action: "RECEIPT_DELETE",
+      entityType: "Receipt",
+      entityId: receiptId,
+      metadata: {
+        ticketId: receipt.ticketId,
+        store: receipt.store,
+        amount: Number(receipt.amount),
+      },
+    })
+
     revalidatePath("/dashboard", "layout")
     return { success: true }
   } catch (error) {
-    console.error("Delete receipt error:", error)
+    logger.error({ err: error, userId: session.user.id, receiptId }, "Delete receipt error")
     return { error: "Nepodařilo se smazat účtenku" }
   }
 }
@@ -317,6 +407,18 @@ export async function updateReceiptDetails(
     return { error: MESSAGES.AUTH.ADMIN_ONLY }
   }
 
+  if (!Number.isFinite(data.amount) || data.amount <= 0) {
+    return { error: MESSAGES.UPLOAD.INVALID_AMOUNT }
+  }
+
+  if (!(data.date instanceof Date) || Number.isNaN(data.date.getTime())) {
+    return { error: MESSAGES.TRANSACTION.INVALID_DATE }
+  }
+
+  if (!Object.values(ExpenseType).includes(data.expenseType)) {
+    return { error: MESSAGES.UPLOAD.REQUIRED_FIELDS }
+  }
+
   try {
     await prisma.receipt.update({
       where: { id: receiptId },
@@ -329,10 +431,23 @@ export async function updateReceiptDetails(
       },
     })
 
+    await logAudit({
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      action: "RECEIPT_UPDATE_DETAILS",
+      entityType: "Receipt",
+      entityId: receiptId,
+      metadata: {
+        store: data.store,
+        amount: data.amount,
+        expenseType: data.expenseType,
+      },
+    })
+
     revalidatePath("/dashboard", "layout")
     return { success: true }
   } catch (error) {
-    console.error("Update receipt details error:", error)
+    logger.error({ err: error, userId: session.user.id, receiptId }, "Update receipt details error")
     return { error: MESSAGES.TRANSACTION.UPDATE_FAILED }
   }
 }
@@ -343,8 +458,8 @@ export async function updateReceiptNote(
 ) {
   const session = await auth()
 
-  if (!session?.user?.id) {
-    return { error: MESSAGES.AUTH.UNAUTHORIZED }
+  if (session?.user?.role !== "ADMIN") {
+    return { error: MESSAGES.AUTH.ADMIN_ONLY }
   }
 
   try {
@@ -353,10 +468,19 @@ export async function updateReceiptNote(
       data: { note },
     })
 
+    await logAudit({
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      action: "RECEIPT_UPDATE_NOTE",
+      entityType: "Receipt",
+      entityId: receiptId,
+      metadata: { note },
+    })
+
     revalidatePath("/dashboard", "layout")
     return { success: true }
   } catch (error) {
-    console.error("Update receipt note error:", error)
+    logger.error({ err: error, userId: session.user.id, receiptId }, "Update receipt note error")
     return { error: "Nepodařilo se uložit poznámku" }
   }
 }

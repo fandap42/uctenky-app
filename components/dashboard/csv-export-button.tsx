@@ -2,7 +2,8 @@
 
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
-import { FileDown } from "lucide-react"
+import { FileDown, FileSpreadsheet } from "lucide-react"
+import * as XLSX from "xlsx"
 
 interface Transaction {
   id: string
@@ -33,7 +34,7 @@ export function CSVExportButton({
       return
     }
 
-    // CSV Headers
+    // CSV Headers - comma separated (default English CSV)
     const headers = [
       "Datum vytvoreni",
       "Zadatel",
@@ -50,12 +51,12 @@ export function CSVExportButton({
     // CSV Rows
     const rows = transactions.map((t) => [
       new Date(t.createdAt).toLocaleDateString("cs-CZ"),
-      t.requester?.fullName || "Neznamy",
-      t.section?.name || "Neznama",
+      `"${(t.requester?.fullName || "Neznamy").replace(/"/g, '""')}"`,
+      `"${(t.section?.name || "Neznama").replace(/"/g, '""')}"`,
       `"${t.purpose.replace(/"/g, '""')}"`,
       `"${(t.store || "").replace(/"/g, '""')}"`,
-      Number(t.estimatedAmount),
-      t.finalAmount ? Number(t.finalAmount) : "-",
+      Number(t.estimatedAmount).toFixed(2),
+      t.finalAmount ? Number(t.finalAmount).toFixed(2) : "-",
       t.status,
       t.isPaid ? "ANO" : "NE",
       t.dueDate ? new Date(t.dueDate).toLocaleDateString("cs-CZ") : "-",
@@ -77,18 +78,83 @@ export function CSVExportButton({
     link.click()
     document.body.removeChild(link)
     
-    toast.success("Export dokončen")
+    toast.success("Export CSV dokončen")
+  }
+
+  function exportToXLSX() {
+    if (transactions.length === 0) {
+      toast.error("Žádná data k exportu")
+      return
+    }
+
+    const headers = [
+      "Datum vytvoření",
+      "Žadatel",
+      "Sekce",
+      "Účel",
+      "Obchod",
+      "Původní částka",
+      "Konečná částka",
+      "Stav",
+      "Proplaceno",
+      "Splatnost",
+    ]
+
+    const rows = transactions.map((t) => [
+      new Date(t.createdAt).toLocaleDateString("cs-CZ"),
+      t.requester?.fullName || "Neznámý",
+      t.section?.name || "Neznámá",
+      t.purpose,
+      t.store || "",
+      Number(Number(t.estimatedAmount).toFixed(2)),
+      t.finalAmount ? Number(Number(t.finalAmount).toFixed(2)) : "-",
+      t.status,
+      t.isPaid ? "ANO" : "NE",
+      t.dueDate ? new Date(t.dueDate).toLocaleDateString("cs-CZ") : "-",
+    ])
+
+    const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows])
+    worksheet["!cols"] = [
+      { wch: 15 },
+      { wch: 22 },
+      { wch: 20 },
+      { wch: 30 },
+      { wch: 20 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 18 },
+      { wch: 12 },
+      { wch: 15 },
+    ]
+
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Účtenky")
+    const xlsxFilename = filename.replace(/\.csv$/i, "") + ".xlsx"
+    XLSX.writeFile(workbook, xlsxFilename)
+
+    toast.success("Export XLSX dokončen")
   }
 
   return (
-    <Button
-      onClick={exportToCSV}
-      variant="ghost"
-      size="sm"
-      className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-full h-7 px-3"
-    >
-      <FileDown className="h-3 w-3 mr-1.5" />
-      Export CSV
-    </Button>
+    <div className="flex flex-wrap items-center gap-2">
+      <Button
+        onClick={exportToCSV}
+        variant="ghost"
+        size="sm"
+        className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-full h-7 px-3"
+      >
+        <FileDown className="h-3 w-3 mr-1.5" />
+        Export CSV
+      </Button>
+      <Button
+        onClick={exportToXLSX}
+        variant="ghost"
+        size="sm"
+        className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-full h-7 px-3"
+      >
+        <FileSpreadsheet className="h-3 w-3 mr-1.5" />
+        Export XLSX
+      </Button>
+    </div>
   )
 }

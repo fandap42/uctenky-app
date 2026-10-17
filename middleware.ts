@@ -2,21 +2,13 @@ import NextAuth from "next-auth"
 import { authConfig } from "./auth.config"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { uploadRateLimiter } from "@/lib/utils/rate-limit"
+import { uploadRateLimiter, getClientIpFromHeaders } from "@/lib/utils/rate-limit"
 
 const { auth } = NextAuth(authConfig)
 
-function getClientIp(req: NextRequest): string {
-  return (
-    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
-    req.headers.get("x-real-ip") ||
-    "unknown"
-  )
-}
-
 function checkUploadRateLimit(req: NextRequest): NextResponse | null {
   if (req.nextUrl.pathname === "/api/upload" && req.method === "POST") {
-    const ip = getClientIp(req)
+    const ip = getClientIpFromHeaders(req.headers)
     const result = uploadRateLimiter.check(ip)
 
     if (!result.allowed) {

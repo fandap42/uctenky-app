@@ -102,6 +102,19 @@ export class RateLimiter {
   }
 
   /**
+   * Check if a key is currently rate-limited without incrementing the counter
+   * @param key - Unique identifier (e.g., IP address, user ID)
+   */
+  isRateLimited(key: string): boolean {
+    const now = Date.now()
+    const record = this.map.get(key)
+    if (!record || now >= record.resetTime) {
+      return false
+    }
+    return record.count >= this.config.maxRequests
+  }
+
+  /**
    * Reset all rate limit records (useful for testing)
    */
   reset(): void {
@@ -109,8 +122,26 @@ export class RateLimiter {
   }
 }
 
+export function getClientIpFromHeaders(headers: Headers): string {
+  return (
+    headers.get("x-real-ip") ||
+    headers.get("x-forwarded-for")?.split(",").pop()?.trim() ||
+    "unknown"
+  )
+}
+
 // Pre-configured rate limiter for upload endpoint
 export const uploadRateLimiter = new RateLimiter({
   windowMs: 60 * 1000, // 60 seconds
   maxRequests: 10, // max 10 uploads per minute per IP
+})
+
+export const receiptUploadRateLimiter = new RateLimiter({
+  windowMs: 60 * 1000,
+  maxRequests: 10,
+})
+
+export const loginRateLimiter = new RateLimiter({
+  windowMs: 15 * 60 * 1000,
+  maxRequests: 10,
 })

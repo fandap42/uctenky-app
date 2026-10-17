@@ -141,7 +141,7 @@ function MonthlyPokladnaCard({
 
   return (
     <Card className="bg-card border-border overflow-hidden">
-      <CardHeader className="py-3 px-4 bg-muted/30 flex flex-row items-center justify-between">
+      <CardHeader className="py-3 px-4 bg-muted/30 flex flex-row flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-3">
           <CardTitle className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
             {group.monthName}

@@ -4,6 +4,8 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { AppRole } from "@prisma/client"
+import { logger } from "@/lib/logger"
+import { logAudit } from "@/lib/audit"
 
 export async function getUsers() {
   const session = await auth()
@@ -14,6 +16,14 @@ export async function getUsers() {
 
   const users = await prisma.user.findMany({
     orderBy: { fullName: "asc" },
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+      role: true,
+      image: true,
+      createdAt: true,
+    },
   })
 
   return users
@@ -45,17 +55,36 @@ export async function updateUser(
   }
 
   try {
+    const previousUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true, email: true },
+    })
+
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
         role: data.role,
+      },
+      select: { id: true, fullName: true, email: true, role: true, image: true },
+    })
+
+    await logAudit({
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      action: "USER_ROLE_CHANGE",
+      entityType: "User",
+      entityId: userId,
+      metadata: {
+        targetEmail: updatedUser.email,
+        fromRole: previousUser?.role ?? null,
+        toRole: data.role,
       },
     })
 
     revalidatePath("/dashboard/users")
     return { success: true, user: updatedUser }
   } catch (error) {
-    console.error("Failed to update user:", error)
+    logger.error({ err: error, actorId: session.user.id, targetUserId: userId }, "Failed to update user")
     return { success: false, error: "Failed to update user" }
   }
 }
@@ -79,15 +108,27 @@ export async function changeUserPassword(
     const bcrypt = await import("bcryptjs")
     const passwordHash = await bcrypt.hash(newPassword, 10)
 
-    await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: { passwordHash },
+      select: { email: true },
+    })
+
+    await logAudit({
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      action: "USER_PASSWORD_CHANGE",
+      entityType: "User",
+      entityId: userId,
+      metadata: {
+        targetEmail: updatedUser.email,
+      },
     })
 
     revalidatePath("/dashboard/users")
     return { success: true }
   } catch (error) {
-    console.error("Failed to change password:", error)
+    logger.error({ err: error, actorId: session.user.id, targetUserId: userId }, "Failed to change password")
     return { success: false, error: "Nepodařilo se změnit heslo" }
   }
 }
@@ -106,14 +147,27 @@ export async function deleteUser(userId: string) {
     }
 
     // Hard delete - tickets will be unlinked (requesterId set to null)
-    await prisma.user.delete({
+    const deletedUser = await prisma.user.delete({
       where: { id: userId },
+    })
+
+    await logAudit({
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      action: "USER_DELETE",
+      entityType: "User",
+      entityId: userId,
+      metadata: {
+        deletedEmail: deletedUser.email,
+        deletedFullName: deletedUser.fullName,
+        deletedRole: deletedUser.role,
+      },
     })
 
     revalidatePath("/dashboard/users")
     return { success: true }
   } catch (error) {
-    console.error("Delete user error:", error)
+    logger.error({ err: error, actorId: session.user.id, targetUserId: userId }, "Delete user error")
     return { error: "Nepodařilo se smazat uživatele" }
   }
 }
