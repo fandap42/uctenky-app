@@ -9,6 +9,8 @@ import { MESSAGES } from "@/lib/constants/messages"
 import { getSemester, getSemesterRange, getCurrentSemester, sortSemesterKeys } from "@/lib/utils/semesters"
 import { sendEmail } from "@/lib/email"
 import { escapeHtml } from "@/lib/utils/html"
+import { logger } from "@/lib/logger"
+import { logAudit } from "@/lib/audit"
 
 async function getHeadSectionId(role: string): Promise<string | null> {
   // Resolve user's section from HEAD role
@@ -99,7 +101,7 @@ async function notifyRequesterOfStatusChange(
       })
     }
   } catch (e) {
-    console.error("Failed to send status update email", e)
+    logger.error({ err: e, newStatus }, "Failed to send status update email")
   }
 }
 
@@ -121,7 +123,7 @@ export async function createTicket(formData: FormData) {
   // Honeypot check for bots
   const honeypot = formData.get("full_name_honey") as string
   if (honeypot) {
-    console.warn("Honeypot filled, bot detected")
+    logger.warn({ userId: session.user.id }, "Honeypot filled on createTicket, bot detected")
     return { error: MESSAGES.SECURITY.BOT_DETECTED }
   }
 
@@ -173,7 +175,7 @@ export async function createTicket(formData: FormData) {
   }
 
   try {
-    await prisma.ticket.create({
+    const createdTicket = await prisma.ticket.create({
       data: {
         requesterId:
           isAdmin && requestedUserId && requestedUserId.length > 0
@@ -184,6 +186,20 @@ export async function createTicket(formData: FormData) {
         budgetAmount,
         targetDate,
         status: "PENDING_APPROVAL",
+      },
+    })
+
+    await logAudit({
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      action: "TICKET_CREATE",
+      entityType: "Ticket",
+      entityId: createdTicket.id,
+      metadata: {
+        purpose,
+        budgetAmount,
+        sectionId,
+        requesterId: createdTicket.requesterId,
       },
     })
 
@@ -207,13 +223,13 @@ export async function createTicket(formData: FormData) {
         })
       }
     } catch (e) {
-      console.error("Failed to send create ticket email", e)
+      logger.error({ err: e, ticketId: createdTicket.id }, "Failed to send create ticket email")
     }
 
     revalidatePath("/dashboard", "layout")
     return { success: true }
   } catch (error) {
-    console.error("Create ticket error:", error)
+    logger.error({ err: error, userId: session.user.id }, "Create ticket error")
     return { error: "Nepodařilo se vytvořit žádost" }
   }
 }
@@ -245,6 +261,19 @@ export async function updateTicketStatus(
       },
     })
 
+    await logAudit({
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      action: "TICKET_STATUS_CHANGE",
+      entityType: "Ticket",
+      entityId: ticketId,
+      metadata: {
+        from: previousTicket?.status ?? null,
+        to: status,
+        isReturned: isReturningToApproved,
+      },
+    })
+
     if (previousTicket) {
       await notifyRequesterOfStatusChange(previousTicket, status)
     }
@@ -252,7 +281,7 @@ export async function updateTicketStatus(
     revalidatePath("/dashboard", "layout")
     return { success: true }
   } catch (error) {
-    console.error("Update ticket status error:", error)
+    logger.error({ err: error, userId: session.user.id, ticketId, status }, "Update ticket status error")
     return { error: MESSAGES.TRANSACTION.UPDATE_FAILED }
   }
 }
@@ -273,10 +302,19 @@ export async function toggleTicketFiled(
       data: { isFiled },
     })
 
+    await logAudit({
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      action: "TICKET_FILED_TOGGLE",
+      entityType: "Ticket",
+      entityId: ticketId,
+      metadata: { isFiled },
+    })
+
     revalidatePath("/dashboard", "layout")
     return { success: true }
   } catch (error) {
-    console.error("Toggle ticket filed status error:", error)
+    logger.error({ err: error, userId: session.user.id, ticketId, isFiled }, "Toggle ticket filed status error")
     return { error: "Nepodařilo se změnit stav zařazení" }
   }
 }
@@ -317,6 +355,19 @@ export async function submitForVerification(ticketId: string) {
       data: { status: "VERIFICATION", isReturned: false },
     })
 
+    await logAudit({
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      action: "TICKET_SUBMIT_VERIFICATION",
+      entityType: "Ticket",
+      entityId: ticketId,
+      metadata: {
+        from: ticket.status,
+        to: "VERIFICATION",
+        receiptCount: ticket.receipts.length,
+      },
+    })
+
     try {
       const admins = await prisma.user.findMany({
         where: { role: "ADMIN", receiveAdminEmails: true },
@@ -331,13 +382,13 @@ export async function submitForVerification(ticketId: string) {
         })
       }
     } catch (e) {
-      console.error("Failed to send verification ticket email", e)
+      logger.error({ err: e, ticketId }, "Failed to send verification ticket email")
     }
 
     revalidatePath("/dashboard", "layout")
     return { success: true }
   } catch (error) {
-    console.error("Submit for verification error:", error)
+    logger.error({ err: error, userId: session.user.id, ticketId }, "Submit for verification error")
     return { error: "Nepodařilo se odeslat ke kontrole" }
   }
 }
@@ -352,7 +403,7 @@ export async function deleteTicket(ticketId: string) {
   try {
     const ticket = await prisma.ticket.findUnique({
       where: { id: ticketId },
-      select: { requesterId: true, status: true },
+      select: { requesterId: true, status: true, purpose: true, budgetAmount: true },
     })
 
     if (!ticket) {
@@ -371,10 +422,23 @@ export async function deleteTicket(ticketId: string) {
       where: { id: ticketId },
     })
 
+    await logAudit({
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      action: "TICKET_DELETE",
+      entityType: "Ticket",
+      entityId: ticketId,
+      metadata: {
+        purpose: ticket.purpose,
+        budgetAmount: Number(ticket.budgetAmount),
+        status: ticket.status,
+      },
+    })
+
     revalidatePath("/dashboard", "layout")
     return { success: true }
   } catch (error) {
-    console.error("Delete ticket error:", error)
+    logger.error({ err: error, userId: session.user.id, ticketId }, "Delete ticket error")
     return { error: MESSAGES.TRANSACTION.DELETE_FAILED }
   }
 }
@@ -392,10 +456,19 @@ export async function assignTicketProcessor(ticketId: string, processorId: strin
       data: { processingById: processorId },
     })
 
+    await logAudit({
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      action: "TICKET_ASSIGN_PROCESSOR",
+      entityType: "Ticket",
+      entityId: ticketId,
+      metadata: { processorId },
+    })
+
     revalidatePath("/dashboard", "layout")
     return { success: true }
   } catch (error) {
-    console.error("Assign ticket processor error:", error)
+    logger.error({ err: error, userId: session.user.id, ticketId, processorId }, "Assign ticket processor error")
     return { error: MESSAGES.TRANSACTION.UPDATE_FAILED }
   }
 }
@@ -500,7 +573,7 @@ export async function getTickets(filters: {
       }))
     }
   } catch (error) {
-    console.error("Get tickets error:", error)
+    logger.error({ err: error, userId: session.user.id }, "Get tickets error")
     return { error: "Nepodařilo se načíst žádosti" }
   }
 }
@@ -541,7 +614,7 @@ export async function getArchivedSemesters(filters: { requesterId?: string; sect
     const semesterKeys = new Set(tickets.map(t => getSemester(t.targetDate)))
     return { semesters: sortSemesterKeys(Array.from(semesterKeys)) }
   } catch (error) {
-    console.error("Get archived semesters error:", error)
+    logger.error({ err: error }, "Get archived semesters error")
     return { error: "Nepodařilo se načíst semestry", semesters: [] }
   }
 }
@@ -565,6 +638,7 @@ export async function updateTicketDetails(
 
   // Honeypot check
   if (data.middle_name_honey) {
+    logger.warn({ userId: session.user.id, ticketId }, "Honeypot filled on updateTicketDetails, bot detected")
     return { error: MESSAGES.SECURITY.BOT_DETECTED }
   }
 
@@ -621,12 +695,27 @@ export async function updateTicketDetails(
       },
     })
 
+    await logAudit({
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      action: "TICKET_UPDATE_DETAILS",
+      entityType: "Ticket",
+      entityId: ticketId,
+      metadata: {
+        fromStatus: previousTicket.status,
+        toStatus: newStatus,
+        fromBudget: Number(previousTicket.budgetAmount),
+        toBudget: data.budgetAmount,
+        purpose: data.purpose,
+      },
+    })
+
     await notifyRequesterOfStatusChange(previousTicket, newStatus)
 
     revalidatePath("/dashboard", "layout")
     return { success: true }
   } catch (error) {
-    console.error("Update ticket details error:", error)
+    logger.error({ err: error, userId: session.user.id, ticketId }, "Update ticket details error")
     return { error: MESSAGES.TRANSACTION.UPDATE_FAILED }
   }
 }
@@ -686,7 +775,7 @@ export async function getTicketsBySemester(
 
     return { transactions: serialized } // Keeping 'transactions' key for backward compatibility in the component
   } catch (error) {
-    console.error("Get tickets by semester error:", error)
+    logger.error({ err: error, userId: session.user.id, semesterKey }, "Get tickets by semester error")
     return { error: "Nepodařilo se načíst žádosti pro daný semestr" }
   }
 }
@@ -726,7 +815,7 @@ export async function getTicketSemesterTotals(
 
     return { totals }
   } catch (error) {
-    console.error("Get ticket semester totals error:", error)
+    logger.error({ err: error, userId: session.user.id }, "Get ticket semester totals error")
     return { error: "Nepodařilo se načíst součty semestrů" }
   }
 }

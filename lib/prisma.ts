@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client"
 import { PrismaPg } from '@prisma/adapter-pg'
+import { logger } from "@/lib/logger"
 
 // Forces Prisma Client refresh after schema migration
 const connectionString = `${process.env.DATABASE_URL}`
@@ -18,7 +19,7 @@ export const prisma = globalForPrisma.prisma ?? (() => {
     
     return client
   } catch (error) {
-    console.error("[prisma] Failed to initialize PrismaClient:", error)
+    logger.error({ err: error }, "[prisma] Failed to initialize PrismaClient")
     throw error
   }
 })()

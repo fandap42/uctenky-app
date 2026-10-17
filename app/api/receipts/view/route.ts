@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { s3Client, BUCKET_NAME } from "@/lib/s3"
 import { GetObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3"
 import { MESSAGES } from "@/lib/constants/messages"
+import { logger } from "@/lib/logger"
 
 async function getAuthorizedFileUrl(request: NextRequest): Promise<string | NextResponse> {
   const session = await auth()
@@ -63,7 +64,7 @@ function handleStorageError(error: unknown): NextResponse {
     return new NextResponse("Receipt file not found in storage", { status: 404 })
   }
 
-  console.error("Receipt streaming error:", error)
+  logger.error({ err: error }, "Receipt streaming error")
   return new NextResponse("Internal Server Error", { status: 500 })
 }
 

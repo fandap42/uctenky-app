@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { logger } from "@/lib/logger"
 
 export async function GET() {
   try {
@@ -10,7 +11,7 @@ export async function GET() {
     })
     return NextResponse.json(sections)
   } catch (error) {
-    console.error("Failed to fetch sections:", error)
+    logger.error({ err: error }, "Failed to fetch sections")
     return NextResponse.json({ error: "Failed to fetch sections" }, { status: 500 })
   }
 }

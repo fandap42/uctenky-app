@@ -4,6 +4,9 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { MESSAGES } from "@/lib/constants/messages"
+import { getSemesterRange } from "@/lib/utils/semesters"
+import { logger } from "@/lib/logger"
+import { logAudit } from "@/lib/audit"
 
 // ============== DEPOSITS ==============
 
@@ -16,7 +19,7 @@ export async function createDeposit(
   const session = await auth()
 
   if (honeypot) {
-    console.warn("Deposit honeypot filled, bot detected")
+    logger.warn({ userId: session?.user?.id }, "Deposit honeypot filled, bot detected")
     return { error: MESSAGES.SECURITY.BOT_DETECTED }
   }
 
@@ -25,7 +28,7 @@ export async function createDeposit(
   }
 
   try {
-    await prisma.deposit.create({
+    const created = await prisma.deposit.create({
       data: {
         amount,
         description,
@@ -33,10 +36,23 @@ export async function createDeposit(
       },
     })
 
+    await logAudit({
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      action: "DEPOSIT_CREATE",
+      entityType: "Deposit",
+      entityId: created.id,
+      metadata: {
+        amount,
+        description,
+        date: date.toISOString(),
+      },
+    })
+
     revalidatePath("/dashboard/pokladna")
     return { success: true }
   } catch (error) {
-    console.error("Create deposit error:", error)
+    logger.error({ err: error, userId: session.user.id }, "Create deposit error")
     return { error: "Nepodařilo se vytvořit vklad" } // This can stay or be moved to MESSAGES if I want to be 100% thorough
   }
 }
@@ -49,14 +65,26 @@ export async function deleteDeposit(depositId: string) {
   }
 
   try {
-    await prisma.deposit.delete({
+    const deleted = await prisma.deposit.delete({
       where: { id: depositId },
+    })
+
+    await logAudit({
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      action: "DEPOSIT_DELETE",
+      entityType: "Deposit",
+      entityId: depositId,
+      metadata: {
+        amount: Number(deleted.amount),
+        description: deleted.description,
+      },
     })
 
     revalidatePath("/dashboard/pokladna")
     return { success: true }
   } catch (error) {
-    console.error("Delete deposit error:", error)
+    logger.error({ err: error, userId: session.user.id, depositId }, "Delete deposit error")
     return { error: "Nepodařilo se smazat vklad" }
   }
 }
@@ -83,10 +111,23 @@ export async function updateDeposit(
       },
     })
 
+    await logAudit({
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      action: "DEPOSIT_UPDATE",
+      entityType: "Deposit",
+      entityId: depositId,
+      metadata: {
+        amount,
+        description: description ?? null,
+        date: date.toISOString(),
+      },
+    })
+
     revalidatePath("/dashboard/pokladna")
     return { success: true }
   } catch (error) {
-    console.error("Update deposit error:", error)
+    logger.error({ err: error, userId: session.user.id, depositId }, "Update deposit error")
     return { error: MESSAGES.CASH_REGISTER.UPDATE_DEPOSIT_FAILED }
   }
 }
@@ -97,7 +138,7 @@ export async function createDebtError(amount: number, reason: string, honeypot?:
   const session = await auth()
 
   if (honeypot) {
-    console.warn("Debt error honeypot filled, bot detected")
+    logger.warn({ userId: session?.user?.id }, "Debt error honeypot filled, bot detected")
     return { error: MESSAGES.SECURITY.BOT_DETECTED }
   }
 
@@ -110,17 +151,26 @@ export async function createDebtError(amount: number, reason: string, honeypot?:
   }
 
   try {
-    await prisma.debtError.create({
+    const created = await prisma.debtError.create({
       data: {
         amount,
         reason,
       },
     })
 
+    await logAudit({
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      action: "DEBT_ERROR_CREATE",
+      entityType: "DebtError",
+      entityId: created.id,
+      metadata: { amount, reason },
+    })
+
     revalidatePath("/dashboard/pokladna")
     return { success: true }
   } catch (error) {
-    console.error("Create debt error:", error)
+    logger.error({ err: error, userId: session.user.id }, "Create debt error")
     return { error: "Nepodařilo se přidat dluh z chyb" }
   }
 }
@@ -133,14 +183,26 @@ export async function deleteDebtError(debtErrorId: string) {
   }
 
   try {
-    await prisma.debtError.delete({
+    const deleted = await prisma.debtError.delete({
       where: { id: debtErrorId },
+    })
+
+    await logAudit({
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      action: "DEBT_ERROR_DELETE",
+      entityType: "DebtError",
+      entityId: debtErrorId,
+      metadata: {
+        amount: Number(deleted.amount),
+        reason: deleted.reason,
+      },
     })
 
     revalidatePath("/dashboard/pokladna")
     return { success: true }
   } catch (error) {
-    console.error("Delete debt error:", error)
+    logger.error({ err: error, userId: session.user.id, debtErrorId }, "Delete debt error")
     return { error: "Nepodařilo se smazat záznam" }
   }
 }
@@ -151,7 +213,7 @@ export async function createCashOnHand(amount: number, reason: string, honeypot?
   const session = await auth()
 
   if (honeypot) {
-    console.warn("Cash on hand honeypot filled, bot detected")
+    logger.warn({ userId: session?.user?.id }, "Cash on hand honeypot filled, bot detected")
     return { error: MESSAGES.SECURITY.BOT_DETECTED }
   }
 
@@ -164,17 +226,26 @@ export async function createCashOnHand(amount: number, reason: string, honeypot?
   }
 
   try {
-    await prisma.cashOnHand.create({
+    const created = await prisma.cashOnHand.create({
       data: {
         amount,
         reason,
       },
     })
 
+    await logAudit({
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      action: "CASH_ON_HAND_CREATE",
+      entityType: "CashOnHand",
+      entityId: created.id,
+      metadata: { amount, reason },
+    })
+
     revalidatePath("/dashboard/pokladna")
     return { success: true }
   } catch (error) {
-    console.error("Create cash on hand error:", error)
+    logger.error({ err: error, userId: session.user.id }, "Create cash on hand error")
     return { error: "Nepodařilo se přidat hotovost" }
   }
 }
@@ -187,14 +258,26 @@ export async function deleteCashOnHand(cashOnHandId: string) {
   }
 
   try {
-    await prisma.cashOnHand.delete({
+    const deleted = await prisma.cashOnHand.delete({
       where: { id: cashOnHandId },
+    })
+
+    await logAudit({
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      action: "CASH_ON_HAND_DELETE",
+      entityType: "CashOnHand",
+      entityId: cashOnHandId,
+      metadata: {
+        amount: Number(deleted.amount),
+        reason: deleted.reason,
+      },
     })
 
     revalidatePath("/dashboard/pokladna")
     return { success: true }
   } catch (error) {
-    console.error("Delete cash on hand error:", error)
+    logger.error({ err: error, userId: session.user.id, cashOnHandId }, "Delete cash on hand error")
     return { error: "Nepodařilo se smazat záznam" }
   }
 }
@@ -322,7 +405,7 @@ export async function getAllCashRegisterData() {
       realCash,
     }
   } catch (error) {
-    console.error("Get all cash register data error:", error)
+    logger.error({ err: error, userId: session.user.id }, "Get all cash register data error")
     return { error: "Nepodařilo se načíst data pokladny" }
   }
 }
@@ -362,11 +445,10 @@ export async function getBalanceAtDate(targetDate: Date) {
 
     return { balance: totalDeposits - totalExpenses }
   } catch (error) {
-    console.error("Get balance at date error:", error)
+    logger.error({ err: error, userId: session.user.id }, "Get balance at date error")
     return { error: "Nepodařilo se vypočítat zůstatek" }
   }
 }
-import { getSemesterRange } from "@/lib/utils/semesters"
 
 export async function getPokladnaSemesterData(semesterKey: string) {
   const session = await auth()
@@ -457,7 +539,7 @@ export async function getPokladnaSemesterData(semesterKey: string) {
       }),
     }
   } catch (error) {
-    console.error("Get pokladna semester data error:", error)
+    logger.error({ err: error, userId: session.user.id, semesterKey }, "Get pokladna semester data error")
     return { error: "Nepodařilo se načíst data pokladny pro daný semestr" }
   }
 }

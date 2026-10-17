@@ -3,6 +3,7 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
+import { logger } from "@/lib/logger"
 
 export async function updateNotificationSettings(data: { receiveEmails: boolean; receiveAdminEmails: boolean }) {
   const session = await auth()
@@ -26,7 +27,7 @@ export async function updateNotificationSettings(data: { receiveEmails: boolean;
     revalidatePath("/dashboard/settings")
     return { success: true }
   } catch (error) {
-    console.error("Failed to update notification settings", error)
+    logger.error({ err: error, userId: session.user.id }, "Failed to update notification settings")
     return { error: "Nepodařilo se uložit nastavení" }
   }
 }
