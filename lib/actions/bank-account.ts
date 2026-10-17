@@ -6,6 +6,8 @@ import { revalidatePath } from "next/cache"
 import { encrypt, decrypt } from "@/lib/utils/encryption"
 import { validateCzechAccountNumber } from "@/lib/utils/iban"
 import { MESSAGES } from "@/lib/constants/messages"
+import { logger } from "@/lib/logger"
+import { logAudit } from "@/lib/audit"
 
 export async function saveBankAccount(data: {
   prefix?: string
@@ -40,10 +42,22 @@ export async function saveBankAccount(data: {
       },
     })
 
+    await logAudit({
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      action: "BANK_ACCOUNT_UPDATE",
+      entityType: "BankAccount",
+      entityId: session.user.id,
+      metadata: {
+        bankCode: data.bankCode,
+        hasPrefix: Boolean(data.prefix),
+      },
+    })
+
     revalidatePath("/dashboard", "layout")
     return { success: true }
   } catch (error) {
-    console.error("Save bank account error:", error)
+    logger.error({ err: error, userId: session.user.id }, "Save bank account error")
     return { error: MESSAGES.BANK_ACCOUNT.SAVE_FAILED }
   }
 }
@@ -76,7 +90,7 @@ export async function getBankAccount() {
       },
     }
   } catch (error) {
-    console.error("Get bank account error:", error)
+    logger.error({ err: error, userId: session.user.id }, "Get bank account error")
     return { error: MESSAGES.BANK_ACCOUNT.LOAD_FAILED }
   }
 }
@@ -96,7 +110,7 @@ export async function completeOnboarding() {
     revalidatePath("/dashboard", "layout")
     return { success: true }
   } catch (error) {
-    console.error("Complete onboarding error:", error)
+    logger.error({ err: error, userId: session.user.id }, "Complete onboarding error")
     return { error: MESSAGES.ONBOARDING.COMPLETE_FAILED }
   }
 }
@@ -130,7 +144,7 @@ export async function getUserBankAccountForQR(userId: string) {
       },
     }
   } catch (error) {
-    console.error("Get user bank account for QR error:", error)
+    logger.error({ err: error, userId: session.user.id, targetUserId: userId }, "Get user bank account for QR error")
     return { error: MESSAGES.BANK_ACCOUNT.LOAD_FAILED }
   }
 }

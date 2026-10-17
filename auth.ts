@@ -6,9 +6,11 @@ import { compare } from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 import { authConfig } from "./auth.config"
 import { loginRateLimiter, getClientIpFromHeaders } from "@/lib/utils/rate-limit"
+import { logger } from "@/lib/logger"
+import { logAudit } from "@/lib/audit"
 
 if (prisma && !('account' in prisma)) {
-  console.error("[auth] CRITICAL: prisma.account is missing from Prisma client!")
+  logger.error("[auth] CRITICAL: prisma.account is missing from Prisma client!")
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -39,13 +41,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials, request) {
         const ip = request?.headers ? getClientIpFromHeaders(request.headers) : "unknown"
         if (loginRateLimiter.isRateLimited(ip)) {
+          logger.warn({ ip }, "[auth] Login rate limit exceeded")
           return null
         }
 
-        console.log("[auth] authorize called with email:", credentials?.email)
+        logger.debug({ ip }, "[auth] Credentials authorize called")
 
         if (!credentials?.email || !credentials?.password) {
-          console.log("[auth] Missing credentials")
+          logger.debug({ ip }, "[auth] Missing credentials")
           loginRateLimiter.check(ip)
           return null
         }
@@ -53,25 +56,25 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const email = credentials.email as string
         const password = credentials.password as string
 
-        console.log("[auth] Looking up user:", email)
         const user = await prisma.user.findUnique({
           where: { email },
         })
 
-        console.log("[auth] User found:", user ? "yes" : "no")
         if (!user || !user.passwordHash) {
+          logger.warn({ ip }, "[auth] Failed login attempt (invalid user or missing password hash)")
           loginRateLimiter.check(ip)
           return null
         }
 
-        console.log("[auth] Comparing passwords...")
         const isPasswordValid = await compare(password, user.passwordHash)
-        console.log("[auth] Password valid:", isPasswordValid)
 
         if (!isPasswordValid) {
+          logger.warn({ ip, userId: user.id }, "[auth] Failed login attempt (invalid password)")
           loginRateLimiter.check(ip)
           return null
         }
+
+        logger.info({ userId: user.id, role: user.role }, "[auth] User logged in via credentials")
 
         return {
           id: user.id,
@@ -146,7 +149,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             }
           }
         } catch (error) {
-          console.error("[auth] Error fetching latest user data in jwt callback:", error)
+          logger.error({ err: error, userId: nextToken.id }, "[auth] Error fetching latest user data in jwt callback")
         }
       }
 
@@ -159,21 +162,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           // Slack profile structure can vary between OpenID Connect and older OAuth
           const userTeamId = getSlackTeamId(profile).trim()
           
-          console.log(`[auth] Slack login attempt. Team ID: "${userTeamId}", Allowed: "${allowedTeamId}"`)
+          logger.debug({ userTeamId, allowedTeamId }, "[auth] Slack login attempt")
 
           if (!allowedTeamId) {
-            console.error("[auth] SLACK_ALLOWED_TEAM_ID is not configured in .env!")
+            logger.error("[auth] SLACK_ALLOWED_TEAM_ID is not configured in .env!")
             return false
           }
 
           if (userTeamId !== allowedTeamId) {
-            console.warn(`[auth] Slack login denied: Team ID mismatch ("${userTeamId}" !== "${allowedTeamId}")`)
+            logger.warn({ userTeamId, allowedTeamId }, "[auth] Slack login denied: Team ID mismatch")
             return false
           }
         }
         return true
       } catch (error) {
-        console.error("[auth] CRITICAL ERROR in signIn callback:", error)
+        logger.error({ err: error }, "[auth] CRITICAL ERROR in signIn callback")
         return false
       }
     },
@@ -186,7 +189,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           where: { id: user.id },
           data: { fullName: user.name },
         })
-        console.log(`[auth] Updated fullName for new user: ${user.email}`)
+        await logAudit({
+          actorId: user.id,
+          actorEmail: user.email,
+          action: "USER_CREATE",
+          entityType: "User",
+          entityId: user.id,
+          metadata: {
+            fullName: user.name,
+            provider: "slack",
+          },
+        })
       }
     },
   },

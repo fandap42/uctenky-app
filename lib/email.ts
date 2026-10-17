@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer"
+import { logger } from "@/lib/logger"
 
 interface EmailOptions {
   to: string | string[]
@@ -10,13 +11,8 @@ export async function sendEmail({ to, subject, html }: EmailOptions) {
   const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, EMAIL_FROM } = process.env
 
   if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS || !EMAIL_FROM) {
-    console.warn("SMTP credentials not fully configured. Simulating email sending.")
-    console.log("------------------------------------------")
-    console.log(`To: ${to}`)
-    console.log(`From: ${EMAIL_FROM}`)
-    console.log(`Subject: ${subject}`)
-    console.log(`Body: ${html}`)
-    console.log("------------------------------------------")
+    logger.warn({ subject, recipientCount: Array.isArray(to) ? to.length : 1 }, "SMTP credentials not fully configured. Simulating email sending.")
+    logger.debug({ to, from: EMAIL_FROM, subject, html }, "Simulated email payload")
     return { success: true, message: "Email simulation successful" }
   }
 
@@ -46,10 +42,10 @@ export async function sendEmail({ to, subject, html }: EmailOptions) {
 </html>`,
     })
 
-    console.log("Message sent: %s", info.messageId)
+    logger.info({ messageId: info.messageId, subject }, "Email sent successfully")
     return { success: true, messageId: info.messageId }
   } catch (error) {
-    console.error("Error sending email:", error)
+    logger.error({ err: error, subject }, "Error sending email")
     return { success: false, error: "Nepodařilo se odeslat email" }
   }
 }
