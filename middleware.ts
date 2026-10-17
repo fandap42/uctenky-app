@@ -2,35 +2,13 @@ import NextAuth from "next-auth"
 import { authConfig } from "./auth.config"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { uploadRateLimiter, loginRateLimiter } from "@/lib/utils/rate-limit"
+import { uploadRateLimiter, getClientIpFromHeaders } from "@/lib/utils/rate-limit"
 
 const { auth } = NextAuth(authConfig)
 
-function getClientIp(req: NextRequest): string {
-  return (
-    req.headers.get("x-real-ip") ||
-    req.headers.get("x-forwarded-for")?.split(",").pop()?.trim() ||
-    "unknown"
-  )
-}
-
-function checkLoginRateLimit(req: NextRequest): NextResponse | null {
-  if (req.nextUrl.pathname === "/api/auth/callback/credentials" && req.method === "POST") {
-    const result = loginRateLimiter.check(getClientIp(req))
-
-    if (!result.allowed) {
-      return NextResponse.json(
-        { url: new URL("/login?error=RateLimited", req.nextUrl).toString() },
-        { status: 429 }
-      )
-    }
-  }
-  return null
-}
-
 function checkUploadRateLimit(req: NextRequest): NextResponse | null {
   if (req.nextUrl.pathname === "/api/upload" && req.method === "POST") {
-    const ip = getClientIp(req)
+    const ip = getClientIpFromHeaders(req.headers)
     const result = uploadRateLimiter.check(ip)
 
     if (!result.allowed) {
@@ -47,9 +25,6 @@ export default auth((req) => {
   // Rate limiting for upload endpoint
   const rateLimitResponse = checkUploadRateLimit(req as unknown as NextRequest)
   if (rateLimitResponse) return rateLimitResponse
-
-  const loginRateLimitResponse = checkLoginRateLimit(req as unknown as NextRequest)
-  if (loginRateLimitResponse) return loginRateLimitResponse
 
   const isLoggedIn = !!req.auth
   const isAuthRoute = req.nextUrl.pathname === "/login" || req.nextUrl.pathname === "/register"

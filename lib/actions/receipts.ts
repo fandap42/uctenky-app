@@ -332,12 +332,16 @@ export async function updateReceiptDetails(
     return { error: MESSAGES.AUTH.ADMIN_ONLY }
   }
 
-  if (!Number.isFinite(data.amount)) {
+  if (!Number.isFinite(data.amount) || data.amount <= 0) {
     return { error: MESSAGES.UPLOAD.INVALID_AMOUNT }
   }
 
   if (!(data.date instanceof Date) || Number.isNaN(data.date.getTime())) {
     return { error: MESSAGES.TRANSACTION.INVALID_DATE }
+  }
+
+  if (!Object.values(ExpenseType).includes(data.expenseType)) {
+    return { error: MESSAGES.UPLOAD.REQUIRED_FIELDS }
   }
 
   try {

@@ -22,13 +22,25 @@ async function getHeadSectionId(role: string): Promise<string | null> {
   return section?.id ?? null
 }
 
+async function getCurrentUserRole(userId: string): Promise<string | null> {
+  const dbUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  })
+  return dbUser?.role ?? null
+}
+
 async function authorizeTicketFilters(
   user: { id: string; role?: string | null },
   filters: { requesterId?: string; sectionId?: string }
 ): Promise<{ requesterId?: string; sectionId?: string } | null> {
   const { requesterId, sectionId } = filters
+  const role = await getCurrentUserRole(user.id)
+  if (!role) {
+    return null
+  }
 
-  if (user.role === "ADMIN") {
+  if (role === "ADMIN") {
     return { requesterId, sectionId }
   }
 
@@ -37,7 +49,7 @@ async function authorizeTicketFilters(
   }
 
   if (sectionId) {
-    const headSectionId = await getHeadSectionId(user.role || "MEMBER")
+    const headSectionId = await getHeadSectionId(role)
     if (headSectionId !== sectionId) {
       return null
     }
@@ -630,7 +642,7 @@ export async function getTicketsBySemester(
 ) {
   const session = await auth()
 
-  if (session?.user?.role !== "ADMIN") {
+  if (!session?.user?.id || (await getCurrentUserRole(session.user.id)) !== "ADMIN") {
     return { error: MESSAGES.AUTH.ADMIN_ONLY }
   }
 
@@ -687,7 +699,7 @@ export async function getTicketSemesterTotals(
 ) {
   const session = await auth()
 
-  if (session?.user?.role !== "ADMIN") {
+  if (!session?.user?.id || (await getCurrentUserRole(session.user.id)) !== "ADMIN") {
     return { error: MESSAGES.AUTH.ADMIN_ONLY }
   }
 
