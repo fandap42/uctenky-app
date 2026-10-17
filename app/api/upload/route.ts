@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { fileTypeFromBuffer } from "file-type"
 import { MESSAGES } from "@/lib/constants/messages"
 import { convertHeicBufferToJpeg } from "@/lib/utils/heic-conversion"
+import { logger } from "@/lib/logger"
 
 // Allowed file extensions and MIME types for receipts
 const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif', 'pdf']
@@ -113,7 +114,7 @@ export async function POST(request: NextRequest) {
         outputBuffer = await convertHeicBufferToJpeg(buffer)
         outputFileType = { ext: "jpg", mime: "image/jpeg" }
       } catch (error) {
-        console.error("HEIC conversion error:", error)
+        logger.error({ err: error, userId: session.user.id, ticketId }, "HEIC conversion error in upload API")
         return NextResponse.json(
           { error: MESSAGES.UPLOAD.HEIC_ERROR },
           { status: 400 }
@@ -132,7 +133,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ url })
   } catch (error) {
-    console.error("Upload error:", error)
+    logger.error({ err: error }, "Upload API error")
     return NextResponse.json(
       { error: MESSAGES.UPLOAD.MINIO_ERROR },
       { status: 500 }
