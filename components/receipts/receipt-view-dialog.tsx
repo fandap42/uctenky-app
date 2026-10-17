@@ -26,6 +26,7 @@ export function ReceiptViewDialog({ transactionId: receiptId, purpose, date, amo
   const [error, setError] = useState(false)
   const [errorMessage, setErrorMessage] = useState("Soubor účtenky nebyl nalezen")
   const [isPdf, setIsPdf] = useState(false)
+  const [headChecked, setHeadChecked] = useState(false)
   const imageUrl = `/api/receipts/view?id=${receiptId}`
   const formattedDate = date ? new Date(date).toLocaleDateString("cs-CZ") : null
   const formattedAmount = typeof amount === "number" && !Number.isNaN(amount)
@@ -50,17 +51,23 @@ export function ReceiptViewDialog({ transactionId: receiptId, purpose, date, amo
         }
 
         setIsPdf(false)
+        setLoading(false)
         return
       }
 
       const contentType = response.headers.get('Content-Type') || ''
-      setIsPdf(contentType.includes('application/pdf'))
+      const pdf = contentType.includes('application/pdf')
+      setIsPdf(pdf)
+      if (pdf) {
+        setLoading(false)
+      }
     } catch {
       setError(true)
       setErrorMessage("Soubor účtenky se nepodařilo načíst")
       setIsPdf(false)
-    } finally {
       setLoading(false)
+    } finally {
+      setHeadChecked(true)
     }
   }
 
@@ -71,6 +78,7 @@ export function ReceiptViewDialog({ transactionId: receiptId, purpose, date, amo
       setLoading(true)
       setError(false)
       setIsPdf(false)
+      setHeadChecked(false)
       setErrorMessage("Soubor účtenky nebyl nalezen")
       checkFileType()
     }
@@ -144,7 +152,7 @@ export function ReceiptViewDialog({ transactionId: receiptId, purpose, date, amo
               <p className="text-sm font-medium text-foreground">PDF soubor s účtenkou</p>
               <p className="text-xs text-muted-foreground">Klikněte na ikonu {'\u2197'} pro otevření v novém okně</p>
             </div>
-          ) : (
+          ) : headChecked ? (
             <div className="relative w-full h-full">
               <Image
                 src={imageUrl}
@@ -160,7 +168,7 @@ export function ReceiptViewDialog({ transactionId: receiptId, purpose, date, amo
                 }}
               />
             </div>
-          )}
+          ) : null}
         </div>
       </DialogContent>
     </Dialog>

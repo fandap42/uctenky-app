@@ -16,6 +16,8 @@ const s3Client = new S3Client({
   requestHandler: {
     connectionTimeout: 5_000,
     requestTimeout: 60_000,
+    socketTimeout: 60_000,
+    throwOnRequestTimeout: true,
   },
 })
 

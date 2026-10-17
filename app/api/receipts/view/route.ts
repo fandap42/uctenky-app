@@ -55,6 +55,10 @@ function handleStorageError(error: unknown): NextResponse {
         ? String((error as { name: unknown }).name)
         : ""
 
+  if (errorName === "AbortError" || errorName === "TimeoutError") {
+    return new NextResponse(null, { status: 499 })
+  }
+
   if (errorName === "NoSuchKey" || errorName === "NotFound") {
     return new NextResponse("Receipt file not found in storage", { status: 404 })
   }
@@ -70,7 +74,7 @@ export async function GET(request: NextRequest) {
 
     // Handle legacy full URLs by proxying them via fetch
     if (fileUrl.startsWith("http")) {
-      const response = await fetch(fileUrl)
+      const response = await fetch(fileUrl, { signal: request.signal })
       if (!response.ok) return new NextResponse("Source file not found", { status: 404 })
 
       return new NextResponse(response.body, {
@@ -87,7 +91,7 @@ export async function GET(request: NextRequest) {
       Key: fileUrl,
     })
 
-    const s3Response = await s3Client.send(command)
+    const s3Response = await s3Client.send(command, { abortSignal: request.signal })
 
     if (!s3Response.Body) {
       return new NextResponse("Empty response from storage", { status: 500 })
@@ -112,7 +116,7 @@ export async function HEAD(request: NextRequest) {
     if (fileUrl instanceof NextResponse) return fileUrl
 
     if (fileUrl.startsWith("http")) {
-      const response = await fetch(fileUrl, { method: "HEAD" })
+      const response = await fetch(fileUrl, { method: "HEAD", signal: request.signal })
       if (!response.ok) return new NextResponse(null, { status: 404 })
 
       return new NextResponse(null, {
@@ -126,7 +130,7 @@ export async function HEAD(request: NextRequest) {
     const s3Response = await s3Client.send(new HeadObjectCommand({
       Bucket: BUCKET_NAME,
       Key: fileUrl,
-    }))
+    }), { abortSignal: request.signal })
 
     return new NextResponse(null, {
       headers: {
